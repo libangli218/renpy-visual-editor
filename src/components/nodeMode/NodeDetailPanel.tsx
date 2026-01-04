@@ -22,11 +22,12 @@ interface NodeDetailPanelProps {
   node: Node
   onClose: () => void
   onNodeDataChange?: (nodeId: string, newData: FlowNodeData) => void
+  onModified?: () => void
 }
 
-export const NodeDetailPanel: React.FC<NodeDetailPanelProps> = ({ node, onClose, onNodeDataChange }) => {
+export const NodeDetailPanel: React.FC<NodeDetailPanelProps> = ({ node, onClose, onNodeDataChange, onModified }) => {
   const data = node.data as unknown as FlowNodeData
-  const { ast, setAst } = useEditorStore()
+  const { ast } = useEditorStore()
   
   /**
    * Handle dialogue text change
@@ -43,24 +44,23 @@ export const NodeDetailPanel: React.FC<NodeDetailPanelProps> = ({ node, onClose,
       dialogues: newDialogues,
     }
     
-    // Notify parent of data change
+    // Notify parent of data change (updates React Flow state)
     if (onNodeDataChange) {
       onNodeDataChange(node.id, newData)
     }
     
-    // Sync to AST
+    // Sync to AST without triggering rebuild
+    // The AST update is done in-place, not by creating a new reference
     if (ast && data.dialogues[index].id) {
       const synchronizer = new ASTSynchronizer()
-      const updated = synchronizer.updateDialogueText(data.dialogues[index].id, newText, ast)
-      if (updated) {
-        // Trigger AST update to mark as modified
-        setAst({ ...ast })
+      synchronizer.updateDialogueText(data.dialogues[index].id, newText, ast)
+      
+      // Notify parent that content was modified (for save tracking)
+      if (onModified) {
+        onModified()
       }
-    } else if (ast) {
-      // Even if we can't find the specific dialogue, mark as modified
-      setAst({ ...ast })
     }
-  }, [data, node.id, onNodeDataChange, ast, setAst])
+  }, [data, node.id, onNodeDataChange, ast, onModified])
   
   return (
     <div className="detail-panel">

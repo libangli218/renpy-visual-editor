@@ -153,10 +153,12 @@ describe('CodeGenerator', () => {
     it('should generate menu with prompt', () => {
       const menu = createMenuNode([
         createMenuChoice('Yes', [createJumpNode('yes')]),
-      ], { prompt: 'choice_menu' })
+      ], { prompt: 'What do you want to do?' })
       const code = generateNode(menu, 0)
       expect(code).toBe(
-        'menu choice_menu:\n' +
+        'menu:\n' +
+        '    "What do you want to do?"\n' +
+        '\n' +
         '    "Yes":\n' +
         '        jump yes'
       )

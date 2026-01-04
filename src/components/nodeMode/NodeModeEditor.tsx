@@ -24,11 +24,10 @@ import {
 import '@xyflow/react/dist/style.css'
 import { useEditorStore } from '../../store/editorStore'
 import { flowNodeTypesSync } from './nodes/flowNodes'
-import { FlowGraphBuilder, FlowEdgeType } from './FlowGraphBuilder'
+import { FlowGraphBuilder, FlowEdgeType, FlowNodeData } from './FlowGraphBuilder'
 import { FileClassifier, FileClassification } from './FileClassifier'
 import { isValidConnection, createEdgeId, handleNodeDeletion, findDisconnectedNodes } from './connectionUtils'
 import { projectManager } from '../../project/ProjectManager'
-import { ASTSynchronizer } from './ASTSynchronizer'
 import { RenpyScript } from '../../types/ast'
 import { NodeDetailPanel } from './NodeDetailPanel'
 import { cacheManager } from '../../cache'
@@ -427,6 +426,20 @@ const NodeModeEditorInner: React.FC = () => {
     setEdges(initialEdges)
   }, [initialNodes, initialEdges, setNodes, setEdges])
 
+  /**
+   * Handle node data change from detail panel
+   * Updates the node data in React Flow state without triggering AST rebuild
+   */
+  const handleNodeDataChange = useCallback((nodeId: string, newData: FlowNodeData) => {
+    setNodes((nds) => 
+      nds.map((node) => 
+        node.id === nodeId 
+          ? { ...node, data: newData as Record<string, unknown> }
+          : node
+      )
+    )
+  }, [setNodes])
+
   // Detect disconnected nodes - Implements Requirement 9.5
   const disconnectedNodeIds = useMemo(() => {
     return findDisconnectedNodes(nodes, edges)
@@ -656,38 +669,16 @@ const NodeModeEditorInner: React.FC = () => {
       // Select the newly created node
       setSelectedNodeId(nodeId)
       
-      // Sync to AST - add the new node to the AST
-      if (ast && selectedFile) {
-        const synchronizer = new ASTSynchronizer()
-        let astModified = false
-        
-        // Create corresponding AST node based on type
-        if (type === 'scene' && data.label) {
-          const labelName = data.label as string
-          astModified = synchronizer.addLabel(labelName, ast)
-        } else if (type === 'dialogue-block' && data.dialogues) {
-          // Dialogue blocks need to be added to an existing label
-          // For now, just mark as modified
-          astModified = true
-        } else if (type === 'jump' && data.target) {
-          // Jump nodes need to be added to an existing label
-          astModified = true
-        } else if (type === 'call' && data.target) {
-          // Call nodes need to be added to an existing label
-          astModified = true
-        }
-        
-        if (astModified) {
-          // Invalidate cache for the modified file
-          // Implements Requirements 1.3, 2.3, 3.3: Cache invalidation on file change
-          cacheManager.invalidate(selectedFile)
-          
-          // Update the AST in the store to trigger modification tracking
-          setAst({ ...ast })
-        }
-      }
+      // Note: We don't sync to AST immediately because the node needs to be
+      // connected to an existing label first. The AST sync will happen when:
+      // 1. The user connects this node to an existing flow
+      // 2. The user explicitly saves the file
+      // For now, the node exists only in the visual editor state.
+      
+      // TODO: Implement proper AST sync when node is connected to a label
+      // This requires knowing which label the node belongs to
     },
-    [contextMenu.flowPosition, generateNodeId, setNodes, closeContextMenu, setSelectedNodeId, ast, selectedFile, setAst]
+    [contextMenu.flowPosition, generateNodeId, setNodes, closeContextMenu, setSelectedNodeId]
   )
 
   // Handle node deletion - also remove connected edges
@@ -968,7 +959,19 @@ const NodeModeEditorInner: React.FC = () => {
       {/* Node detail panel - Implements Requirement 2.6 */}
       {selectedNode && (
         <div className="node-detail-panel">
-          <NodeDetailPanel node={selectedNode} onClose={() => setSelectedNodeId(null)} />
+          <NodeDetailPanel 
+            node={selectedNode} 
+            onClose={() => setSelectedNodeId(null)}
+            onNodeDataChange={handleNodeDataChange}
+            onModified={() => {
+              // Sync AST to ProjectManager and mark as modified
+              if (selectedFile && ast) {
+                // Update the AST in ProjectManager so save will use the modified version
+                projectManager.updateScript(selectedFile, ast)
+                projectManager.markScriptModified(selectedFile)
+              }
+            }}
+          />
         </div>
       )}
       

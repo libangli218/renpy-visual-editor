@@ -289,16 +289,28 @@ export class CodeGenerator {
    */
   private generateMenu(node: MenuNode, indent: number): string {
     const indentStr = this.getIndent(indent)
-    let line = `${indentStr}menu`
+    let line = `${indentStr}menu:`
+    
+    // Generate prompt as a dialogue line inside the menu (if present)
+    const choiceLines: string[] = []
     
     if (node.prompt) {
-      line += ` ${node.prompt}`
+      // Prompt is a dialogue line inside the menu block
+      // Check if prompt has a speaker (format: 'speaker: "text"')
+      const promptMatch = node.prompt.match(/^([a-zA-Z_][a-zA-Z0-9_]*)\s*:\s*"(.+)"$/)
+      if (promptMatch) {
+        // Has speaker: s "text"
+        const speaker = promptMatch[1]
+        const text = promptMatch[2]
+        choiceLines.push(`${this.getIndent(indent + 1)}${speaker} "${this.escapeString(text)}"`)
+      } else {
+        // No speaker, just text - add quotes
+        choiceLines.push(`${this.getIndent(indent + 1)}"${this.escapeString(node.prompt)}"`)
+      }
+      choiceLines.push('') // Empty line after prompt
     }
     
-    line += ':'
-    
     // Generate choices
-    const choiceLines: string[] = []
     for (const choice of node.choices) {
       const choiceIndent = this.getIndent(indent + 1)
       let choiceLine = `${choiceIndent}"${this.escapeString(choice.text)}"`
