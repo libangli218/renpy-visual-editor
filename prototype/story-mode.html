@@ -1,0 +1,829 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ren'Py Visual Editor - 故事模式 v3</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="story-mode.css">
+</head>
+<body>
+  <!-- 顶部工具栏 -->
+  <header class="toolbar">
+    <div class="toolbar-left">
+      <div class="logo">
+        <span class="logo-icon">◇</span>
+        <span class="logo-text">Ren'Py Visual Editor</span>
+      </div>
+      <nav class="menu">
+        <button class="menu-item">文件</button>
+        <button class="menu-item">编辑</button>
+        <button class="menu-item">视图</button>
+        <button class="menu-item">项目</button>
+        <button class="menu-item">帮助</button>
+      </nav>
+    </div>
+    <div class="toolbar-center">
+      <div class="mode-switcher">
+        <button class="mode-btn active" title="故事模式 - 剧本视图">
+          <span class="icon">≡</span> 故事
+        </button>
+        <button class="mode-btn" title="节点模式 - 流程图">
+          <span class="icon">⬡</span> 节点
+        </button>
+      </div>
+      <span class="separator"></span>
+      <!-- 三级复杂度切换 -->
+      <div class="complexity-switcher">
+        <button class="complexity-btn active" data-level="simple" title="简单模式">🟢</button>
+        <button class="complexity-btn" data-level="preview" title="代码预览">🟡</button>
+        <button class="complexity-btn" data-level="advanced" title="高级模式">🔴</button>
+      </div>
+      <span class="separator"></span>
+      <button class="action-btn preview-btn">
+        <span class="icon">▶</span> 运行
+      </button>
+      <button class="action-btn secondary export-btn">
+        <span class="icon">↗</span> 导出 .rpy
+      </button>
+    </div>
+    <div class="toolbar-right">
+      <button class="icon-btn" title="撤销">↶</button>
+      <button class="icon-btn" title="重做">↷</button>
+      <span class="separator"></span>
+      <button class="icon-btn" id="btnResourceBrowser" title="资源浏览器 (Ctrl+B)">📁</button>
+      <button class="icon-btn" id="btnDialogueHistory" title="对话历史 (Ctrl+H)">📜</button>
+      <button class="icon-btn" id="btnTransitionPreview" title="转场效果 (Ctrl+T)">✨</button>
+      <button class="icon-btn" id="btnAudioTracks" title="音频轨道 (Ctrl+M)">🎵</button>
+      <button class="icon-btn" id="btnDirectorMode" title="导演模式 (Ctrl+D)">🎬</button>
+      <span class="separator"></span>
+      <button class="icon-btn" id="btnShortcuts" title="快捷键 (?)">⌨️</button>
+      <button class="icon-btn" title="设置">⚙</button>
+    </div>
+  </header>
+
+  <div class="main-container">
+    <!-- 左侧 - 场景导航 -->
+    <aside class="panel panel-left">
+      <div class="panel-header">
+        <span class="panel-title">场景大纲</span>
+      </div>
+      <div class="outline-tree">
+        <div class="outline-item active">
+          <span class="outline-icon">▶</span>
+          <span class="outline-label">label start</span>
+          <span class="outline-checkpoint" title="存档点">💾</span>
+          <span class="outline-count">12 行</span>
+        </div>
+        <div class="outline-item">
+          <span class="outline-icon">◇</span>
+          <span class="outline-label">label rightaway</span>
+          <span class="outline-count">24 行</span>
+        </div>
+        <div class="outline-item">
+          <span class="outline-icon">◇</span>
+          <span class="outline-label">label later</span>
+          <span class="outline-count">8 行</span>
+        </div>
+        <div class="outline-item">
+          <span class="outline-icon">◇</span>
+          <span class="outline-label">label marry</span>
+          <span class="outline-checkpoint" title="存档点">💾</span>
+          <span class="outline-count">32 行</span>
+        </div>
+      </div>
+
+      <div class="panel-divider"></div>
+      
+      <div class="panel-header">
+        <span class="panel-title">角色</span>
+        <button class="panel-action">+</button>
+      </div>
+      <div class="characters-list">
+        <div class="char-item" data-char="sylvie">
+          <span class="char-avatar" style="background: #c8ffc8;">S</span>
+          <span class="char-info">
+            <span class="char-name">Sylvie</span>
+            <span class="char-layers">3 图层</span>
+          </span>
+        </div>
+        <div class="char-item" data-char="me">
+          <span class="char-avatar" style="background: #c8c8ff;">M</span>
+          <span class="char-info">
+            <span class="char-name">Me</span>
+            <span class="char-layers">简单模式</span>
+          </span>
+        </div>
+      </div>
+
+      <div class="panel-divider"></div>
+
+      <div class="panel-header">
+        <span class="panel-title">变量</span>
+        <button class="panel-action">+</button>
+      </div>
+      <div class="variables-list">
+        <!-- default 变量 -->
+        <div class="var-item" title="default - 可在游戏中修改">
+          <span class="var-scope default">default</span>
+          <span class="var-type bool">布尔</span>
+          <span class="var-name">book</span>
+          <span class="var-value">False</span>
+        </div>
+        <div class="var-item" title="default - 可在游戏中修改">
+          <span class="var-scope default">default</span>
+          <span class="var-type int">整数</span>
+          <span class="var-name">points</span>
+          <span class="var-value">0</span>
+        </div>
+        <div class="var-item" title="default - 可在游戏中修改">
+          <span class="var-scope default">default</span>
+          <span class="var-type str">字符串</span>
+          <span class="var-name">player_name</span>
+          <span class="var-value">""</span>
+        </div>
+        <div class="var-item" title="default - 可在游戏中修改">
+          <span class="var-scope default">default</span>
+          <span class="var-type list">列表</span>
+          <span class="var-name">inventory</span>
+          <span class="var-value">[]</span>
+        </div>
+        <!-- define 常量 -->
+        <div class="var-item" title="define - 常量，不可修改">
+          <span class="var-scope define">define</span>
+          <span class="var-type str">字符串</span>
+          <span class="var-name">game_version</span>
+          <span class="var-value">"1.0"</span>
+        </div>
+        <!-- persistent 持久化变量 -->
+        <div class="var-item persistent" title="persistent - 跨存档持久化">
+          <span class="var-scope persistent">persistent</span>
+          <span class="var-type bool">布尔</span>
+          <span class="var-name">seen_ending_1</span>
+          <span class="var-value">False</span>
+        </div>
+      </div>
+    </aside>
+
+    <!-- 中间 - 剧本编辑器 -->
+    <main class="story-editor">
+      <div class="story-header">
+        <div class="story-label">
+          <span class="label-icon">▶</span>
+          <span class="label-name">label start:</span>
+          <span class="checkpoint-badge" title="存档点">💾</span>
+        </div>
+        <div class="story-mode-toggle">
+          <button class="mode-toggle-btn active" data-mode="adv">ADV</button>
+          <button class="mode-toggle-btn" data-mode="nvl">NVL</button>
+        </div>
+        <div class="story-stats">
+          <span>12 对话</span>
+          <span>•</span>
+          <span>1 选择</span>
+          <span>•</span>
+          <span>2 分支</span>
+        </div>
+      </div>
+
+      <div class="story-content">
+        <!-- 场景设置块 -->
+        <div class="story-block scene-block">
+          <div class="block-marker">
+            <span class="marker-icon">🎬</span>
+          </div>
+          <div class="block-content">
+            <div class="scene-info">
+              <span class="scene-tag">scene</span>
+              <span class="scene-value">bg lecturehall</span>
+              <span class="scene-transition">with fade</span>
+            </div>
+            <div class="scene-info">
+              <span class="scene-tag">play music</span>
+              <span class="scene-value">"illurock.opus"</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 旁白对话 -->
+        <div class="story-block dialogue-block narration">
+          <div class="block-marker">
+            <span class="marker-line"></span>
+          </div>
+          <div class="block-content">
+            <div class="dialogue-text" contenteditable="true">当我听到脚步声和收拾东西的声音时，我才意识到讲座结束了。</div>
+          </div>
+        </div>
+
+        <div class="story-block dialogue-block narration">
+          <div class="block-marker">
+            <span class="marker-line"></span>
+          </div>
+          <div class="block-content">
+            <div class="dialogue-text" contenteditable="true">Eileen 教授的课通常很有趣，但今天我就是无法集中注意力。</div>
+          </div>
+        </div>
+
+        <div class="story-block dialogue-block narration">
+          <div class="block-marker">
+            <span class="marker-line"></span>
+          </div>
+          <div class="block-content">
+            <div class="dialogue-text" contenteditable="true">我脑子里一直有很多其他的想法...这些想法最终汇聚成一个问题。</div>
+          </div>
+        </div>
+
+        <div class="story-block dialogue-block narration">
+          <div class="block-marker">
+            <span class="marker-line"></span>
+          </div>
+          <div class="block-content">
+            <div class="dialogue-text" contenteditable="true">这是我一直想问某人的问题。</div>
+          </div>
+        </div>
+
+        <!-- 场景切换 -->
+        <div class="story-block scene-block">
+          <div class="block-marker">
+            <span class="marker-icon">🎬</span>
+          </div>
+          <div class="block-content">
+            <div class="scene-info">
+              <span class="scene-tag">scene</span>
+              <span class="scene-value">bg uni</span>
+              <span class="scene-transition">with fade</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 旁白 -->
+        <div class="story-block dialogue-block narration">
+          <div class="block-marker">
+            <span class="marker-line"></span>
+          </div>
+          <div class="block-content">
+            <div class="dialogue-text" contenteditable="true">当我们走出大学时，我立刻看到了她。</div>
+          </div>
+        </div>
+
+        <!-- 显示角色 (带图层) -->
+        <div class="story-block show-block">
+          <div class="block-marker">
+            <span class="marker-icon">👤</span>
+          </div>
+          <div class="block-content">
+            <div class="show-info">
+              <span class="show-tag">show</span>
+              <span class="show-character">sylvie</span>
+              <span class="show-layer">happy</span>
+              <span class="show-layer">casual</span>
+              <span class="show-transition">with dissolve</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 更多旁白 -->
+        <div class="story-block dialogue-block narration">
+          <div class="block-marker">
+            <span class="marker-line"></span>
+          </div>
+          <div class="block-content">
+            <div class="dialogue-text" contenteditable="true">我从小就认识 Sylvie。她心地善良，一直是我的好朋友。</div>
+          </div>
+        </div>
+
+        <div class="story-block dialogue-block narration">
+          <div class="block-marker">
+            <span class="marker-line"></span>
+          </div>
+          <div class="block-content">
+            <div class="dialogue-text" contenteditable="true">但最近...我感觉我想要更多。</div>
+          </div>
+        </div>
+
+        <!-- 角色对话 -->
+        <div class="story-block dialogue-block character" data-char="sylvie">
+          <div class="block-marker">
+            <span class="marker-avatar" style="background: #c8ffc8;">S</span>
+          </div>
+          <div class="block-content">
+            <div class="dialogue-speaker" style="color: #c8ffc8;">Sylvie</div>
+            <div class="dialogue-text" contenteditable="true">嗨！今天的课怎么样？</div>
+          </div>
+        </div>
+
+        <div class="story-block dialogue-block character" data-char="me">
+          <div class="block-marker">
+            <span class="marker-avatar" style="background: #c8c8ff;">M</span>
+          </div>
+          <div class="block-content">
+            <div class="dialogue-speaker" style="color: #c8c8ff;">Me</div>
+            <div class="dialogue-text" contenteditable="true">还好...</div>
+          </div>
+        </div>
+
+        <!-- PyTom v3.1: Extend 示例 - 追加对话 -->
+        <div class="story-block dialogue-block character extend-block" data-char="me">
+          <div class="block-marker">
+            <span class="marker-avatar extend-marker" style="background: #c8c8ff;">↳</span>
+          </div>
+          <div class="block-content">
+            <div class="extend-label">extend</div>
+            <div class="dialogue-text" contenteditable="true">...其实我完全没听进去。</div>
+          </div>
+        </div>
+
+        <!-- 旁白 -->
+        <div class="story-block dialogue-block narration">
+          <div class="block-marker">
+            <span class="marker-line"></span>
+          </div>
+          <div class="block-content">
+            <div class="dialogue-text" contenteditable="true">我没法承认我完全没听进去。</div>
+          </div>
+        </div>
+
+        <!-- PyTom v3.1: NVL 模式示例 -->
+        <div class="story-block nvl-mode-block">
+          <div class="block-marker">
+            <span class="marker-icon">📜</span>
+          </div>
+          <div class="block-content">
+            <div class="nvl-mode-label">
+              <span class="nvl-tag">nvl</span>
+              <span class="nvl-desc">切换到 NVL 模式</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- NVL 模式下的对话 -->
+        <div class="story-block dialogue-block narration nvl-style">
+          <div class="block-marker">
+            <span class="marker-line nvl-line"></span>
+          </div>
+          <div class="block-content">
+            <div class="dialogue-text" contenteditable="true">这是 NVL 模式下的旁白文字，会显示在全屏文本框中。</div>
+          </div>
+        </div>
+
+        <!-- PyTom v3.1: NVL Clear 示例 -->
+        <div class="story-block nvl-clear-block">
+          <div class="block-marker">
+            <span class="marker-icon">🧹</span>
+          </div>
+          <div class="block-content">
+            <div class="nvl-clear-label">
+              <span class="nvl-clear-tag">nvl clear</span>
+              <span class="nvl-clear-desc">清除 NVL 文字</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- PyTom v3.1: With 转场示例 -->
+        <div class="story-block with-block">
+          <div class="block-marker">
+            <span class="marker-icon">✨</span>
+          </div>
+          <div class="block-content">
+            <div class="with-info">
+              <span class="with-tag">with</span>
+              <span class="with-value">dissolve</span>
+              <span class="with-duration">0.5s</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- PyTom v3.2: Call 调用示例 -->
+        <div class="story-block call-block">
+          <div class="block-marker">
+            <span class="marker-icon">📞</span>
+          </div>
+          <div class="block-content">
+            <div class="call-info">
+              <span class="call-tag">call</span>
+              <span class="call-target">common_dialogue</span>
+              <span class="call-return">→ 返回此处</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- PyTom v3.2: Pause 暂停示例 -->
+        <div class="story-block pause-block">
+          <div class="block-marker">
+            <span class="marker-icon">⏸</span>
+          </div>
+          <div class="block-content">
+            <div class="pause-info">
+              <span class="pause-tag">pause</span>
+              <span class="pause-value">2.0</span>
+              <span class="pause-desc">秒</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- PyTom v3.2: Stop Audio 示例 -->
+        <div class="story-block stop-audio-block">
+          <div class="block-marker">
+            <span class="marker-icon">⏹</span>
+          </div>
+          <div class="block-content">
+            <div class="stop-audio-info">
+              <span class="stop-tag">stop music</span>
+              <span class="stop-fadeout">fadeout 1.0</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- PyTom v3.2: Python 代码块示例 -->
+        <div class="story-block python-block">
+          <div class="block-marker">
+            <span class="marker-icon">🐍</span>
+          </div>
+          <div class="block-content">
+            <div class="python-label">python:</div>
+            <div class="python-code">
+              <code>inventory.append("book")
+points += 5</code>
+            </div>
+          </div>
+        </div>
+
+        <!-- 选择菜单 -->
+        <div class="story-block menu-block">
+          <div class="block-marker">
+            <span class="marker-icon">◆</span>
+            <span class="checkpoint-badge" title="存档点">💾</span>
+          </div>
+          <div class="block-content">
+            <div class="menu-prompt">"当她看到我时，我决定..."</div>
+            <div class="menu-choices">
+              <div class="choice-item">
+                <span class="choice-bullet">├─</span>
+                <span class="choice-text">现在就问她</span>
+                <span class="choice-arrow">→</span>
+                <span class="choice-target">jump rightaway</span>
+              </div>
+              <div class="choice-item has-condition">
+                <span class="choice-bullet">├─</span>
+                <span class="choice-condition">if book:</span>
+                <span class="choice-text">聊聊那本书</span>
+                <span class="choice-arrow">→</span>
+                <span class="choice-target">jump book_talk</span>
+              </div>
+              <div class="choice-item">
+                <span class="choice-bullet">└─</span>
+                <span class="choice-text">以后再问</span>
+                <span class="choice-arrow">→</span>
+                <span class="choice-target">jump later</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 输入提示 -->
+        <div class="story-block input-block">
+          <div class="block-marker">
+            <span class="marker-line"></span>
+          </div>
+          <div class="block-content">
+            <div class="input-hint">
+              <span class="hint-text">输入对话... (s: = Sylvie, m: = Me, > = 旁白, [show] = 显示角色)</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- 右侧 - 预览 + 属性 -->
+    <aside class="panel panel-right">
+      <!-- 实时预览 -->
+      <div class="preview-compact">
+        <div class="preview-header-small">
+          <span>预览</span>
+          <div class="preview-mode-toggle-small">
+            <button class="mode-toggle-btn-small active" data-mode="adv">ADV</button>
+            <button class="mode-toggle-btn-small" data-mode="nvl">NVL</button>
+          </div>
+        </div>
+        <div class="preview-stage-small">
+          <div class="stage-bg" style="background: linear-gradient(180deg, #4a90a4 0%, #2d5a6b 100%);"></div>
+          <div class="stage-char" style="left: 50%;">
+            <div class="char-body" style="background: #c8ffc8;">S</div>
+            <div class="char-layers-small">
+              <span>happy</span>
+              <span>casual</span>
+            </div>
+          </div>
+          <div class="stage-textbox">
+            <div class="tb-name" style="color: #c8ffc8;">Sylvie</div>
+            <div class="tb-text">嗨！今天的课怎么样？</div>
+          </div>
+        </div>
+        <div class="preview-nav-bar">
+          <button class="nav-btn">◀</button>
+          <span class="nav-step">5 / 12</span>
+          <button class="nav-btn">▶</button>
+          <button class="nav-btn auto-btn" title="自动播放">▶▶</button>
+        </div>
+      </div>
+
+      <!-- 当前选中块的属性 -->
+      <div class="panel-header">
+        <span class="panel-title">属性</span>
+        <span class="property-type">角色对话</span>
+      </div>
+      <div class="properties-content">
+        <div class="property-group">
+          <div class="property-label">说话者</div>
+          <select class="property-select">
+            <option value="">旁白 (无角色)</option>
+            <option value="s" selected>Sylvie</option>
+            <option value="m">Me</option>
+          </select>
+        </div>
+
+        <div class="property-group">
+          <div class="property-label">图层属性</div>
+          <div class="layer-chips">
+            <span class="layer-chip active">happy</span>
+            <span class="layer-chip active">casual</span>
+            <span class="layer-chip">sad</span>
+            <span class="layer-chip">dress</span>
+            <span class="layer-chip">glasses</span>
+          </div>
+        </div>
+
+        <div class="property-group">
+          <div class="property-label">文本样式</div>
+          <div class="style-toolbar">
+            <button class="style-btn" data-tag="b" title="粗体 {b}">B</button>
+            <button class="style-btn" data-tag="i" title="斜体 {i}"><i>I</i></button>
+            <button class="style-btn" data-tag="u" title="下划线 {u}"><u>U</u></button>
+            <button class="style-btn" data-tag="color" title="颜色 {color}">🎨</button>
+            <button class="style-btn" data-tag="cps" title="打字速度 {cps}">⌨️</button>
+            <button class="style-btn" data-tag="w" title="等待点击 {w}">⏸</button>
+            <button class="style-btn" data-tag="p" title="暂停 {p}">⏱️</button>
+            <button class="style-btn" data-tag="nw" title="不等待 {nw}">⏩</button>
+          </div>
+        </div>
+
+        <div class="property-group">
+          <div class="property-label">同时显示角色</div>
+          <div class="inline-show">
+            <select class="property-select-sm">
+              <option value="">无变化</option>
+              <option value="sylvie" selected>sylvie</option>
+            </select>
+            <select class="property-select-sm">
+              <option value="">-</option>
+              <option value="happy" selected>happy</option>
+              <option value="sad">sad</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- 代码预览 (根据复杂度显示) -->
+        <div class="property-group code-preview-section">
+          <div class="property-label">生成的代码</div>
+          <div class="code-preview-small">
+            <code>s happy casual "嗨！今天的课怎么样？"</code>
+          </div>
+        </div>
+      </div>
+
+      <!-- 快捷键提示 -->
+      <div class="shortcuts-panel">
+        <div class="shortcuts-title">快捷键</div>
+        <div class="shortcut-item">
+          <kbd>Enter</kbd> 新建对话
+        </div>
+        <div class="shortcut-item">
+          <kbd>s:</kbd> Sylvie 说话
+        </div>
+        <div class="shortcut-item">
+          <kbd>m:</kbd> Me 说话
+        </div>
+        <div class="shortcut-item">
+          <kbd>></kbd> 旁白
+        </div>
+        <div class="shortcut-item">
+          <kbd>[show]</kbd> 显示角色
+        </div>
+        <div class="shortcut-item">
+          <kbd>[scene]</kbd> 切换场景
+        </div>
+        <div class="shortcut-item">
+          <kbd>Ctrl+M</kbd> 插入选择
+        </div>
+      </div>
+    </aside>
+  </div>
+
+  <!-- 底部状态栏 -->
+  <footer class="statusbar">
+    <div class="status-left">
+      <span class="status-item">📁 the_question</span>
+      <span class="status-item">📄 script.rpy</span>
+    </div>
+    <div class="status-center">
+      <span class="status-item success">✓ 已保存</span>
+      <span class="status-item mode-indicator">ADV 模式</span>
+    </div>
+    <div class="status-right">
+      <span class="status-item">行 8</span>
+      <span class="status-item">列 24</span>
+      <span class="status-item complexity-indicator">简单模式</span>
+      <span class="status-item">Ren'Py 8.5.1</span>
+    </div>
+  </footer>
+
+  <!-- 资源浏览器面板 -->
+  <div class="floating-panel resource-browser" id="resourceBrowser" style="display: none;">
+    <div class="floating-panel-header">
+      <span class="floating-panel-title">📁 资源浏览器</span>
+      <div class="floating-panel-actions">
+        <button class="panel-minimize-btn" title="最小化">−</button>
+        <button class="panel-close-btn" title="关闭">×</button>
+      </div>
+    </div>
+    <div class="floating-panel-body">
+      <div class="resource-tabs">
+        <button class="resource-tab active" data-type="characters">角色</button>
+        <button class="resource-tab" data-type="backgrounds">背景</button>
+        <button class="resource-tab" data-type="audio">音频</button>
+      </div>
+      <div class="resource-search">
+        <input type="text" placeholder="搜索资源..." class="resource-search-input">
+      </div>
+      <div class="resource-grid" id="resourceGrid">
+        <div class="resource-item" draggable="true" data-type="character" data-name="sylvie">
+          <div class="resource-thumb char-thumb" style="background: #c8ffc8;"><span>S</span></div>
+          <span class="resource-name">Sylvie</span>
+          <span class="resource-badge">3层</span>
+        </div>
+        <div class="resource-item" draggable="true" data-type="character" data-name="me">
+          <div class="resource-thumb char-thumb" style="background: #c8c8ff;"><span>M</span></div>
+          <span class="resource-name">Me</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 对话历史面板 -->
+  <div class="floating-panel dialogue-history" id="dialogueHistory" style="display: none;">
+    <div class="floating-panel-header">
+      <span class="floating-panel-title">📜 对话历史</span>
+      <div class="floating-panel-actions">
+        <button class="panel-minimize-btn" title="最小化">−</button>
+        <button class="panel-close-btn" title="关闭">×</button>
+      </div>
+    </div>
+    <div class="floating-panel-body history-body">
+      <div class="history-list" id="historyList">
+        <div class="history-item narrator">
+          <span class="history-text">当我听到脚步声和收拾东西的声音时，我才意识到讲座结束了。</span>
+        </div>
+        <div class="history-item character" style="--char-color: #c8ffc8;">
+          <span class="history-speaker">Sylvie</span>
+          <span class="history-text">嗨！今天的课怎么样？</span>
+        </div>
+        <div class="history-item character current" style="--char-color: #c8c8ff;">
+          <span class="history-speaker">Me</span>
+          <span class="history-text">还好...</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 转场效果预览面板 -->
+  <div class="floating-panel transition-preview" id="transitionPreview" style="display: none;">
+    <div class="floating-panel-header">
+      <span class="floating-panel-title">✨ 转场效果</span>
+      <div class="floating-panel-actions">
+        <button class="panel-close-btn" title="关闭">×</button>
+      </div>
+    </div>
+    <div class="floating-panel-body">
+      <div class="transition-grid">
+        <div class="transition-item" data-transition="dissolve">
+          <div class="transition-demo dissolve-demo">
+            <div class="demo-layer layer-a"></div>
+            <div class="demo-layer layer-b"></div>
+          </div>
+          <span class="transition-name">dissolve</span>
+        </div>
+        <div class="transition-item" data-transition="fade">
+          <div class="transition-demo fade-demo">
+            <div class="demo-layer layer-a"></div>
+            <div class="demo-layer layer-b"></div>
+          </div>
+          <span class="transition-name">fade</span>
+        </div>
+        <div class="transition-item" data-transition="move">
+          <div class="transition-demo move-demo">
+            <div class="demo-layer layer-a"></div>
+            <div class="demo-layer layer-b"></div>
+          </div>
+          <span class="transition-name">move</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 音频轨道面板 -->
+  <div class="floating-panel audio-tracks" id="audioTracks" style="display: none;">
+    <div class="floating-panel-header">
+      <span class="floating-panel-title">🎵 音频轨道</span>
+      <div class="floating-panel-actions">
+        <button class="panel-minimize-btn" title="最小化">−</button>
+        <button class="panel-close-btn" title="关闭">×</button>
+      </div>
+    </div>
+    <div class="floating-panel-body">
+      <div class="audio-channel" data-channel="music">
+        <div class="channel-header">
+          <span class="channel-icon">🎵</span>
+          <span class="channel-name">Music</span>
+          <div class="channel-controls">
+            <button class="channel-btn mute-btn" title="静音">🔊</button>
+            <input type="range" class="volume-slider" min="0" max="100" value="80">
+          </div>
+        </div>
+        <div class="channel-track">
+          <div class="track-clip" style="left: 0; width: 100%;">
+            <span class="clip-name">illurock.opus</span>
+            <span class="clip-loop">🔁</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 导演模式 -->
+  <div class="director-mode" id="directorMode" style="display: none;">
+    <div class="director-header">
+      <div class="director-title">
+        <span class="director-icon">🎬</span>
+        <span>导演模式 - 场景编排</span>
+      </div>
+      <div class="director-controls">
+        <button class="director-btn" id="directorPlay" title="播放">▶</button>
+        <button class="director-btn" id="directorPause" title="暂停">⏸</button>
+        <button class="director-btn" id="directorStop" title="停止">⏹</button>
+        <span class="director-time">00:00.00 / 00:30.00</span>
+        <button class="director-close" title="退出导演模式">×</button>
+      </div>
+    </div>
+    <div class="director-stage">
+      <div class="stage-preview-large">
+        <div class="stage-bg-preview" style="background: linear-gradient(180deg, #4a90a4 0%, #2d5a6b 100%);"></div>
+        <div class="stage-char-preview" style="left: 50%;">
+          <div class="char-preview-sprite" style="background: linear-gradient(180deg, #c8ffc8 0%, #90EE90 100%);">S</div>
+        </div>
+        <div class="stage-dialogue-preview">
+          <div class="dialogue-preview-name" style="color: #c8ffc8;">Sylvie</div>
+          <div class="dialogue-preview-text">嗨！今天的课怎么样？</div>
+        </div>
+      </div>
+    </div>
+    <div class="director-timeline">
+      <div class="timeline-tracks">
+        <div class="timeline-track" data-track="scene">
+          <div class="track-label">场景</div>
+          <div class="track-content">
+            <div class="timeline-block scene-block" style="left: 0; width: 30%;"><span>bg lecturehall</span></div>
+            <div class="timeline-block scene-block" style="left: 30%; width: 70%;"><span>bg uni</span></div>
+          </div>
+        </div>
+        <div class="timeline-track" data-track="dialogue">
+          <div class="track-label">对话</div>
+          <div class="track-content">
+            <div class="timeline-block dialogue-block" style="left: 0; width: 8%;">1</div>
+            <div class="timeline-block dialogue-block active" style="left: 55%; width: 10%;">7</div>
+          </div>
+        </div>
+      </div>
+      <div class="timeline-ruler-bottom">
+        <div class="ruler-marks">
+          <span>0:00</span><span>0:10</span><span>0:20</span><span>0:30</span>
+        </div>
+        <div class="timeline-playhead-main" style="left: 55%;"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 快捷键提示 -->
+  <div class="shortcuts-hint" id="shortcutsHint" style="display: none;">
+    <div class="shortcuts-content">
+      <h3>快捷键</h3>
+      <div class="shortcut-row"><kbd>Ctrl</kbd>+<kbd>H</kbd> 对话历史</div>
+      <div class="shortcut-row"><kbd>Ctrl</kbd>+<kbd>B</kbd> 资源浏览器</div>
+      <div class="shortcut-row"><kbd>Ctrl</kbd>+<kbd>D</kbd> 导演模式</div>
+      <div class="shortcut-row"><kbd>?</kbd> 显示快捷键</div>
+    </div>
+  </div>
+
+  <!-- JavaScript -->
+  <script src="app.js"></script>
+</body>
+</html>
