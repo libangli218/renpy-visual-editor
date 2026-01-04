@@ -17,6 +17,10 @@ export default defineConfig({
               external: ['electron']
             }
           }
+        },
+        onstart(options) {
+          // Start Electron app
+          options.startup()
         }
       },
       {
