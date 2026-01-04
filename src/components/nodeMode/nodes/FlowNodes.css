@@ -1,0 +1,611 @@
+/* Flow Node Base Styles */
+
+.flow-node {
+  min-width: 240px;
+  max-width: 320px;
+  background-color: var(--bg-secondary, #1e1e2e);
+  border: 2px solid var(--border-color, #313244);
+  border-radius: 10px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  overflow: hidden;
+  transition: box-shadow 0.2s ease, border-color 0.2s ease, transform 0.1s ease;
+}
+
+.flow-node:hover {
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.25);
+}
+
+.flow-node.selected {
+  box-shadow: 0 0 0 3px var(--node-glow-color, rgba(99, 102, 241, 0.4)),
+              0 6px 20px rgba(0, 0, 0, 0.3);
+  transform: translateY(-1px);
+}
+
+/* Flow Node Header */
+.flow-node-header {
+  padding: 0.5rem 0.75rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 600;
+  color: white;
+}
+
+.flow-node-icon {
+  font-size: 1rem;
+}
+
+.flow-node-label {
+  font-size: 0.875rem;
+  letter-spacing: 0.02em;
+}
+
+/* Flow Node Content */
+.flow-node-content {
+  padding: 0.625rem 0.75rem;
+  font-size: 0.8125rem;
+  color: var(--text-primary, #cdd6f4);
+  background-color: var(--bg-tertiary, #181825);
+}
+
+.flow-node-content:empty {
+  display: none;
+}
+
+/* Flow Node Footer */
+.flow-node-footer {
+  padding: 0.375rem 0.75rem;
+  background-color: var(--bg-secondary, #1e1e2e);
+  border-top: 1px solid var(--border-color, #313244);
+  display: flex;
+  justify-content: flex-end;
+}
+
+/* Flow Handle Styles */
+.flow-handle {
+  width: 14px !important;
+  height: 14px !important;
+  border: 2px solid var(--bg-secondary, #1e1e2e) !important;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.flow-handle:hover {
+  transform: scale(1.3);
+  box-shadow: 0 0 8px var(--handle-color, rgba(99, 102, 241, 0.6));
+}
+
+.flow-handle-target {
+  top: -7px !important;
+}
+
+.flow-handle-source {
+  bottom: -7px !important;
+}
+
+/* ==================== */
+/* Scene Node Styles    */
+/* ==================== */
+
+.flow-scene-node {
+  --node-color: #4f46e5;
+  --node-glow-color: rgba(99, 102, 241, 0.4);
+  --handle-color: rgba(99, 102, 241, 0.6);
+}
+
+.flow-scene-node.selected {
+  border-color: #6366f1;
+}
+
+.flow-scene-header {
+  background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
+}
+
+.flow-scene-node .flow-handle {
+  background-color: #6366f1 !important;
+}
+
+.flow-scene-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.flow-preview-line {
+  font-size: 0.75rem;
+  color: var(--text-secondary, #a6adc8);
+  line-height: 1.4;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.flow-empty-content {
+  font-size: 0.75rem;
+  color: var(--text-muted, #6c7086);
+  font-style: italic;
+}
+
+/* Exit type badges */
+.flow-exit-badge {
+  font-size: 0.625rem;
+  padding: 0.125rem 0.375rem;
+  border-radius: 4px;
+  font-weight: 500;
+}
+
+.flow-exit-return {
+  background-color: rgba(249, 115, 22, 0.2);
+  color: #f97316;
+}
+
+.flow-exit-jump {
+  background-color: rgba(236, 72, 153, 0.2);
+  color: #ec4899;
+}
+
+.flow-exit-menu {
+  background-color: rgba(245, 158, 11, 0.2);
+  color: #f59e0b;
+}
+
+.flow-exit-fall-through {
+  background-color: rgba(148, 163, 184, 0.2);
+  color: #94a3b8;
+}
+
+/* ========================= */
+/* Dialogue Block Node Styles */
+/* ========================= */
+
+.flow-dialogue-block-node {
+  --node-color: #16a34a;
+  --node-glow-color: rgba(34, 197, 94, 0.4);
+  --handle-color: rgba(34, 197, 94, 0.6);
+}
+
+.flow-dialogue-block-node.selected {
+  border-color: #22c55e;
+}
+
+.flow-dialogue-header {
+  background: linear-gradient(135deg, #16a34a 0%, #22c55e 100%);
+}
+
+.flow-dialogue-block-node .flow-handle {
+  background-color: #22c55e !important;
+}
+
+.flow-visual-commands {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin-bottom: 0.5rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--border-color, #313244);
+}
+
+.flow-visual-command {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: 0.6875rem;
+  color: var(--text-secondary, #a6adc8);
+}
+
+.flow-visual-icon {
+  font-size: 0.75rem;
+}
+
+.flow-visual-target {
+  font-family: monospace;
+  color: var(--text-primary, #cdd6f4);
+}
+
+.flow-speakers-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.flow-speaker-item {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.25rem 0.375rem;
+  background-color: var(--bg-secondary, #1e1e2e);
+  border-radius: 4px;
+}
+
+.flow-speaker-icon {
+  font-size: 0.75rem;
+}
+
+.flow-speaker-name {
+  font-weight: 600;
+  color: var(--node-color, #22c55e);
+  font-size: 0.75rem;
+}
+
+.flow-speaker-count {
+  font-size: 0.625rem;
+  color: var(--text-muted, #6c7086);
+  margin-left: auto;
+}
+
+.flow-dialogue-count {
+  font-size: 0.6875rem;
+  color: var(--text-secondary, #a6adc8);
+  text-align: center;
+  padding-top: 0.375rem;
+  border-top: 1px solid var(--border-color, #313244);
+  margin-top: 0.375rem;
+}
+
+/* Expanded dialogue view */
+.flow-dialogues-expanded {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.flow-dialogue-item {
+  padding: 0.375rem 0.5rem;
+  background-color: var(--bg-secondary, #1e1e2e);
+  border-radius: 4px;
+  border-left: 3px solid var(--node-color, #22c55e);
+}
+
+.flow-dialogue-speaker {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--node-color, #22c55e);
+  margin-bottom: 0.125rem;
+}
+
+.flow-dialogue-text {
+  font-size: 0.75rem;
+  color: var(--text-primary, #cdd6f4);
+  font-style: italic;
+  line-height: 1.4;
+}
+
+.flow-expand-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  padding: 0.25rem;
+  margin-top: 0.375rem;
+  font-size: 0.625rem;
+  color: var(--text-muted, #6c7086);
+  cursor: pointer;
+  border-radius: 4px;
+  transition: background-color 0.15s ease;
+}
+
+.flow-expand-toggle:hover {
+  background-color: var(--bg-secondary, #1e1e2e);
+  color: var(--text-secondary, #a6adc8);
+}
+
+/* ==================== */
+/* Menu Node Styles     */
+/* ==================== */
+
+.flow-menu-node {
+  --node-color: #d97706;
+  --node-glow-color: rgba(245, 158, 11, 0.4);
+  --handle-color: rgba(245, 158, 11, 0.6);
+}
+
+.flow-menu-node.selected {
+  border-color: #f59e0b;
+}
+
+.flow-menu-header {
+  background: linear-gradient(135deg, #d97706 0%, #f59e0b 100%);
+}
+
+.flow-menu-node .flow-handle {
+  background-color: #f59e0b !important;
+}
+
+.flow-menu-prompt {
+  font-size: 0.8125rem;
+  font-style: italic;
+  color: var(--text-primary, #cdd6f4);
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--border-color, #313244);
+  margin-bottom: 0.5rem;
+}
+
+.flow-menu-choices {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.flow-menu-choice {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  padding: 0.375rem 0.5rem;
+  background-color: var(--bg-secondary, #1e1e2e);
+  border-radius: 4px;
+  position: relative;
+}
+
+.flow-choice-marker {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  background-color: var(--node-color, #f59e0b);
+  color: white;
+  font-size: 0.625rem;
+  font-weight: 600;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.flow-choice-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.flow-choice-text {
+  font-size: 0.75rem;
+  color: var(--text-primary, #cdd6f4);
+}
+
+.flow-choice-condition {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-top: 0.125rem;
+  font-size: 0.625rem;
+}
+
+.flow-condition-keyword {
+  color: var(--node-color, #f59e0b);
+  font-weight: 600;
+  font-family: monospace;
+}
+
+.flow-condition-expr {
+  color: var(--text-secondary, #a6adc8);
+  font-family: monospace;
+}
+
+/* Choice output handle */
+.flow-choice-handle {
+  position: absolute !important;
+  right: -7px !important;
+  top: 50% !important;
+  transform: translateY(-50%) !important;
+  bottom: auto !important;
+}
+
+/* ==================== */
+/* Jump Node Styles     */
+/* ==================== */
+
+.flow-jump-node {
+  --node-color: #db2777;
+  --node-glow-color: rgba(236, 72, 153, 0.4);
+  --handle-color: rgba(236, 72, 153, 0.6);
+  min-width: 180px;
+}
+
+.flow-jump-node.selected {
+  border-color: #ec4899;
+}
+
+.flow-jump-header {
+  background: linear-gradient(135deg, #db2777 0%, #ec4899 100%);
+}
+
+.flow-jump-node .flow-handle {
+  background-color: #ec4899 !important;
+}
+
+.flow-jump-target {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.flow-target-arrow {
+  font-size: 1rem;
+  color: var(--node-color, #ec4899);
+}
+
+.flow-target-label {
+  font-family: monospace;
+  font-weight: 600;
+  font-size: 0.875rem;
+  color: var(--node-color, #ec4899);
+}
+
+/* ==================== */
+/* Call Node Styles     */
+/* ==================== */
+
+.flow-call-node {
+  --node-color: #0d9488;
+  --node-glow-color: rgba(20, 184, 166, 0.4);
+  --handle-color: rgba(20, 184, 166, 0.6);
+  min-width: 180px;
+}
+
+.flow-call-node.selected {
+  border-color: #14b8a6;
+}
+
+.flow-call-header {
+  background: linear-gradient(135deg, #0d9488 0%, #14b8a6 100%);
+}
+
+.flow-call-node .flow-handle {
+  background-color: #14b8a6 !important;
+}
+
+.flow-call-target {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.flow-call-icon {
+  font-size: 1rem;
+  color: var(--node-color, #14b8a6);
+}
+
+.flow-call-label {
+  font-family: monospace;
+  font-weight: 600;
+  font-size: 0.875rem;
+  color: var(--node-color, #14b8a6);
+}
+
+/* ======================== */
+/* Condition Node Styles    */
+/* ======================== */
+
+.flow-condition-node {
+  --node-color: #ca8a04;
+  --node-glow-color: rgba(234, 179, 8, 0.4);
+  --handle-color: rgba(234, 179, 8, 0.6);
+}
+
+.flow-condition-node.selected {
+  border-color: #eab308;
+}
+
+.flow-condition-header {
+  background: linear-gradient(135deg, #ca8a04 0%, #eab308 100%);
+}
+
+.flow-condition-node .flow-handle {
+  background-color: #eab308 !important;
+}
+
+.flow-branches-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.flow-branch-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  padding: 0.375rem 0.5rem;
+  background-color: var(--bg-secondary, #1e1e2e);
+  border-radius: 4px;
+  position: relative;
+}
+
+.flow-branch-marker {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  background-color: var(--node-color, #eab308);
+  color: white;
+  font-size: 0.625rem;
+  font-weight: 600;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.flow-branch-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.flow-branch-keyword {
+  font-size: 0.625rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.flow-branch-keyword.if {
+  color: #eab308;
+}
+
+.flow-branch-keyword.elif {
+  color: #f59e0b;
+}
+
+.flow-branch-keyword.else {
+  color: #78716c;
+}
+
+.flow-branch-condition {
+  font-family: monospace;
+  font-size: 0.6875rem;
+  color: var(--text-primary, #cdd6f4);
+  margin-top: 0.125rem;
+}
+
+.flow-branch-else {
+  font-size: 0.6875rem;
+  color: var(--text-secondary, #a6adc8);
+  font-style: italic;
+}
+
+/* Branch output handle */
+.flow-branch-handle {
+  position: absolute !important;
+  right: -7px !important;
+  top: 50% !important;
+  transform: translateY(-50%) !important;
+  bottom: auto !important;
+}
+
+/* ==================== */
+/* Return Node Styles   */
+/* ==================== */
+
+.flow-return-node {
+  --node-color: #ea580c;
+  --node-glow-color: rgba(249, 115, 22, 0.4);
+  --handle-color: rgba(249, 115, 22, 0.6);
+  min-width: 140px;
+}
+
+.flow-return-node.selected {
+  border-color: #f97316;
+}
+
+.flow-return-header {
+  background: linear-gradient(135deg, #ea580c 0%, #f97316 100%);
+}
+
+.flow-return-node .flow-handle {
+  background-color: #f97316 !important;
+}
+
+.flow-return-content {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.25rem;
+}
+
+.flow-return-icon {
+  font-size: 1.25rem;
+  color: var(--node-color, #f97316);
+}
+
+.flow-return-text {
+  font-size: 0.75rem;
+  color: var(--text-secondary, #a6adc8);
+}
