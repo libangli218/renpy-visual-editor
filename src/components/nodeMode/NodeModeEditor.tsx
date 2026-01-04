@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useState, useEffect } from 'react'
+import React, { useCallback, useMemo, useState, useEffect, useRef } from 'react'
 import {
   ReactFlow,
   Background,
@@ -13,6 +13,13 @@ import {
   BackgroundVariant,
   Panel,
   NodeTypes,
+  OnConnectStart,
+  OnConnectEnd,
+  ReactFlowProvider,
+  ConnectionLineType,
+  useReactFlow,
+  XYPosition,
+  SelectionMode,
 } from '@xyflow/react'
 import '@xyflow/react/dist/style.css'
 import { useEditorStore } from '../../store/editorStore'
@@ -24,6 +31,74 @@ import { projectManager } from '../../project/ProjectManager'
 import { RenpyScript } from '../../types/ast'
 import { NodeDetailPanel } from './NodeDetailPanel'
 import './NodeModeEditor.css'
+
+/**
+ * Node creation menu item definition
+ */
+interface NodeCreationMenuItem {
+  type: string
+  label: string
+  icon: string
+  description: string
+}
+
+/**
+ * Available node types for creation
+ * Implements Requirement 6.3: Support creating new label, dialogue, etc.
+ */
+const NODE_CREATION_MENU_ITEMS: NodeCreationMenuItem[] = [
+  {
+    type: 'scene',
+    label: 'New Scene (Label)',
+    icon: '🏷️',
+    description: 'Create a new scene entry point',
+  },
+  {
+    type: 'dialogue-block',
+    label: 'Dialogue Block',
+    icon: '💬',
+    description: 'Add a dialogue sequence',
+  },
+  {
+    type: 'menu',
+    label: 'Menu Choice',
+    icon: '🔀',
+    description: 'Add a branching menu',
+  },
+  {
+    type: 'condition',
+    label: 'Condition',
+    icon: '❓',
+    description: 'Add a conditional branch',
+  },
+  {
+    type: 'jump',
+    label: 'Jump',
+    icon: '➡️',
+    description: 'Jump to another scene',
+  },
+  {
+    type: 'call',
+    label: 'Call',
+    icon: '📞',
+    description: 'Call another scene and return',
+  },
+  {
+    type: 'return',
+    label: 'Return',
+    icon: '↩️',
+    description: 'Return from current scene',
+  },
+]
+
+/**
+ * Context menu position state
+ */
+interface ContextMenuState {
+  visible: boolean
+  position: { x: number; y: number }
+  flowPosition: XYPosition
+}
 
 /**
  * Get edge style based on edge type
@@ -95,6 +170,8 @@ function getFileName(filePath: string): string {
  * - 2.1: Create Scene_Node for each label
  * - 5.3, 5.4, 5.5: Edge styling based on type
  * - 2.6: Node detail panel for selected nodes
+ * - 6.1: Drag from output port to show preview line
+ * - 6.2: Drop on valid input port to create new edge
  * 
  * Features:
  * - React Flow canvas with zoom and pan
@@ -102,15 +179,58 @@ function getFileName(filePath: string): string {
  * - Flow node types for story visualization
  * - File classification and selection
  * - Node detail panel
+ * - Drag-to-connect with visual feedback
  */
-export const NodeModeEditor: React.FC = () => {
+
+/**
+ * Viewport state for persistence
+ */
+interface ViewportState {
+  x: number
+  y: number
+  zoom: number
+}
+
+/**
+ * Store for viewport states per file
+ * Implements Requirement 7.6: Remember zoom level and position per file
+ */
+const viewportStates = new Map<string, ViewportState>()
+
+/**
+ * Inner component that uses React Flow hooks
+ */
+const NodeModeEditorInner: React.FC = () => {
   const { ast, setAst, setSelectedNodeId, selectedNodeId, projectPath } = useEditorStore()
+  const reactFlowInstance = useReactFlow()
+  
+  // Connection state for drag-to-connect visual feedback
+  const [isConnecting, setIsConnecting] = useState(false)
+  const connectingNodeRef = useRef<{ nodeId: string; handleId: string | null } | null>(null)
+  
+  // Zoom level state for display
+  // Implements Requirement 7.1: Zoom support
+  const [zoomLevel, setZoomLevel] = useState(1)
+  
+  // Context menu state for node creation
+  // Implements Requirement 6.3: Double-click canvas to show creation menu
+  const [contextMenu, setContextMenu] = useState<ContextMenuState>({
+    visible: false,
+    position: { x: 0, y: 0 },
+    flowPosition: { x: 0, y: 0 },
+  })
   
   // File classification state
   const [fileClassification, setFileClassification] = useState<FileClassification | null>(null)
   const [selectedFile, setSelectedFile] = useState<string | null>(null)
   const [showConfigFiles, setShowConfigFiles] = useState(false)
   const [scripts, setScripts] = useState<Map<string, RenpyScript>>(new Map())
+  
+  // Track previous file for viewport persistence
+  const previousFileRef = useRef<string | null>(null)
+  
+  // Node ID counter for generating unique IDs
+  const nodeIdCounter = useRef(0)
   
   // Initialize file classifier and flow graph builder
   const fileClassifier = useMemo(() => new FileClassifier(), [])
@@ -215,6 +335,7 @@ export const NodeModeEditor: React.FC = () => {
   }, [initialNodes, initialEdges, setNodes, setEdges])
 
   // Validate connections before allowing them
+  // Implements Requirements 6.1, 6.2: Connection validation
   const isValidConnectionCallback = useCallback(
     (connection: Edge | Connection) => {
       const conn: Connection = {
@@ -228,10 +349,50 @@ export const NodeModeEditor: React.FC = () => {
     [nodes, edges]
   )
 
-  // Handle new connections between nodes
+  /**
+   * Handle connection start - show visual feedback
+   * Implements Requirement 6.1: Show preview line when dragging from output port
+   */
+  const onConnectStart: OnConnectStart = useCallback(
+    (_event, { nodeId, handleId }) => {
+      setIsConnecting(true)
+      connectingNodeRef.current = { nodeId: nodeId || '', handleId }
+    },
+    []
+  )
+
+  /**
+   * Handle connection end - cleanup visual feedback
+   */
+  const onConnectEnd: OnConnectEnd = useCallback(
+    () => {
+      setIsConnecting(false)
+      connectingNodeRef.current = null
+    },
+    []
+  )
+
+  /**
+   * Handle new connections between nodes
+   * Implements Requirement 6.2: Create new edge when dropped on valid input port
+   */
   const onConnect = useCallback(
     (params: Connection) => {
       if (isValidConnection(params, nodes, edges)) {
+        // Determine edge type based on source node type
+        const sourceNode = nodes.find(n => n.id === params.source)
+        let edgeType: FlowEdgeType = 'normal'
+        
+        if (sourceNode) {
+          if (sourceNode.type === 'jump') {
+            edgeType = 'jump'
+          } else if (sourceNode.type === 'call') {
+            edgeType = 'call'
+          } else if (sourceNode.type === 'menu' || sourceNode.type === 'condition') {
+            edgeType = 'jump' // Menu/condition choices are like jumps
+          }
+        }
+        
         const newEdge: Edge = {
           id: createEdgeId(params),
           source: params.source!,
@@ -239,12 +400,24 @@ export const NodeModeEditor: React.FC = () => {
           sourceHandle: params.sourceHandle || undefined,
           targetHandle: params.targetHandle || undefined,
           type: 'smoothstep',
-          style: getEdgeStyle('jump'),
+          style: getEdgeStyle(edgeType),
+          className: getEdgeClassName(edgeType),
         }
         setEdges((eds) => addEdge(newEdge, eds))
+        
+        // Sync to AST - create jump statement for the new connection
+        if (ast && params.target) {
+          const targetNode = nodes.find(n => n.id === params.target)
+          if (targetNode && targetNode.data && typeof targetNode.data === 'object' && 'label' in targetNode.data) {
+            const targetLabel = (targetNode.data as { label: string }).label
+            // Note: Full AST sync would be implemented here
+            // For now, we just update the visual representation
+            console.log(`Created connection to label: ${targetLabel}`)
+          }
+        }
       }
     },
-    [nodes, edges, setEdges]
+    [nodes, edges, setEdges, ast]
   )
 
   // Handle node selection
@@ -258,7 +431,127 @@ export const NodeModeEditor: React.FC = () => {
   // Handle canvas click (deselect)
   const onPaneClick = useCallback(() => {
     setSelectedNodeId(null)
+    // Close context menu when clicking on canvas
+    setContextMenu(prev => ({ ...prev, visible: false }))
   }, [setSelectedNodeId])
+
+  /**
+   * Handle double-click on canvas to show node creation menu
+   * Implements Requirement 6.3: Double-click on empty canvas shows creation menu
+   */
+  const onPaneDoubleClick = useCallback(
+    (event: React.MouseEvent) => {
+      // Get the position in flow coordinates
+      const flowPosition = reactFlowInstance.screenToFlowPosition({
+        x: event.clientX,
+        y: event.clientY,
+      })
+      
+      setContextMenu({
+        visible: true,
+        position: { x: event.clientX, y: event.clientY },
+        flowPosition,
+      })
+    },
+    [reactFlowInstance]
+  )
+
+  /**
+   * Close the context menu
+   */
+  const closeContextMenu = useCallback(() => {
+    setContextMenu(prev => ({ ...prev, visible: false }))
+  }, [])
+
+  /**
+   * Generate a unique node ID
+   */
+  const generateNodeId = useCallback((type: string) => {
+    nodeIdCounter.current += 1
+    return `${type}-${Date.now()}-${nodeIdCounter.current}`
+  }, [])
+
+  /**
+   * Create a new node at the specified position
+   * Implements Requirement 6.3: Support creating new label, dialogue, etc.
+   */
+  const createNode = useCallback(
+    (type: string) => {
+      const position = contextMenu.flowPosition
+      const nodeId = generateNodeId(type)
+      
+      // Create default data based on node type
+      let data: Record<string, unknown> = {}
+      
+      switch (type) {
+        case 'scene':
+          data = {
+            label: `new_scene_${nodeIdCounter.current}`,
+            preview: 'New scene - double click to edit',
+            hasIncoming: true,
+            exitType: 'fall-through',
+          }
+          break
+        case 'dialogue-block':
+          data = {
+            dialogues: [
+              { speaker: 'Character', text: 'New dialogue line' }
+            ],
+            visualCommands: [],
+            expanded: false,
+          }
+          break
+        case 'menu':
+          data = {
+            prompt: 'What do you want to do?',
+            choices: [
+              { text: 'Option 1', portId: 'choice-0' },
+              { text: 'Option 2', portId: 'choice-1' },
+            ],
+          }
+          break
+        case 'condition':
+          data = {
+            branches: [
+              { condition: 'variable == True', portId: 'branch-0' },
+              { condition: null, portId: 'branch-1' }, // else branch
+            ],
+          }
+          break
+        case 'jump':
+          data = {
+            target: 'target_label',
+          }
+          break
+        case 'call':
+          data = {
+            target: 'target_label',
+          }
+          break
+        case 'return':
+          data = {
+            expression: null,
+          }
+          break
+        default:
+          data = {}
+      }
+      
+      const newNode: Node = {
+        id: nodeId,
+        type,
+        position,
+        data,
+      }
+      
+      setNodes((nds) => [...nds, newNode])
+      closeContextMenu()
+      
+      // Select the newly created node
+      setSelectedNodeId(nodeId)
+    },
+    [contextMenu.flowPosition, generateNodeId, setNodes, closeContextMenu, setSelectedNodeId]
+  )
 
   // Handle node deletion - also remove connected edges
   const onNodesDelete = useCallback(
@@ -269,6 +562,85 @@ export const NodeModeEditor: React.FC = () => {
     },
     [setEdges, setNodes]
   )
+
+  /**
+   * Handle viewport change to track zoom level and save state
+   * Implements Requirements 7.1, 7.6: Zoom support and viewport persistence
+   */
+  const onMoveEnd = useCallback(
+    (_event: unknown, viewport: { x: number; y: number; zoom: number }) => {
+      setZoomLevel(viewport.zoom)
+      
+      // Save viewport state for current file
+      if (selectedFile) {
+        viewportStates.set(selectedFile, {
+          x: viewport.x,
+          y: viewport.y,
+          zoom: viewport.zoom,
+        })
+      }
+    },
+    [selectedFile]
+  )
+
+  /**
+   * Restore viewport state when switching files
+   * Implements Requirement 7.6: Remember zoom level and position per file
+   */
+  useEffect(() => {
+    if (selectedFile && selectedFile !== previousFileRef.current) {
+      // Save previous file's viewport state
+      if (previousFileRef.current) {
+        const currentViewport = reactFlowInstance.getViewport()
+        viewportStates.set(previousFileRef.current, {
+          x: currentViewport.x,
+          y: currentViewport.y,
+          zoom: currentViewport.zoom,
+        })
+      }
+      
+      // Restore viewport state for new file
+      const savedState = viewportStates.get(selectedFile)
+      if (savedState) {
+        // Use setTimeout to ensure nodes are rendered first
+        setTimeout(() => {
+          reactFlowInstance.setViewport(savedState, { duration: 200 })
+          setZoomLevel(savedState.zoom)
+        }, 100)
+      }
+      
+      previousFileRef.current = selectedFile
+    }
+  }, [selectedFile, reactFlowInstance])
+
+  /**
+   * Fit all nodes in view
+   * Implements Requirement 7.5: Fit to View button
+   */
+  const handleFitView = useCallback(() => {
+    reactFlowInstance.fitView({ padding: 0.2, duration: 300 })
+  }, [reactFlowInstance])
+
+  /**
+   * Zoom in by 25%
+   */
+  const handleZoomIn = useCallback(() => {
+    reactFlowInstance.zoomIn({ duration: 200 })
+  }, [reactFlowInstance])
+
+  /**
+   * Zoom out by 25%
+   */
+  const handleZoomOut = useCallback(() => {
+    reactFlowInstance.zoomOut({ duration: 200 })
+  }, [reactFlowInstance])
+
+  /**
+   * Reset zoom to 100%
+   */
+  const handleResetZoom = useCallback(() => {
+    reactFlowInstance.setViewport({ x: 0, y: 0, zoom: 1 }, { duration: 200 })
+  }, [reactFlowInstance])
 
   // Minimap node color based on node type
   // Implements Requirements 9.1: Use distinct colors for different node types
@@ -291,18 +663,31 @@ export const NodeModeEditor: React.FC = () => {
     if (!selectedNodeId) return null
     return nodes.find(n => n.id === selectedNodeId) || null
   }, [selectedNodeId, nodes])
+  
+  // Count selected nodes for multi-select indicator
+  // Implements Requirement 6.6: Multi-select support
+  const selectedNodesCount = useMemo(() => {
+    return nodes.filter(n => n.selected).length
+  }, [nodes])
 
   return (
-    <div className="node-mode-editor-container" data-testid="node-mode-editor">
+    <div 
+      className={`node-mode-editor-container ${isConnecting ? 'connecting' : ''}`} 
+      data-testid="node-mode-editor"
+    >
       <ReactFlow
         nodes={nodes}
         edges={edges}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
+        onConnectStart={onConnectStart}
+        onConnectEnd={onConnectEnd}
         onNodeClick={onNodeClick}
         onPaneClick={onPaneClick}
+        onDoubleClick={onPaneDoubleClick}
         onNodesDelete={onNodesDelete}
+        onMoveEnd={onMoveEnd}
         isValidConnection={isValidConnectionCallback}
         nodeTypes={flowNodeTypesSync as NodeTypes}
         fitView
@@ -312,10 +697,27 @@ export const NodeModeEditor: React.FC = () => {
           type: 'smoothstep',
           animated: false,
         }}
+        connectionLineStyle={{
+          stroke: '#6366f1',
+          strokeWidth: 2,
+          strokeDasharray: '5,5',
+        }}
+        connectionLineType={ConnectionLineType.SmoothStep}
         minZoom={0.1}
         maxZoom={2}
         attributionPosition="bottom-left"
         deleteKeyCode={['Backspace', 'Delete']}
+        /* Multi-select configuration - Implements Requirement 6.6 */
+        selectionOnDrag={true}
+        selectionMode={SelectionMode.Partial}
+        multiSelectionKeyCode="Shift"
+        panOnDrag={[1, 2]}
+        selectNodesOnDrag={true}
+        /* Zoom and pan configuration - Implements Requirements 7.1, 7.2 */
+        panActivationKeyCode="Space"
+        zoomOnScroll={true}
+        zoomOnPinch={true}
+        zoomOnDoubleClick={false}
       >
         <Background variant={BackgroundVariant.Dots} gap={15} size={1} />
         <Controls showInteractive={false} />
@@ -358,6 +760,64 @@ export const NodeModeEditor: React.FC = () => {
           </div>
           <div className="node-count">
             {nodes.length} nodes • {edges.length} connections
+            {selectedNodesCount > 1 && (
+              <span className="selection-count"> • {selectedNodesCount} selected</span>
+            )}
+          </div>
+        </Panel>
+        
+        {/* Multi-select indicator - Implements Requirement 6.6 */}
+        {selectedNodesCount > 1 && (
+          <Panel position="top-center" className="selection-panel">
+            <div className="selection-info">
+              <span className="selection-icon">☑️</span>
+              <span>{selectedNodesCount} nodes selected</span>
+              <span className="selection-hint">Press Delete to remove</span>
+            </div>
+          </Panel>
+        )}
+        
+        {/* Connection status indicator */}
+        {isConnecting && (
+          <Panel position="top-center" className="connection-status-panel">
+            <div className="connection-status">
+              <span className="connection-icon">🔗</span>
+              <span>Drag to a target node to connect</span>
+            </div>
+          </Panel>
+        )}
+        
+        {/* Zoom controls panel - Implements Requirements 7.1, 7.5 */}
+        <Panel position="top-right" className="zoom-controls-panel">
+          <div className="zoom-controls">
+            <button 
+              className="zoom-btn" 
+              onClick={handleZoomOut}
+              title="Zoom Out"
+            >
+              −
+            </button>
+            <button 
+              className="zoom-level" 
+              onClick={handleResetZoom}
+              title="Reset Zoom (100%)"
+            >
+              {Math.round(zoomLevel * 100)}%
+            </button>
+            <button 
+              className="zoom-btn" 
+              onClick={handleZoomIn}
+              title="Zoom In"
+            >
+              +
+            </button>
+            <button 
+              className="zoom-btn fit-view-btn" 
+              onClick={handleFitView}
+              title="Fit to View"
+            >
+              ⊡
+            </button>
           </div>
         </Panel>
       </ReactFlow>
@@ -368,6 +828,54 @@ export const NodeModeEditor: React.FC = () => {
           <NodeDetailPanel node={selectedNode} onClose={() => setSelectedNodeId(null)} />
         </div>
       )}
+      
+      {/* Node creation context menu - Implements Requirement 6.3 */}
+      {contextMenu.visible && (
+        <div 
+          className="node-creation-menu"
+          style={{
+            position: 'fixed',
+            left: contextMenu.position.x,
+            top: contextMenu.position.y,
+          }}
+        >
+          <div className="node-creation-menu-header">
+            <span>Create Node</span>
+            <button 
+              className="node-creation-menu-close"
+              onClick={closeContextMenu}
+            >
+              ×
+            </button>
+          </div>
+          <div className="node-creation-menu-items">
+            {NODE_CREATION_MENU_ITEMS.map((item) => (
+              <button
+                key={item.type}
+                className="node-creation-menu-item"
+                onClick={() => createNode(item.type)}
+              >
+                <span className="node-creation-menu-icon">{item.icon}</span>
+                <div className="node-creation-menu-content">
+                  <span className="node-creation-menu-label">{item.label}</span>
+                  <span className="node-creation-menu-description">{item.description}</span>
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
+  )
+}
+
+/**
+ * NodeModeEditor wrapper with ReactFlowProvider
+ */
+export const NodeModeEditor: React.FC = () => {
+  return (
+    <ReactFlowProvider>
+      <NodeModeEditorInner />
+    </ReactFlowProvider>
   )
 }

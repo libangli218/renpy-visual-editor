@@ -800,3 +800,342 @@ describe('Property 4: Edge-Jump Correspondence', () => {
     )
   })
 })
+
+
+describe('Property 7: Node Deletion Consistency', () => {
+  /**
+   * Property 7: Node Deletion Consistency
+   * For any node deletion operation, the resulting AST should not contain
+   * the deleted statements, and all edges connected to the deleted node
+   * should be removed.
+   * 
+   * Feature: node-editor-redesign, Property 7: Node Deletion Consistency
+   * Validates: Requirements 6.4, 8.5
+   */
+
+  // Arbitrary for valid label names
+  const arbitraryLabelName = fc.stringOf(
+    fc.constantFrom(...'abcdefghijklmnopqrstuvwxyz_'),
+    { minLength: 1, maxLength: 15 }
+  ).filter(s => /^[a-z_][a-z0-9_]*$/.test(s))
+
+  // Arbitrary for dialogue text
+  const arbitraryText = fc.stringOf(
+    fc.constantFrom(...'abcdefghijklmnopqrstuvwxyz '),
+    { minLength: 1, maxLength: 30 }
+  )
+
+  it('should remove deleted node statements from AST', () => {
+    fc.assert(
+      fc.property(
+        fc.array(arbitraryLabelName, { minLength: 2, maxLength: 5 }),
+        (labelNames) => {
+          const uniqueNames = [...new Set(labelNames)]
+          if (uniqueNames.length < 2) return true
+
+          const builder = new FlowGraphBuilder()
+          const synchronizer = new ASTSynchronizer()
+
+          // Create labels with dialogues
+          const labels = uniqueNames.map(name =>
+            createLabel(name, [
+              createDialogue(`d-${name}`, null, `Content of ${name}`),
+            ])
+          )
+
+          const ast = createScript(labels)
+          const graph = builder.buildGraph(ast)
+
+          // Pick a random label to delete
+          const labelToDelete = uniqueNames[0]
+          const nodeToDelete = graph.nodes.find(
+            n => n.type === 'scene' && n.data.label === labelToDelete
+          )
+
+          if (!nodeToDelete) return true
+
+          // Delete the node
+          const result = synchronizer.deleteNode(nodeToDelete.id, graph, ast)
+
+          // The deleted label should not be in the resulting AST
+          const remainingLabels = result.ast.statements
+            .filter(s => s.type === 'label')
+            .map(s => (s as LabelNode).name)
+
+          expect(remainingLabels).not.toContain(labelToDelete)
+
+          // Other labels should still be present
+          for (const name of uniqueNames.slice(1)) {
+            expect(remainingLabels).toContain(name)
+          }
+
+          return true
+        }
+      ),
+      { numRuns: 100 }
+    )
+  })
+
+  it('should remove edges connected to deleted node', () => {
+    fc.assert(
+      fc.property(
+        fc.array(arbitraryLabelName, { minLength: 2, maxLength: 4 }),
+        (labelNames) => {
+          const uniqueNames = [...new Set(labelNames)]
+          if (uniqueNames.length < 2) return true
+
+          const builder = new FlowGraphBuilder()
+          const synchronizer = new ASTSynchronizer()
+
+          // Create labels where each jumps to the next
+          const labels = uniqueNames.map((name, i) => {
+            const nextLabel = uniqueNames[(i + 1) % uniqueNames.length]
+            return createLabel(name, [
+              createDialogue(`d-${name}`, null, `In ${name}`),
+              createJump(`j-${name}`, nextLabel),
+            ])
+          })
+
+          const ast = createScript(labels)
+          const graph = builder.buildGraph(ast)
+
+          // Pick a label to delete
+          const labelToDelete = uniqueNames[0]
+          const nodeToDelete = graph.nodes.find(
+            n => n.type === 'scene' && n.data.label === labelToDelete
+          )
+
+          if (!nodeToDelete) return true
+
+          // Count edges connected to this node before deletion
+          const connectedEdgesBefore = graph.edges.filter(
+            e => e.source === nodeToDelete.id || e.target === nodeToDelete.id
+          )
+
+          // Delete the node
+          const result = synchronizer.deleteNode(nodeToDelete.id, graph, ast)
+
+          // All connected edges should be in the removed list
+          expect(result.removedEdgeIds.length).toBeGreaterThanOrEqual(connectedEdgesBefore.length)
+
+          return true
+        }
+      ),
+      { numRuns: 100 }
+    )
+  })
+
+  it('should remove jump statements targeting deleted label', () => {
+    fc.assert(
+      fc.property(
+        fc.array(arbitraryLabelName, { minLength: 2, maxLength: 4 }),
+        (labelNames) => {
+          const uniqueNames = [...new Set(labelNames)]
+          if (uniqueNames.length < 2) return true
+
+          const builder = new FlowGraphBuilder()
+          const synchronizer = new ASTSynchronizer()
+
+          // Create labels where each jumps to the next
+          const labels = uniqueNames.map((name, i) => {
+            const nextLabel = uniqueNames[(i + 1) % uniqueNames.length]
+            return createLabel(name, [
+              createDialogue(`d-${name}`, null, `In ${name}`),
+              createJump(`j-${name}`, nextLabel),
+            ])
+          })
+
+          const ast = createScript(labels)
+          const graph = builder.buildGraph(ast)
+
+          // Pick a label to delete (not the first one, so there's a jump to it)
+          const labelToDelete = uniqueNames[uniqueNames.length - 1]
+          const nodeToDelete = graph.nodes.find(
+            n => n.type === 'scene' && n.data.label === labelToDelete
+          )
+
+          if (!nodeToDelete) return true
+
+          // Delete the node
+          const result = synchronizer.deleteNode(nodeToDelete.id, graph, ast)
+
+          // Check that no jump statements target the deleted label
+          function findJumpsToLabel(body: ASTNode[], targetLabel: string): JumpNode[] {
+            const jumps: JumpNode[] = []
+            for (const node of body) {
+              if (node.type === 'jump' && (node as JumpNode).target === targetLabel) {
+                jumps.push(node as JumpNode)
+              } else if (node.type === 'label') {
+                jumps.push(...findJumpsToLabel((node as LabelNode).body, targetLabel))
+              }
+            }
+            return jumps
+          }
+
+          const jumpsToDeleted = findJumpsToLabel(result.ast.statements, labelToDelete)
+          expect(jumpsToDeleted.length).toBe(0)
+
+          return true
+        }
+      ),
+      { numRuns: 100 }
+    )
+  })
+
+  it('should preserve unrelated nodes when deleting', () => {
+    fc.assert(
+      fc.property(
+        fc.array(arbitraryLabelName, { minLength: 3, maxLength: 5 }),
+        fc.array(arbitraryText, { minLength: 1, maxLength: 3 }),
+        (labelNames, dialogueTexts) => {
+          const uniqueNames = [...new Set(labelNames)]
+          if (uniqueNames.length < 3) return true
+
+          const builder = new FlowGraphBuilder()
+          const synchronizer = new ASTSynchronizer()
+
+          // Create labels with dialogues
+          const labels = uniqueNames.map((name, i) =>
+            createLabel(name, [
+              createDialogue(`d-${name}`, null, dialogueTexts[i % dialogueTexts.length]),
+            ])
+          )
+
+          const ast = createScript(labels)
+          const graph = builder.buildGraph(ast)
+
+          // Delete the first label
+          const labelToDelete = uniqueNames[0]
+          const nodeToDelete = graph.nodes.find(
+            n => n.type === 'scene' && n.data.label === labelToDelete
+          )
+
+          if (!nodeToDelete) return true
+
+          // Delete the node
+          const result = synchronizer.deleteNode(nodeToDelete.id, graph, ast)
+
+          // All other labels should be preserved with their content
+          for (let i = 1; i < uniqueNames.length; i++) {
+            const labelName = uniqueNames[i]
+            const label = result.ast.statements.find(
+              s => s.type === 'label' && (s as LabelNode).name === labelName
+            ) as LabelNode | undefined
+
+            expect(label).toBeDefined()
+            expect(label?.body.length).toBeGreaterThan(0)
+
+            // Check dialogue content is preserved
+            const dialogue = label?.body.find(n => n.type === 'dialogue') as DialogueNode | undefined
+            expect(dialogue).toBeDefined()
+            expect(dialogue?.text).toBe(dialogueTexts[i % dialogueTexts.length])
+          }
+
+          return true
+        }
+      ),
+      { numRuns: 100 }
+    )
+  })
+
+  it('should handle deletion of nodes with no external edges', () => {
+    fc.assert(
+      fc.property(
+        arbitraryLabelName,
+        arbitraryText,
+        (labelName, dialogueText) => {
+          const builder = new FlowGraphBuilder()
+          const synchronizer = new ASTSynchronizer()
+
+          // Create a single label with no jumps
+          const label = createLabel(labelName, [
+            createDialogue(`d-${labelName}`, null, dialogueText),
+          ])
+
+          const ast = createScript([label])
+          const graph = builder.buildGraph(ast)
+
+          // Find the scene node
+          const nodeToDelete = graph.nodes.find(
+            n => n.type === 'scene' && n.data.label === labelName
+          )
+
+          if (!nodeToDelete) return true
+
+          // Count edges connected to this node before deletion
+          const connectedEdges = graph.edges.filter(
+            e => e.source === nodeToDelete.id || e.target === nodeToDelete.id
+          )
+
+          // Delete the node
+          const result = synchronizer.deleteNode(nodeToDelete.id, graph, ast)
+
+          // The AST should have no labels
+          const remainingLabels = result.ast.statements.filter(s => s.type === 'label')
+          expect(remainingLabels.length).toBe(0)
+
+          // All connected edges should be in the removed list
+          expect(result.removedEdgeIds.length).toBe(connectedEdges.length)
+
+          return true
+        }
+      ),
+      { numRuns: 100 }
+    )
+  })
+
+  it('should return removed statement IDs', () => {
+    fc.assert(
+      fc.property(
+        arbitraryLabelName,
+        fc.array(arbitraryText, { minLength: 1, maxLength: 3 }),
+        (labelName, dialogueTexts) => {
+          const builder = new FlowGraphBuilder()
+          const synchronizer = new ASTSynchronizer()
+
+          // Create a label with multiple dialogues
+          const dialogues = dialogueTexts.map((text, i) =>
+            createDialogue(`d-${labelName}-${i}`, null, text)
+          )
+          const label = createLabel(labelName, dialogues)
+
+          const ast = createScript([label])
+          const graph = builder.buildGraph(ast)
+
+          // Find the scene node
+          const nodeToDelete = graph.nodes.find(
+            n => n.type === 'scene' && n.data.label === labelName
+          )
+
+          if (!nodeToDelete) return true
+
+          // Delete the node
+          const result = synchronizer.deleteNode(nodeToDelete.id, graph, ast)
+
+          // Should have removed statement IDs
+          expect(result.removedStatementIds.length).toBeGreaterThan(0)
+
+          // The removed IDs should not be in the resulting AST
+          function collectAllIds(nodes: ASTNode[]): string[] {
+            const ids: string[] = []
+            for (const node of nodes) {
+              ids.push(node.id)
+              if (node.type === 'label') {
+                ids.push(...collectAllIds((node as LabelNode).body))
+              }
+            }
+            return ids
+          }
+
+          const remainingIds = collectAllIds(result.ast.statements)
+          for (const removedId of result.removedStatementIds) {
+            expect(remainingIds).not.toContain(removedId)
+          }
+
+          return true
+        }
+      ),
+      { numRuns: 100 }
+    )
+  })
+})
