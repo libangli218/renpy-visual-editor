@@ -2,6 +2,7 @@ import React from 'react'
 import { useEditorStore } from '../../store/editorStore'
 import { PreviewPanel } from './PreviewPanel'
 import { NodeModeEditor } from '../nodeMode'
+import { StoryModeEditor } from '../storyMode'
 
 /**
  * EditorArea component - Main editing area with preview and editor
@@ -24,24 +25,5 @@ export const EditorArea: React.FC = () => {
         )}
       </div>
     </section>
-  )
-}
-
-/**
- * Placeholder for Story Mode Editor
- * Will be implemented in Task 10
- */
-const StoryModeEditor: React.FC = () => {
-  return (
-    <div className="story-mode-editor" data-testid="story-mode-editor">
-      <div className="editor-placeholder">
-        <h3>Story Mode</h3>
-        <p>Linear script editing view</p>
-        <p className="placeholder-hint">
-          Edit your visual novel as a script with dialogue blocks, 
-          scene changes, and character actions.
-        </p>
-      </div>
-    </div>
   )
 }

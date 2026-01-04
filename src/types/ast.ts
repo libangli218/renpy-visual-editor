@@ -38,6 +38,7 @@ export interface DialogueNode extends BaseNode {
   speaker: string | null
   text: string
   attributes?: string[]
+  extend?: boolean  // If true, this dialogue extends the previous one
 }
 
 // Menu node

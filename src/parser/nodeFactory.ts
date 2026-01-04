@@ -72,7 +72,7 @@ export function createLabelNode(
 export function createDialogueNode(
   text: string,
   speaker: string | null = null,
-  options: { attributes?: string[]; line?: number } = {}
+  options: { attributes?: string[]; line?: number; extend?: boolean } = {}
 ): DialogueNode {
   return {
     id: generateNodeId(),
@@ -80,6 +80,7 @@ export function createDialogueNode(
     speaker,
     text,
     attributes: options.attributes,
+    extend: options.extend,
     line: options.line,
   }
 }
