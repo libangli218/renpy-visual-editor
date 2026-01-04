@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import * as fc from 'fast-check'
-import { parse, RenpyParser } from './renpyParser'
+import { parse } from './renpyParser'
 import {
   ASTNode,
   LabelNode,
@@ -12,13 +12,11 @@ import {
   WithNode,
   JumpNode,
   CallNode,
-  ReturnNode,
   IfNode,
   PlayNode,
   StopNode,
   PauseNode,
   NVLNode,
-  PythonNode,
   DefineNode,
   DefaultNode,
   RawNode,

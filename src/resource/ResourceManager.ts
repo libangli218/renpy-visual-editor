@@ -61,15 +61,6 @@ function getExtension(path: string): string {
 }
 
 /**
- * Get the parent directory path
- */
-function getParentDir(path: string): string {
-  const parts = path.split(/[/\\]/)
-  parts.pop()
-  return parts.join('/')
-}
-
-/**
  * Detect resource type based on file path and name
  */
 function detectResourceType(path: string, name: string): ResourceType {

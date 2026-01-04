@@ -10,7 +10,7 @@
 
 import { describe, it, expect } from 'vitest'
 import * as fc from 'fast-check'
-import { generateNode, CodeGenerator } from './codeGenerator'
+import { generateNode } from './codeGenerator'
 import {
   ASTNode,
   LabelNode,

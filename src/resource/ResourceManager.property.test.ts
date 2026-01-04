@@ -23,7 +23,7 @@
  *   ∀ r ∈ results: matches(r.name, query) = true
  */
 
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, vi } from 'vitest'
 import * as fc from 'fast-check'
 import { ResourceManager, ResourceType } from './ResourceManager'
 import { FileSystem } from '../project/ProjectManager'

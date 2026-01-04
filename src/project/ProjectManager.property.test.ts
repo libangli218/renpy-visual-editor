@@ -13,7 +13,7 @@
  *   exists(project.path + '/game/gui/') = true
  */
 
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, vi } from 'vitest'
 import * as fc from 'fast-check'
 import { ProjectManager, FileSystem } from './ProjectManager'
 import { RENPY_PROJECT_STRUCTURE } from './types'

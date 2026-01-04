@@ -3,7 +3,7 @@
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { ResourceManager, ResourceType } from './ResourceManager'
+import { ResourceManager } from './ResourceManager'
 import { FileSystem } from '../project/ProjectManager'
 
 // Mock file system for testing
