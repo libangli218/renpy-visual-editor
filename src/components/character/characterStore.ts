@@ -17,6 +17,7 @@ import {
 } from './types'
 import { DefineNode, ASTNode, RenpyScript } from '../../types/ast'
 import { createDefineNode } from '../../parser/nodeFactory'
+import { markAsModified } from '../../store/editorStore'
 
 export interface CharacterStore {
   // State
@@ -73,6 +74,9 @@ export const useCharacterStore = create<CharacterStore>((set, get) => ({
       editingCharacter: null,
     }))
 
+    // Mark editor as modified (Requirement 1.4)
+    markAsModified()
+
     return newCharacter
   },
 
@@ -93,6 +97,9 @@ export const useCharacterStore = create<CharacterStore>((set, get) => ({
       dialogOpen: false,
       editingCharacter: null,
     }))
+
+    // Mark editor as modified (Requirement 1.4)
+    markAsModified()
   },
 
   deleteCharacter: (id) => {
@@ -101,6 +108,9 @@ export const useCharacterStore = create<CharacterStore>((set, get) => ({
       selectedCharacterId:
         state.selectedCharacterId === id ? null : state.selectedCharacterId,
     }))
+
+    // Mark editor as modified (Requirement 1.4)
+    markAsModified()
   },
 
   selectCharacter: (id) => {
@@ -130,6 +140,9 @@ export const useCharacterStore = create<CharacterStore>((set, get) => ({
           : char
       ),
     }))
+
+    // Mark editor as modified (Requirement 1.4)
+    markAsModified()
   },
 
   addLayerAttribute: (characterId, attribute) => {
@@ -151,6 +164,9 @@ export const useCharacterStore = create<CharacterStore>((set, get) => ({
         }
       }),
     }))
+
+    // Mark editor as modified (Requirement 1.4)
+    markAsModified()
   },
 
   updateLayerAttribute: (characterId, index, attribute) => {
@@ -170,6 +186,9 @@ export const useCharacterStore = create<CharacterStore>((set, get) => ({
         }
       }),
     }))
+
+    // Mark editor as modified (Requirement 1.4)
+    markAsModified()
   },
 
   removeLayerAttribute: (characterId, index) => {
@@ -193,6 +212,9 @@ export const useCharacterStore = create<CharacterStore>((set, get) => ({
         }
       }),
     }))
+
+    // Mark editor as modified (Requirement 1.4)
+    markAsModified()
   },
 
   // Extract characters from AST (define statements with Character())

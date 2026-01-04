@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain } from 'electron'
+import { app, BrowserWindow, ipcMain, dialog } from 'electron'
 import { join } from 'path'
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
@@ -73,7 +73,12 @@ ipcMain.handle('fs:writeFile', async (_event, path: string, content: string) => 
 
 ipcMain.handle('fs:readDir', async (_event, path: string) => {
   const fs = await import('fs/promises')
-  return fs.readdir(path, { withFileTypes: true })
+  const entries = await fs.readdir(path, { withFileTypes: true })
+  // Convert Dirent objects to plain objects for IPC serialization
+  return entries.map(entry => ({
+    name: entry.name,
+    isDirectory: entry.isDirectory(),
+  }))
 })
 
 ipcMain.handle('fs:exists', async (_event, path: string) => {
@@ -89,4 +94,35 @@ ipcMain.handle('fs:exists', async (_event, path: string) => {
 ipcMain.handle('fs:mkdir', async (_event, path: string) => {
   const fs = await import('fs/promises')
   await fs.mkdir(path, { recursive: true })
+})
+
+// Dialog handlers for project management
+ipcMain.handle('dialog:openDirectory', async () => {
+  if (!mainWindow) return null
+  
+  const result = await dialog.showOpenDialog(mainWindow, {
+    properties: ['openDirectory'],
+    title: 'Open Ren\'Py Project',
+  })
+  
+  if (result.canceled || result.filePaths.length === 0) {
+    return null
+  }
+  
+  return result.filePaths[0]
+})
+
+ipcMain.handle('dialog:selectDirectory', async (_event, title: string) => {
+  if (!mainWindow) return null
+  
+  const result = await dialog.showOpenDialog(mainWindow, {
+    properties: ['openDirectory', 'createDirectory'],
+    title: title || 'Select Directory',
+  })
+  
+  if (result.canceled || result.filePaths.length === 0) {
+    return null
+  }
+  
+  return result.filePaths[0]
 })

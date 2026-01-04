@@ -27,7 +27,7 @@ import {
 export interface FileSystem {
   readFile(path: string): Promise<string>
   writeFile(path: string, content: string): Promise<void>
-  readDir(path: string): Promise<{ name: string; isDirectory: () => boolean }[]>
+  readDir(path: string): Promise<{ name: string; isDirectory: boolean }[]>
   exists(path: string): Promise<boolean>
   mkdir(path: string): Promise<void>
 }
@@ -40,9 +40,11 @@ declare global {
     electronAPI?: {
       readFile: (path: string) => Promise<string>
       writeFile: (path: string, content: string) => Promise<void>
-      readDir: (path: string) => Promise<{ name: string; isDirectory: () => boolean }[]>
+      readDir: (path: string) => Promise<{ name: string; isDirectory: boolean }[]>
       exists: (path: string) => Promise<boolean>
       mkdir: (path: string) => Promise<void>
+      openDirectory: () => Promise<string | null>
+      selectDirectory: (title?: string) => Promise<string | null>
     }
   }
 }
@@ -297,7 +299,7 @@ label start:
       for (const entry of entries) {
         const fullPath = joinPath(dirPath, entry.name)
 
-        if (entry.isDirectory()) {
+        if (entry.isDirectory) {
           // Skip certain directories
           if (entry.name === 'saves' || entry.name === 'cache' || entry.name.startsWith('.')) {
             continue

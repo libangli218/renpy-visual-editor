@@ -5,7 +5,7 @@ import { ComplexitySwitcher } from './ComplexitySwitcher'
 
 /**
  * Header component - Top bar with title and mode/complexity switchers
- * Implements Requirements 2.1, 3.1
+ * Implements Requirements 2.1, 3.1, 1.4 (unsaved marker display)
  */
 export const Header: React.FC = () => {
   const { modified, projectPath } = useEditorStore()
@@ -20,11 +20,9 @@ export const Header: React.FC = () => {
       <div className="header-left">
         <h1 className="app-title">
           Ren'Py Visual Editor
-          {projectPath && (
-            <span className="project-name">
-              {' - '}{projectName}{modified ? ' *' : ''}
-            </span>
-          )}
+          <span className="project-name">
+            {' - '}{projectName}{modified ? ' *' : ''}
+          </span>
         </h1>
       </div>
       <div className="header-center">

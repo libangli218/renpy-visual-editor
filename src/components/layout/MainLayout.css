@@ -51,6 +51,11 @@
   font-weight: 400;
 }
 
+.project-name .unsaved-marker {
+  color: var(--accent-primary);
+  font-weight: 600;
+}
+
 /* Mode Switcher Styles */
 .mode-switcher {
   display: flex;

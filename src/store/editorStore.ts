@@ -6,6 +6,32 @@ import { RenpyScript } from '../types/ast'
 // Create a history manager instance
 const historyManager = new HistoryManager<EditorState>(100)
 
+/**
+ * List of modification operation types for tracking
+ * Used by Property 3: Modification Tracking
+ */
+export type ModificationOperation = 
+  | 'setMode'
+  | 'setAst'
+  | 'addCharacter'
+  | 'updateCharacter'
+  | 'deleteCharacter'
+  | 'setCharacterLayers'
+  | 'addLayerAttribute'
+  | 'updateLayerAttribute'
+  | 'removeLayerAttribute'
+  | 'addVariable'
+  | 'updateVariable'
+  | 'deleteVariable'
+  | 'addBlock'
+  | 'updateBlock'
+  | 'deleteBlock'
+  | 'addNode'
+  | 'updateNode'
+  | 'deleteNode'
+  | 'connectNodes'
+  | 'disconnectNodes'
+
 export interface EditorStore {
   // Editor mode state
   mode: EditorMode
@@ -198,4 +224,28 @@ export { historyManager }
 export function getEditorStateSnapshot(): EditorState {
   const state = useEditorStore.getState()
   return createStateSnapshot(state)
+}
+
+/**
+ * Mark the editor as modified
+ * This function should be called by any store that makes changes to the project data
+ * Implements Property 3: Modification Tracking
+ * Validates: Requirements 1.4
+ */
+export function markAsModified(): void {
+  useEditorStore.getState().setModified(true)
+}
+
+/**
+ * Check if the editor has unsaved modifications
+ */
+export function isModified(): boolean {
+  return useEditorStore.getState().modified
+}
+
+/**
+ * Clear the modified flag (typically after saving)
+ */
+export function clearModified(): void {
+  useEditorStore.getState().setModified(false)
 }

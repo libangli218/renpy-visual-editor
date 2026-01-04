@@ -1,0 +1,161 @@
+/**
+ * KeyboardHelpPanel Styles
+ * 
+ * Styles for the keyboard shortcut help panel.
+ */
+
+.keyboard-help-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: fadeIn 0.15s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.keyboard-help-panel {
+  background-color: #1e1e1e;
+  border-radius: 8px;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
+  max-width: 500px;
+  width: 90%;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  animation: slideIn 0.2s ease-out;
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateY(-20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.keyboard-help-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid #333;
+}
+
+.keyboard-help-header h2 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #fff;
+}
+
+.keyboard-help-close {
+  background: none;
+  border: none;
+  color: #888;
+  font-size: 24px;
+  cursor: pointer;
+  padding: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: background-color 0.15s, color 0.15s;
+}
+
+.keyboard-help-close:hover {
+  background-color: #333;
+  color: #fff;
+}
+
+.keyboard-help-content {
+  padding: 16px 20px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.keyboard-help-category {
+  margin-bottom: 20px;
+}
+
+.keyboard-help-category:last-child {
+  margin-bottom: 0;
+}
+
+.keyboard-help-category-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: #888;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin: 0 0 12px 0;
+}
+
+.keyboard-help-shortcuts {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.keyboard-help-shortcut {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  background-color: #252525;
+  border-radius: 4px;
+}
+
+.keyboard-help-key {
+  font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Fira Code', monospace;
+  font-size: 13px;
+  color: #4fc3f7;
+  background-color: #1a1a1a;
+  padding: 4px 8px;
+  border-radius: 4px;
+  border: 1px solid #333;
+}
+
+.keyboard-help-description {
+  font-size: 14px;
+  color: #ccc;
+}
+
+.keyboard-help-footer {
+  padding: 12px 20px;
+  border-top: 1px solid #333;
+  text-align: center;
+}
+
+.keyboard-help-hint {
+  font-size: 12px;
+  color: #666;
+}
+
+.keyboard-help-hint kbd {
+  font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Fira Code', monospace;
+  font-size: 11px;
+  background-color: #333;
+  padding: 2px 6px;
+  border-radius: 3px;
+  border: 1px solid #444;
+  color: #aaa;
+}

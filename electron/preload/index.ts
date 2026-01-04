@@ -9,6 +9,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
   readDir: (path: string) => ipcRenderer.invoke('fs:readDir', path),
   exists: (path: string) => ipcRenderer.invoke('fs:exists', path),
   mkdir: (path: string) => ipcRenderer.invoke('fs:mkdir', path),
+  
+  // Dialog operations
+  openDirectory: () => ipcRenderer.invoke('dialog:openDirectory'),
+  selectDirectory: (title?: string) => ipcRenderer.invoke('dialog:selectDirectory', title),
 })
 
 // Type definitions for the exposed API
@@ -17,9 +21,11 @@ declare global {
     electronAPI: {
       readFile: (path: string) => Promise<string>
       writeFile: (path: string, content: string) => Promise<void>
-      readDir: (path: string) => Promise<{ name: string; isDirectory: () => boolean }[]>
+      readDir: (path: string) => Promise<{ name: string; isDirectory: boolean }[]>
       exists: (path: string) => Promise<boolean>
       mkdir: (path: string) => Promise<void>
+      openDirectory: () => Promise<string | null>
+      selectDirectory: (title?: string) => Promise<string | null>
     }
   }
 }

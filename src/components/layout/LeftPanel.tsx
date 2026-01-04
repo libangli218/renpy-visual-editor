@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import { useEditorStore } from '../../store/editorStore'
+import { projectManager } from '../../project/ProjectManager'
 import {
   CharacterList,
   CharacterDialog,
@@ -37,10 +38,12 @@ const sections: SectionConfig[] = [
 ]
 
 export const LeftPanel: React.FC = () => {
-  const { projectPath } = useEditorStore()
+  const { projectPath, setProjectPath, setAst } = useEditorStore()
   const [expandedSections, setExpandedSections] = useState<Set<PanelSection>>(
     new Set(['labels', 'characters'])
   )
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   // Character store
   const {
@@ -66,6 +69,87 @@ export const LeftPanel: React.FC = () => {
       }
       return next
     })
+  }
+
+  const handleOpenProject = async () => {
+    if (!window.electronAPI) {
+      setError('Electron API not available')
+      return
+    }
+
+    try {
+      setIsLoading(true)
+      setError(null)
+
+      const selectedPath = await window.electronAPI.openDirectory()
+      if (!selectedPath) {
+        setIsLoading(false)
+        return
+      }
+
+      const result = await projectManager.openProject(selectedPath)
+      if (result.success && result.project) {
+        setProjectPath(result.project.path)
+        // Set the first script's AST if available
+        const scripts = Array.from(result.project.scripts.values())
+        if (scripts.length > 0) {
+          setAst(scripts[0])
+        }
+      } else {
+        setError(result.error || 'Failed to open project')
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to open project')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleNewProject = async () => {
+    if (!window.electronAPI) {
+      setError('Electron API not available')
+      return
+    }
+
+    try {
+      setIsLoading(true)
+      setError(null)
+
+      // Ask for project name
+      const projectName = window.prompt('Enter project name:', 'MyVisualNovel')
+      if (!projectName) {
+        setIsLoading(false)
+        return
+      }
+
+      // Select directory for the new project
+      const selectedPath = await window.electronAPI.selectDirectory('Select location for new project')
+      if (!selectedPath) {
+        setIsLoading(false)
+        return
+      }
+
+      const result = await projectManager.createProject({
+        name: projectName,
+        path: selectedPath,
+        createDefaultScript: true,
+      })
+
+      if (result.success && result.project) {
+        setProjectPath(result.project.path)
+        // Set the first script's AST if available
+        const scripts = Array.from(result.project.scripts.values())
+        if (scripts.length > 0) {
+          setAst(scripts[0])
+        }
+      } else {
+        setError(result.error || 'Failed to create project')
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to create project')
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   const handleSaveCharacter = (data: CharacterFormData) => {
@@ -112,8 +196,21 @@ export const LeftPanel: React.FC = () => {
       {!projectPath ? (
         <div className="panel-empty">
           <p>No project open</p>
-          <button className="btn-primary">Open Project</button>
-          <button className="btn-secondary">New Project</button>
+          {error && <p className="error-message" style={{ color: 'red', fontSize: '12px' }}>{error}</p>}
+          <button 
+            className="btn-primary" 
+            onClick={handleOpenProject}
+            disabled={isLoading}
+          >
+            {isLoading ? 'Loading...' : 'Open Project'}
+          </button>
+          <button 
+            className="btn-secondary" 
+            onClick={handleNewProject}
+            disabled={isLoading}
+          >
+            {isLoading ? 'Loading...' : 'New Project'}
+          </button>
         </div>
       ) : (
         <div className="panel-content">

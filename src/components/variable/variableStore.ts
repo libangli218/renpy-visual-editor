@@ -15,6 +15,7 @@ import {
 } from './types'
 import { DefineNode, DefaultNode, ASTNode, RenpyScript } from '../../types/ast'
 import { createDefineNode, createDefaultNode } from '../../parser/nodeFactory'
+import { markAsModified } from '../../store/editorStore'
 
 export interface VariableStore {
   // State
@@ -69,6 +70,9 @@ export const useVariableStore = create<VariableStore>((set, get) => ({
       editingVariable: null,
     }))
 
+    // Mark editor as modified (Requirement 1.4)
+    markAsModified()
+
     return newVariable
   },
 
@@ -89,6 +93,9 @@ export const useVariableStore = create<VariableStore>((set, get) => ({
       dialogOpen: false,
       editingVariable: null,
     }))
+
+    // Mark editor as modified (Requirement 1.4)
+    markAsModified()
   },
 
   deleteVariable: (id) => {
@@ -97,6 +104,9 @@ export const useVariableStore = create<VariableStore>((set, get) => ({
       selectedVariableId:
         state.selectedVariableId === id ? null : state.selectedVariableId,
     }))
+
+    // Mark editor as modified (Requirement 1.4)
+    markAsModified()
   },
 
   selectVariable: (id) => {
