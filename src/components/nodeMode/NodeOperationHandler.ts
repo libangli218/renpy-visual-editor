@@ -390,16 +390,17 @@ export class NodeOperationHandler {
       return null
     }
 
-    const success = this.astSynchronizer.addLabel(labelName, ast)
-    if (!success) {
+    const result = this.astSynchronizer.addLabel(labelName, ast)
+    if (!result.success) {
+      // Log error for debugging
+      if (result.error) {
+        console.warn(`Failed to add label "${labelName}": ${result.error.message}`)
+      }
       return null
     }
 
-    // Return the label ID (we need to find it in the AST)
-    const labelNode = ast.statements.find(
-      s => s.type === 'label' && (s as any).name === labelName
-    )
-    return labelNode?.id || null
+    // Return the label ID from the result
+    return result.labelId || null
   }
 
   /**

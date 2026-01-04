@@ -81,6 +81,26 @@ export interface SyncError {
 }
 
 /**
+ * Result of addLabel operation
+ * 
+ * Implements Requirements:
+ * - 2.1: 创建新的 Scene 节点时在 AST 顶层添加新的 label 定义
+ * - 2.4: 创建的标签名与现有标签重复时显示错误提示并阻止创建
+ */
+export interface AddLabelResult {
+  /** Whether the label was successfully added */
+  success: boolean
+  /** The ID of the created label node (if successful) */
+  labelId?: string
+  /** Error information (if failed) */
+  error?: {
+    type: 'duplicate_label' | 'invalid_name' | 'sync_failed'
+    message: string
+    existingLabelId?: string
+  }
+}
+
+/**
  * Options for creating new statements
  */
 export interface CreateStatementOptions {
@@ -776,19 +796,75 @@ export class ASTSynchronizer {
   /**
    * Add a new label to the AST
    * 
+   * Implements Requirements:
+   * - 2.1: 创建新的 Scene 节点时在 AST 顶层添加新的 label 定义
+   * - 2.4: 创建的标签名与现有标签重复时显示错误提示并阻止创建
+   * 
+   * @param name - The label name
+   * @param ast - The AST to modify
+   * @param body - Optional body statements
+   * @returns Result with success status and detailed error information
+   */
+  addLabel(name: string, ast: RenpyScript, body: ASTNode[] = []): AddLabelResult {
+    // Validate label name
+    if (!name || name.trim() === '') {
+      return {
+        success: false,
+        error: {
+          type: 'invalid_name',
+          message: 'Label name cannot be empty',
+        },
+      }
+    }
+
+    // Check for valid label name format (Ren'Py label naming rules)
+    const validLabelPattern = /^[a-zA-Z_][a-zA-Z0-9_]*$/
+    if (!validLabelPattern.test(name)) {
+      return {
+        success: false,
+        error: {
+          type: 'invalid_name',
+          message: `Invalid label name "${name}". Label names must start with a letter or underscore and contain only letters, numbers, and underscores.`,
+        },
+      }
+    }
+
+    // Check if label already exists
+    const labelMap = this.buildLabelMap(ast)
+    const existingLabel = labelMap.get(name)
+    if (existingLabel) {
+      return {
+        success: false,
+        error: {
+          type: 'duplicate_label',
+          message: `Label "${name}" already exists in the script`,
+          existingLabelId: existingLabel.id,
+        },
+      }
+    }
+
+    // Create and add the label
+    const label = this.createLabel(name, body)
+    ast.statements.push(label)
+    
+    return {
+      success: true,
+      labelId: label.id,
+    }
+  }
+
+  /**
+   * Add a new label to the AST (legacy method for backward compatibility)
+   * 
+   * @deprecated Use addLabel() which returns AddLabelResult for detailed error information
    * @param name - The label name
    * @param ast - The AST to modify
    * @param body - Optional body statements
    * @returns Whether addition was successful
    */
-  addLabel(name: string, ast: RenpyScript, body: ASTNode[] = []): boolean {
-    // Check if label already exists
-    const labelMap = this.buildLabelMap(ast)
-    if (labelMap.has(name)) return false
-
-    const label = this.createLabel(name, body)
-    ast.statements.push(label)
-    return true
+  addLabelSimple(name: string, ast: RenpyScript, body: ASTNode[] = []): boolean {
+    const result = this.addLabel(name, ast, body)
+    return result.success
   }
 
   /**

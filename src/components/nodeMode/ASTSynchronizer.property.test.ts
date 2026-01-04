@@ -1623,3 +1623,252 @@ describe('Property 1: Node Insertion Position Correctness', () => {
     )
   })
 })
+
+
+/**
+ * Property 6: Label 唯一性约束
+ * 
+ * Feature: node-creation-persistence
+ * 
+ * For any attempt to create a Scene node with a label name that already exists
+ * in the AST, the operation should be rejected and return an error.
+ * 
+ * Validates: Requirements 2.4
+ */
+describe('Property 6: Label 唯一性约束', () => {
+  // Arbitrary for valid label names
+  const arbitraryLabelName = fc.stringOf(
+    fc.constantFrom(...'abcdefghijklmnopqrstuvwxyz_'),
+    { minLength: 1, maxLength: 15 }
+  ).filter(s => /^[a-z_][a-z0-9_]*$/.test(s))
+
+  // Arbitrary for dialogue text
+  const arbitraryText = fc.stringOf(
+    fc.constantFrom(...'abcdefghijklmnopqrstuvwxyz '),
+    { minLength: 1, maxLength: 50 }
+  )
+
+  /**
+   * Property 6.1: Duplicate label names should be rejected
+   * 
+   * For any valid label name that already exists in the AST,
+   * attempting to add another label with the same name should fail
+   * and return a duplicate_label error.
+   * 
+   * Feature: node-creation-persistence, Property 6: Label 唯一性约束
+   * Validates: Requirements 2.4
+   */
+  it('should reject duplicate label names with detailed error', () => {
+    fc.assert(
+      fc.property(
+        arbitraryLabelName,
+        arbitraryText,
+        (labelName, dialogueText) => {
+          const synchronizer = new ASTSynchronizer()
+
+          // Create an AST with an existing label
+          const existingLabel = createLabel(labelName, [
+            createDialogue(`d-${labelName}`, null, dialogueText)
+          ])
+          const ast = createScript([existingLabel])
+
+          // Attempt to add a label with the same name
+          const result = synchronizer.addLabel(labelName, ast)
+
+          // Should fail with duplicate_label error
+          expect(result.success).toBe(false)
+          expect(result.error).toBeDefined()
+          expect(result.error?.type).toBe('duplicate_label')
+          expect(result.error?.message).toContain(labelName)
+          expect(result.error?.existingLabelId).toBe(existingLabel.id)
+
+          // AST should not be modified
+          expect(ast.statements.length).toBe(1)
+
+          return true
+        }
+      ),
+      { numRuns: 100 }
+    )
+  })
+
+  /**
+   * Property 6.2: Unique label names should be accepted
+   * 
+   * For any valid label name that does not exist in the AST,
+   * adding a new label should succeed and return the new label ID.
+   * 
+   * Feature: node-creation-persistence, Property 6: Label 唯一性约束
+   * Validates: Requirements 2.1, 2.4
+   */
+  it('should accept unique label names and return label ID', () => {
+    fc.assert(
+      fc.property(
+        arbitraryLabelName,
+        arbitraryLabelName,
+        (existingLabelName, newLabelName) => {
+          // Skip if names are the same
+          if (existingLabelName === newLabelName) return true
+
+          const synchronizer = new ASTSynchronizer()
+
+          // Create an AST with an existing label
+          const existingLabel = createLabel(existingLabelName, [])
+          const ast = createScript([existingLabel])
+
+          // Add a new label with a different name
+          const result = synchronizer.addLabel(newLabelName, ast)
+
+          // Should succeed
+          expect(result.success).toBe(true)
+          expect(result.labelId).toBeDefined()
+          expect(result.error).toBeUndefined()
+
+          // AST should have two labels now
+          expect(ast.statements.length).toBe(2)
+
+          // Verify the new label exists
+          const newLabel = ast.statements.find(
+            s => s.type === 'label' && (s as LabelNode).name === newLabelName
+          ) as LabelNode
+          expect(newLabel).toBeDefined()
+          expect(newLabel.id).toBe(result.labelId)
+
+          return true
+        }
+      ),
+      { numRuns: 100 }
+    )
+  })
+
+  /**
+   * Property 6.3: Multiple unique labels can be added sequentially
+   * 
+   * For any array of unique label names, all labels should be
+   * successfully added to the AST.
+   * 
+   * Feature: node-creation-persistence, Property 6: Label 唯一性约束
+   * Validates: Requirements 2.1, 2.4
+   */
+  it('should allow adding multiple unique labels sequentially', () => {
+    fc.assert(
+      fc.property(
+        fc.array(arbitraryLabelName, { minLength: 2, maxLength: 5 }),
+        (labelNames) => {
+          // Ensure all names are unique
+          const uniqueNames = [...new Set(labelNames)]
+          if (uniqueNames.length < 2) return true
+
+          const synchronizer = new ASTSynchronizer()
+          const ast = createScript([])
+
+          // Add all labels
+          const results = uniqueNames.map(name => ({
+            name,
+            result: synchronizer.addLabel(name, ast)
+          }))
+
+          // All should succeed
+          for (const { name, result } of results) {
+            expect(result.success).toBe(true)
+            expect(result.labelId).toBeDefined()
+            expect(result.error).toBeUndefined()
+          }
+
+          // AST should have all labels
+          expect(ast.statements.length).toBe(uniqueNames.length)
+
+          // All labels should be present
+          for (const name of uniqueNames) {
+            const label = ast.statements.find(
+              s => s.type === 'label' && (s as LabelNode).name === name
+            )
+            expect(label).toBeDefined()
+          }
+
+          return true
+        }
+      ),
+      { numRuns: 100 }
+    )
+  })
+
+  /**
+   * Property 6.4: Invalid label names should be rejected
+   * 
+   * For any invalid label name (empty, starts with number, contains special chars),
+   * the operation should fail with an invalid_name error.
+   * 
+   * Feature: node-creation-persistence, Property 6: Label 唯一性约束
+   * Validates: Requirements 2.4
+   */
+  it('should reject invalid label names with detailed error', () => {
+    fc.assert(
+      fc.property(
+        fc.oneof(
+          fc.constant(''),
+          fc.constant('   '),
+          fc.stringOf(fc.constantFrom(...'0123456789'), { minLength: 1, maxLength: 5 })
+            .map(s => s + 'label'), // Starts with number
+          fc.stringOf(fc.constantFrom(...'!@#$%^&*()'), { minLength: 1, maxLength: 5 }) // Special chars
+        ),
+        (invalidName) => {
+          const synchronizer = new ASTSynchronizer()
+          const ast = createScript([])
+
+          // Attempt to add a label with invalid name
+          const result = synchronizer.addLabel(invalidName, ast)
+
+          // Should fail with invalid_name error
+          expect(result.success).toBe(false)
+          expect(result.error).toBeDefined()
+          expect(result.error?.type).toBe('invalid_name')
+
+          // AST should not be modified
+          expect(ast.statements.length).toBe(0)
+
+          return true
+        }
+      ),
+      { numRuns: 100 }
+    )
+  })
+
+  /**
+   * Property 6.5: Adding duplicate after successful add should fail
+   * 
+   * For any label name, after successfully adding it once,
+   * attempting to add it again should fail with duplicate_label error.
+   * 
+   * Feature: node-creation-persistence, Property 6: Label 唯一性约束
+   * Validates: Requirements 2.4
+   */
+  it('should reject second add of same label name', () => {
+    fc.assert(
+      fc.property(
+        arbitraryLabelName,
+        (labelName) => {
+          const synchronizer = new ASTSynchronizer()
+          const ast = createScript([])
+
+          // First add should succeed
+          const firstResult = synchronizer.addLabel(labelName, ast)
+          expect(firstResult.success).toBe(true)
+          expect(firstResult.labelId).toBeDefined()
+
+          // Second add should fail
+          const secondResult = synchronizer.addLabel(labelName, ast)
+          expect(secondResult.success).toBe(false)
+          expect(secondResult.error?.type).toBe('duplicate_label')
+          expect(secondResult.error?.existingLabelId).toBe(firstResult.labelId)
+
+          // AST should still have only one label
+          expect(ast.statements.length).toBe(1)
+
+          return true
+        }
+      ),
+      { numRuns: 100 }
+    )
+  })
+})
