@@ -657,6 +657,287 @@ export class NodeOperationHandler {
   updatePendingNodePosition(nodeId: string, position: XYPosition): boolean {
     return this.pendingNodePool.updatePosition(nodeId, position)
   }
+
+  /**
+   * Remove a connection between two nodes and sync to AST
+   * 
+   * Implements Requirement 5.3: 删除连接时移除对应的 jump/call 语句
+   * 
+   * When a connection is removed:
+   * - If the connection represents a jump/call statement, remove it from the AST
+   * - If the connection is from a menu choice to a scene, remove the jump from the choice body
+   * - If the connection is from a condition branch to a scene, remove the jump from the branch body
+   * 
+   * @param sourceId - The source node ID
+   * @param targetId - The target node ID
+   * @param sourceHandle - Optional source handle (for menu choices, condition branches)
+   * @param graph - The current flow graph state
+   * @param ast - The current AST
+   * @returns Result of the remove connection operation
+   */
+  removeConnection(
+    sourceId: string,
+    targetId: string,
+    sourceHandle: string | undefined,
+    graph: FlowGraph,
+    ast: RenpyScript
+  ): RemoveConnectionResult {
+    const sourceNode = graph.nodes.find(n => n.id === sourceId)
+    const targetNode = graph.nodes.find(n => n.id === targetId)
+
+    if (!sourceNode) {
+      return { success: false, error: 'Source node not found' }
+    }
+
+    // Case 1: Connection from menu choice to scene - remove jump from choice body
+    if (sourceNode.type === 'menu' && targetNode?.type === 'scene' && sourceHandle) {
+      return this.removeJumpFromMenuChoice(sourceNode, targetNode, sourceHandle, ast)
+    }
+
+    // Case 2: Connection from condition branch to scene - remove jump from branch body
+    if (sourceNode.type === 'condition' && targetNode?.type === 'scene' && sourceHandle) {
+      return this.removeJumpFromConditionBranch(sourceNode, targetNode, sourceHandle, ast)
+    }
+
+    // Case 3: Connection from jump node to scene - remove the jump statement
+    if (sourceNode.type === 'jump' && targetNode?.type === 'scene') {
+      return this.removeJumpStatement(sourceNode, targetNode, graph, ast)
+    }
+
+    // Case 4: Connection from call node to scene - remove the call statement
+    if (sourceNode.type === 'call' && targetNode?.type === 'scene') {
+      return this.removeCallStatement(sourceNode, targetNode, graph, ast)
+    }
+
+    // Case 5: Connection from dialogue-block or other node to scene
+    // This might represent an implicit flow, check if there's a jump at the end
+    if (targetNode?.type === 'scene') {
+      return this.removeImplicitJumpToScene(sourceNode, targetNode, graph, ast)
+    }
+
+    // For other connection types, just return success (no AST changes needed)
+    return { success: true }
+  }
+
+  /**
+   * Remove a jump statement from a menu choice body
+   */
+  private removeJumpFromMenuChoice(
+    menuNode: FlowNode,
+    targetSceneNode: FlowNode,
+    sourceHandle: string,
+    ast: RenpyScript
+  ): RemoveConnectionResult {
+    const choiceIndex = this.parseChoiceIndex(sourceHandle)
+    if (choiceIndex === null) {
+      return { success: false, error: 'Invalid choice handle' }
+    }
+
+    const targetLabel = targetSceneNode.data.label
+    if (!targetLabel) {
+      return { success: false, error: 'Target scene has no label' }
+    }
+
+    // Find the menu's AST node
+    const menuAstNode = menuNode.data.astNodes?.find(n => n.type === 'menu')
+    if (!menuAstNode) {
+      return { success: false, error: 'Menu AST node not found' }
+    }
+
+    // Remove the jump from the choice body
+    const success = this.astSynchronizer.removeJumpFromChoice(
+      menuAstNode.id,
+      choiceIndex,
+      targetLabel,
+      ast
+    )
+
+    if (success) {
+      return { success: true, removedStatementId: undefined }
+    }
+
+    return { success: false, error: 'Failed to remove jump from menu choice' }
+  }
+
+  /**
+   * Remove a jump statement from a condition branch body
+   */
+  private removeJumpFromConditionBranch(
+    conditionNode: FlowNode,
+    targetSceneNode: FlowNode,
+    sourceHandle: string,
+    ast: RenpyScript
+  ): RemoveConnectionResult {
+    const branchIndex = this.parseBranchIndex(sourceHandle)
+    if (branchIndex === null) {
+      return { success: false, error: 'Invalid branch handle' }
+    }
+
+    const targetLabel = targetSceneNode.data.label
+    if (!targetLabel) {
+      return { success: false, error: 'Target scene has no label' }
+    }
+
+    // Find the condition's AST node (if node)
+    const ifAstNode = conditionNode.data.astNodes?.find(n => n.type === 'if')
+    if (!ifAstNode) {
+      return { success: false, error: 'Condition AST node not found' }
+    }
+
+    // Remove the jump from the branch body
+    const success = this.astSynchronizer.removeJumpFromConditionBranch(
+      ifAstNode.id,
+      branchIndex,
+      targetLabel,
+      ast
+    )
+
+    if (success) {
+      return { success: true, removedStatementId: undefined }
+    }
+
+    return { success: false, error: 'Failed to remove jump from condition branch' }
+  }
+
+  /**
+   * Remove a jump statement node from the AST
+   */
+  private removeJumpStatement(
+    jumpNode: FlowNode,
+    targetSceneNode: FlowNode,
+    graph: FlowGraph,
+    ast: RenpyScript
+  ): RemoveConnectionResult {
+    const targetLabel = targetSceneNode.data.label
+    if (!targetLabel) {
+      return { success: false, error: 'Target scene has no label' }
+    }
+
+    // Find the label that contains this jump node
+    const labelName = this.connectionResolver.resolveNodeLabel(
+      jumpNode.id,
+      graph.edges,
+      graph.nodes
+    )
+
+    if (!labelName) {
+      return { success: false, error: 'Could not determine label for jump node' }
+    }
+
+    // Remove the jump statement from the label
+    const success = this.astSynchronizer.removeFlowStatement(
+      labelName,
+      targetLabel,
+      ast,
+      'jump'
+    )
+
+    if (success) {
+      return { success: true, removedStatementId: jumpNode.id }
+    }
+
+    return { success: false, error: 'Failed to remove jump statement' }
+  }
+
+  /**
+   * Remove a call statement node from the AST
+   */
+  private removeCallStatement(
+    callNode: FlowNode,
+    targetSceneNode: FlowNode,
+    graph: FlowGraph,
+    ast: RenpyScript
+  ): RemoveConnectionResult {
+    const targetLabel = targetSceneNode.data.label
+    if (!targetLabel) {
+      return { success: false, error: 'Target scene has no label' }
+    }
+
+    // Find the label that contains this call node
+    const labelName = this.connectionResolver.resolveNodeLabel(
+      callNode.id,
+      graph.edges,
+      graph.nodes
+    )
+
+    if (!labelName) {
+      return { success: false, error: 'Could not determine label for call node' }
+    }
+
+    // Remove the call statement from the label
+    const success = this.astSynchronizer.removeFlowStatement(
+      labelName,
+      targetLabel,
+      ast,
+      'call'
+    )
+
+    if (success) {
+      return { success: true, removedStatementId: callNode.id }
+    }
+
+    return { success: false, error: 'Failed to remove call statement' }
+  }
+
+  /**
+   * Remove an implicit jump to a scene (e.g., from dialogue block end)
+   */
+  private removeImplicitJumpToScene(
+    sourceNode: FlowNode,
+    targetSceneNode: FlowNode,
+    graph: FlowGraph,
+    ast: RenpyScript
+  ): RemoveConnectionResult {
+    const targetLabel = targetSceneNode.data.label
+    if (!targetLabel) {
+      return { success: false, error: 'Target scene has no label' }
+    }
+
+    // Find the label that contains the source node
+    const labelName = this.connectionResolver.resolveNodeLabel(
+      sourceNode.id,
+      graph.edges,
+      graph.nodes
+    )
+
+    if (!labelName) {
+      // Source node might not be connected to any label yet
+      return { success: true }
+    }
+
+    // Try to remove a jump statement targeting the scene
+    // This handles cases where a jump was implicitly created
+    const success = this.astSynchronizer.removeFlowStatement(
+      labelName,
+      targetLabel,
+      ast,
+      'jump'
+    )
+
+    // Even if no jump was found, consider it a success
+    // (the connection might not have had an AST representation)
+    return { success: true, removedStatementId: success ? undefined : undefined }
+  }
+
+  /**
+   * Parse branch index from source handle (e.g., "branch-0" -> 0)
+   */
+  private parseBranchIndex(sourceHandle: string): number | null {
+    const match = sourceHandle.match(/^branch-(\d+)$/)
+    if (match) {
+      return parseInt(match[1], 10)
+    }
+    return null
+  }
+}
+
+/**
+ * Result of a remove connection operation
+ */
+export interface RemoveConnectionResult {
+  success: boolean
+  removedStatementId?: string
+  error?: string
 }
 
 // Export singleton instance

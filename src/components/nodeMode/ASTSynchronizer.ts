@@ -1532,6 +1532,94 @@ export class ASTSynchronizer {
   }
 
   /**
+   * Remove a jump statement from a menu choice body
+   * 
+   * Implements Requirements:
+   * - 5.3: 删除连接时移除对应的 jump/call 语句
+   * 
+   * @param menuNodeId - The menu node ID
+   * @param choiceIndex - The index of the choice to remove from
+   * @param targetLabel - The jump target label to remove
+   * @param ast - The AST to modify
+   * @returns Whether removal was successful
+   */
+  removeJumpFromChoice(
+    menuNodeId: string,
+    choiceIndex: number,
+    targetLabel: string,
+    ast: RenpyScript
+  ): boolean {
+    // Find the menu node in the AST
+    const menuNode = this.findNodeById(ast, menuNodeId) as ASTMenuNode | null
+    
+    if (!menuNode || menuNode.type !== 'menu') {
+      return false
+    }
+
+    // Check if choice index is valid
+    if (choiceIndex < 0 || choiceIndex >= menuNode.choices.length) {
+      return false
+    }
+
+    // Find and remove the jump statement targeting the specified label
+    const choice = menuNode.choices[choiceIndex]
+    const jumpIndex = choice.body.findIndex(
+      n => n.type === 'jump' && (n as ASTJumpNode).target === targetLabel
+    )
+    
+    if (jumpIndex === -1) {
+      return false
+    }
+
+    choice.body.splice(jumpIndex, 1)
+    return true
+  }
+
+  /**
+   * Remove a jump statement from a condition branch body
+   * 
+   * Implements Requirements:
+   * - 5.3: 删除连接时移除对应的 jump/call 语句
+   * 
+   * @param ifNodeId - The if node ID
+   * @param branchIndex - The index of the branch to remove from
+   * @param targetLabel - The jump target label to remove
+   * @param ast - The AST to modify
+   * @returns Whether removal was successful
+   */
+  removeJumpFromConditionBranch(
+    ifNodeId: string,
+    branchIndex: number,
+    targetLabel: string,
+    ast: RenpyScript
+  ): boolean {
+    // Find the if node in the AST
+    const ifNode = this.findNodeById(ast, ifNodeId) as ASTIfNode | null
+    
+    if (!ifNode || ifNode.type !== 'if') {
+      return false
+    }
+
+    // Check if branch index is valid
+    if (branchIndex < 0 || branchIndex >= ifNode.branches.length) {
+      return false
+    }
+
+    // Find and remove the jump statement targeting the specified label
+    const branch = ifNode.branches[branchIndex]
+    const jumpIndex = branch.body.findIndex(
+      n => n.type === 'jump' && (n as ASTJumpNode).target === targetLabel
+    )
+    
+    if (jumpIndex === -1) {
+      return false
+    }
+
+    branch.body.splice(jumpIndex, 1)
+    return true
+  }
+
+  /**
    * Find the index of a node in a body array by ID
    */
   private findNodeIndexInBody(body: ASTNode[], nodeId: string): number {
