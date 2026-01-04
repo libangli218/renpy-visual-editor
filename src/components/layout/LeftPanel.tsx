@@ -8,6 +8,7 @@ import {
   CharacterFormData,
 } from '../character'
 import { NewProjectWizard, ProjectConfig } from '../project'
+import { findDefaultFile } from '../nodeMode/FileClassifier'
 
 /**
  * LeftPanel component - Project browser panel
@@ -92,10 +93,14 @@ export const LeftPanel: React.FC = () => {
       const result = await projectManager.openProject(selectedPath)
       if (result.success && result.project) {
         setProjectPath(result.project.path)
-        // Set the first script's AST if available
-        const scripts = Array.from(result.project.scripts.values())
-        if (scripts.length > 0) {
-          setAst(scripts[0])
+        // Find the best default file to open (prioritizes script.rpy, then story scripts)
+        // Implements Requirements 1.4, 1.5
+        const defaultFilePath = findDefaultFile(result.project.scripts)
+        if (defaultFilePath) {
+          const defaultScript = result.project.scripts.get(defaultFilePath)
+          if (defaultScript) {
+            setAst(defaultScript)
+          }
         }
       } else {
         setError(result.error || 'Failed to open project')
@@ -141,10 +146,14 @@ export const LeftPanel: React.FC = () => {
 
       if (result.success && result.project) {
         setProjectPath(result.project.path)
-        // Set the first script's AST if available
-        const scripts = Array.from(result.project.scripts.values())
-        if (scripts.length > 0) {
-          setAst(scripts[0])
+        // Find the best default file to open (prioritizes script.rpy, then story scripts)
+        // Implements Requirements 1.4, 1.5
+        const defaultFilePath = findDefaultFile(result.project.scripts)
+        if (defaultFilePath) {
+          const defaultScript = result.project.scripts.get(defaultFilePath)
+          if (defaultScript) {
+            setAst(defaultScript)
+          }
         }
       } else {
         setError(result.error || 'Failed to create project')

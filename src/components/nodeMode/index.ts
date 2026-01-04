@@ -13,4 +13,11 @@ export {
   edgesToAstFlow,
   detectCycles,
 } from './connectionUtils'
+export {
+  FileClassifier,
+  fileClassifier,
+  findDefaultFile,
+  type FileClassification,
+  type SingleFileClassification,
+} from './FileClassifier'
 export * from './nodes'
