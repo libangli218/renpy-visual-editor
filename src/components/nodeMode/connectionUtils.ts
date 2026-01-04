@@ -290,3 +290,72 @@ export function detectCycles(nodes: Node[], edges: Edge[]): string[][] {
 
   return cycles
 }
+
+/**
+ * Find disconnected nodes - nodes not reachable from any scene (label) node
+ * Implements Requirement 9.5: Dim nodes that are not connected to the main flow
+ * 
+ * @param nodes - All nodes in the graph
+ * @param edges - All edges in the graph
+ * @returns Set of node IDs that are disconnected from the main flow
+ */
+export function findDisconnectedNodes(nodes: Node[], edges: Edge[]): Set<string> {
+  const connectedNodes = new Set<string>()
+  
+  // Find all scene (label) nodes - these are entry points
+  const sceneNodes = nodes.filter((n) => n.type === 'scene')
+  
+  // If no scene nodes, all nodes are considered disconnected
+  if (sceneNodes.length === 0) {
+    return new Set(nodes.map(n => n.id))
+  }
+  
+  // Build adjacency list for bidirectional traversal
+  const adjacencyList = new Map<string, Set<string>>()
+  
+  // Initialize adjacency list
+  nodes.forEach(node => {
+    adjacencyList.set(node.id, new Set())
+  })
+  
+  // Add edges (both directions for reachability)
+  edges.forEach(edge => {
+    // Forward direction (source -> target)
+    adjacencyList.get(edge.source)?.add(edge.target)
+    // Backward direction (target -> source) - for nodes that flow INTO scene nodes
+    adjacencyList.get(edge.target)?.add(edge.source)
+  })
+  
+  // BFS from all scene nodes
+  const queue: string[] = sceneNodes.map(n => n.id)
+  
+  while (queue.length > 0) {
+    const currentId = queue.shift()!
+    
+    if (connectedNodes.has(currentId)) {
+      continue
+    }
+    
+    connectedNodes.add(currentId)
+    
+    // Visit all connected nodes
+    const neighbors = adjacencyList.get(currentId)
+    if (neighbors) {
+      neighbors.forEach(neighborId => {
+        if (!connectedNodes.has(neighborId)) {
+          queue.push(neighborId)
+        }
+      })
+    }
+  }
+  
+  // Return nodes that are NOT connected
+  const disconnectedNodes = new Set<string>()
+  nodes.forEach(node => {
+    if (!connectedNodes.has(node.id)) {
+      disconnectedNodes.add(node.id)
+    }
+  })
+  
+  return disconnectedNodes
+}

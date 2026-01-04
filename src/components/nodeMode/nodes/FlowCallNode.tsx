@@ -12,15 +12,19 @@ import './FlowNodes.css'
  * Implements Requirements:
  * - 5.2: Draw Flow_Edge from call statements to their target Scene_Node with dashed line
  * - 9.1: Use teal color scheme for Call nodes
+ * - 9.4: Highlight selected node with glow effect
  */
 export const FlowCallNode: React.FC<NodeProps> = memo((props) => {
   const { selected } = props
   const data = props.data as unknown as FlowNodeData
+  
+  // Get className from props (includes 'disconnected' if applicable)
+  const nodeClassName = (props as unknown as { className?: string }).className || ''
 
   const target = data.target || 'unknown'
 
   return (
-    <div className={`flow-node flow-call-node ${selected ? 'selected' : ''}`}>
+    <div className={`flow-node flow-call-node ${selected ? 'selected' : ''} ${nodeClassName}`}>
       {/* Input port */}
       <Handle
         type="target"

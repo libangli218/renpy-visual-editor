@@ -8,17 +8,38 @@
   border-radius: 10px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
   overflow: hidden;
-  transition: box-shadow 0.2s ease, border-color 0.2s ease, transform 0.1s ease;
+  transition: box-shadow 0.2s ease, border-color 0.2s ease, transform 0.1s ease, opacity 0.3s ease;
 }
 
 .flow-node:hover {
   box-shadow: 0 6px 16px rgba(0, 0, 0, 0.25);
+  border-color: var(--node-color, #313244);
 }
 
 .flow-node.selected {
   box-shadow: 0 0 0 3px var(--node-glow-color, rgba(99, 102, 241, 0.4)),
+              0 0 20px var(--node-glow-color, rgba(99, 102, 241, 0.3)),
               0 6px 20px rgba(0, 0, 0, 0.3);
   transform: translateY(-1px);
+  border-color: var(--node-color, #6366f1);
+}
+
+/* Disconnected node styling - Implements Requirement 9.5 */
+.flow-node.disconnected {
+  opacity: 0.5;
+  filter: grayscale(30%);
+}
+
+.flow-node.disconnected:hover {
+  opacity: 0.75;
+  filter: grayscale(15%);
+}
+
+.flow-node.disconnected .flow-node-header::after {
+  content: '⚠';
+  margin-left: auto;
+  font-size: 0.75rem;
+  opacity: 0.7;
 }
 
 /* Flow Node Header */
@@ -29,15 +50,35 @@
   gap: 0.5rem;
   font-weight: 600;
   color: white;
+  position: relative;
 }
 
 .flow-node-icon {
   font-size: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  background-color: rgba(255, 255, 255, 0.15);
+  border-radius: 6px;
 }
 
 .flow-node-label {
   font-size: 0.875rem;
   letter-spacing: 0.02em;
+  flex: 1;
+}
+
+/* Node type indicator badge */
+.flow-node-type-badge {
+  font-size: 0.5625rem;
+  padding: 0.125rem 0.375rem;
+  background-color: rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 500;
 }
 
 /* Flow Node Content */
@@ -66,7 +107,7 @@
   width: 14px !important;
   height: 14px !important;
   border: 2px solid var(--bg-secondary, #1e1e2e) !important;
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
 }
 
 .flow-handle:hover {
@@ -82,6 +123,20 @@
   bottom: -7px !important;
 }
 
+/* Handle pulse animation for selected nodes */
+.flow-node.selected .flow-handle {
+  animation: handle-pulse 2s ease-in-out infinite;
+}
+
+@keyframes handle-pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 var(--handle-color, rgba(99, 102, 241, 0.4));
+  }
+  50% {
+    box-shadow: 0 0 8px 2px var(--handle-color, rgba(99, 102, 241, 0.6));
+  }
+}
+
 /* ==================== */
 /* Scene Node Styles    */
 /* ==================== */
@@ -92,12 +147,34 @@
   --handle-color: rgba(99, 102, 241, 0.6);
 }
 
-.flow-scene-node.selected {
+.flow-scene-node:hover {
   border-color: #6366f1;
+}
+
+.flow-scene-node.selected {
+  border-color: #818cf8;
 }
 
 .flow-scene-header {
   background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
+  position: relative;
+  overflow: hidden;
+}
+
+/* Subtle shine effect on header */
+.flow-scene-header::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+  transition: left 0.5s ease;
+}
+
+.flow-scene-node:hover .flow-scene-header::before {
+  left: 100%;
 }
 
 .flow-scene-node .flow-handle {
@@ -117,6 +194,15 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+}
+
+.flow-preview-line::before {
+  content: '›';
+  color: var(--node-color, #6366f1);
+  font-weight: bold;
 }
 
 .flow-empty-content {
@@ -163,12 +249,33 @@
   --handle-color: rgba(34, 197, 94, 0.6);
 }
 
-.flow-dialogue-block-node.selected {
+.flow-dialogue-block-node:hover {
   border-color: #22c55e;
+}
+
+.flow-dialogue-block-node.selected {
+  border-color: #4ade80;
 }
 
 .flow-dialogue-header {
   background: linear-gradient(135deg, #16a34a 0%, #22c55e 100%);
+  position: relative;
+  overflow: hidden;
+}
+
+.flow-dialogue-header::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+  transition: left 0.5s ease;
+}
+
+.flow-dialogue-block-node:hover .flow-dialogue-header::before {
+  left: 100%;
 }
 
 .flow-dialogue-block-node .flow-handle {
@@ -300,12 +407,33 @@
   --handle-color: rgba(245, 158, 11, 0.6);
 }
 
-.flow-menu-node.selected {
+.flow-menu-node:hover {
   border-color: #f59e0b;
+}
+
+.flow-menu-node.selected {
+  border-color: #fbbf24;
 }
 
 .flow-menu-header {
   background: linear-gradient(135deg, #d97706 0%, #f59e0b 100%);
+  position: relative;
+  overflow: hidden;
+}
+
+.flow-menu-header::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+  transition: left 0.5s ease;
+}
+
+.flow-menu-node:hover .flow-menu-header::before {
+  left: 100%;
 }
 
 .flow-menu-node .flow-handle {
@@ -400,12 +528,33 @@
   min-width: 180px;
 }
 
-.flow-jump-node.selected {
+.flow-jump-node:hover {
   border-color: #ec4899;
+}
+
+.flow-jump-node.selected {
+  border-color: #f472b6;
 }
 
 .flow-jump-header {
   background: linear-gradient(135deg, #db2777 0%, #ec4899 100%);
+  position: relative;
+  overflow: hidden;
+}
+
+.flow-jump-header::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+  transition: left 0.5s ease;
+}
+
+.flow-jump-node:hover .flow-jump-header::before {
+  left: 100%;
 }
 
 .flow-jump-node .flow-handle {
@@ -441,12 +590,33 @@
   min-width: 180px;
 }
 
-.flow-call-node.selected {
+.flow-call-node:hover {
   border-color: #14b8a6;
+}
+
+.flow-call-node.selected {
+  border-color: #2dd4bf;
 }
 
 .flow-call-header {
   background: linear-gradient(135deg, #0d9488 0%, #14b8a6 100%);
+  position: relative;
+  overflow: hidden;
+}
+
+.flow-call-header::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+  transition: left 0.5s ease;
+}
+
+.flow-call-node:hover .flow-call-header::before {
+  left: 100%;
 }
 
 .flow-call-node .flow-handle {
@@ -481,12 +651,33 @@
   --handle-color: rgba(234, 179, 8, 0.6);
 }
 
-.flow-condition-node.selected {
+.flow-condition-node:hover {
   border-color: #eab308;
+}
+
+.flow-condition-node.selected {
+  border-color: #facc15;
 }
 
 .flow-condition-header {
   background: linear-gradient(135deg, #ca8a04 0%, #eab308 100%);
+  position: relative;
+  overflow: hidden;
+}
+
+.flow-condition-header::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+  transition: left 0.5s ease;
+}
+
+.flow-condition-node:hover .flow-condition-header::before {
+  left: 100%;
 }
 
 .flow-condition-node .flow-handle {
@@ -580,12 +771,33 @@
   min-width: 140px;
 }
 
-.flow-return-node.selected {
+.flow-return-node:hover {
   border-color: #f97316;
+}
+
+.flow-return-node.selected {
+  border-color: #fb923c;
 }
 
 .flow-return-header {
   background: linear-gradient(135deg, #ea580c 0%, #f97316 100%);
+  position: relative;
+  overflow: hidden;
+}
+
+.flow-return-header::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+  transition: left 0.5s ease;
+}
+
+.flow-return-node:hover .flow-return-header::before {
+  left: 100%;
 }
 
 .flow-return-node .flow-handle {
@@ -608,4 +820,26 @@
 .flow-return-text {
   font-size: 0.75rem;
   color: var(--text-secondary, #a6adc8);
+}
+
+/* ======================== */
+/* Animation Keyframes      */
+/* ======================== */
+
+/* Glow animation for selected nodes */
+@keyframes node-glow {
+  0%, 100% {
+    box-shadow: 0 0 0 3px var(--node-glow-color, rgba(99, 102, 241, 0.4)),
+                0 0 15px var(--node-glow-color, rgba(99, 102, 241, 0.2)),
+                0 6px 20px rgba(0, 0, 0, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 0 3px var(--node-glow-color, rgba(99, 102, 241, 0.5)),
+                0 0 25px var(--node-glow-color, rgba(99, 102, 241, 0.4)),
+                0 6px 20px rgba(0, 0, 0, 0.3);
+  }
+}
+
+.flow-node.selected {
+  animation: node-glow 2s ease-in-out infinite;
 }

@@ -15,11 +15,15 @@ import './FlowNodes.css'
  * - 3.3: Show count of merged dialogues
  * - 3.6: Support expand to show all dialogues (double-click)
  * - 9.2: Display icons for visual commands
+ * - 9.4: Highlight selected node with glow effect
  */
 export const FlowDialogueBlockNode: React.FC<NodeProps> = memo((props) => {
   const { selected } = props
   const data = props.data as unknown as FlowNodeData
   const [expanded, setExpanded] = useState(data.expanded || false)
+  
+  // Get className from props (includes 'disconnected' if applicable)
+  const nodeClassName = (props as unknown as { className?: string }).className || ''
 
   const dialogues = data.dialogues || []
   const visualCommands = data.visualCommands || []
@@ -33,7 +37,7 @@ export const FlowDialogueBlockNode: React.FC<NodeProps> = memo((props) => {
   }, [])
 
   return (
-    <div className={`flow-node flow-dialogue-block-node ${selected ? 'selected' : ''}`}>
+    <div className={`flow-node flow-dialogue-block-node ${selected ? 'selected' : ''} ${nodeClassName}`}>
       {/* Input port */}
       <Handle
         type="target"

@@ -26,7 +26,7 @@ import { useEditorStore } from '../../store/editorStore'
 import { flowNodeTypesSync } from './nodes/flowNodes'
 import { FlowGraphBuilder, FlowEdgeType } from './FlowGraphBuilder'
 import { FileClassifier, FileClassification } from './FileClassifier'
-import { isValidConnection, createEdgeId, handleNodeDeletion } from './connectionUtils'
+import { isValidConnection, createEdgeId, handleNodeDeletion, findDisconnectedNodes } from './connectionUtils'
 import { projectManager } from '../../project/ProjectManager'
 import { RenpyScript } from '../../types/ast'
 import { NodeDetailPanel } from './NodeDetailPanel'
@@ -333,6 +333,19 @@ const NodeModeEditorInner: React.FC = () => {
     setNodes(initialNodes)
     setEdges(initialEdges)
   }, [initialNodes, initialEdges, setNodes, setEdges])
+
+  // Detect disconnected nodes - Implements Requirement 9.5
+  const disconnectedNodeIds = useMemo(() => {
+    return findDisconnectedNodes(nodes, edges)
+  }, [nodes, edges])
+
+  // Add disconnected class to nodes
+  const nodesWithDisconnectedClass = useMemo(() => {
+    return nodes.map(node => ({
+      ...node,
+      className: disconnectedNodeIds.has(node.id) ? 'disconnected' : '',
+    }))
+  }, [nodes, disconnectedNodeIds])
 
   // Validate connections before allowing them
   // Implements Requirements 6.1, 6.2: Connection validation
@@ -676,7 +689,7 @@ const NodeModeEditorInner: React.FC = () => {
       data-testid="node-mode-editor"
     >
       <ReactFlow
-        nodes={nodes}
+        nodes={nodesWithDisconnectedClass}
         edges={edges}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
@@ -762,6 +775,12 @@ const NodeModeEditorInner: React.FC = () => {
             {nodes.length} nodes • {edges.length} connections
             {selectedNodesCount > 1 && (
               <span className="selection-count"> • {selectedNodesCount} selected</span>
+            )}
+            {disconnectedNodeIds.size > 0 && (
+              <span className="disconnected-indicator">
+                <span className="warning-icon">⚠</span>
+                {disconnectedNodeIds.size} disconnected
+              </span>
             )}
           </div>
         </Panel>

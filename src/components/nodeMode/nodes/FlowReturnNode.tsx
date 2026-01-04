@@ -7,12 +7,19 @@ import './FlowNodes.css'
  * 
  * Represents a return statement that ends the current label execution.
  * Uses orange color scheme as per design requirements.
+ * 
+ * Implements Requirements:
+ * - 9.1: Use orange color scheme for Return nodes
+ * - 9.4: Highlight selected node with glow effect
  */
 export const FlowReturnNode: React.FC<NodeProps> = memo((props) => {
   const { selected } = props
+  
+  // Get className from props (includes 'disconnected' if applicable)
+  const nodeClassName = (props as unknown as { className?: string }).className || ''
 
   return (
-    <div className={`flow-node flow-return-node ${selected ? 'selected' : ''}`}>
+    <div className={`flow-node flow-return-node ${selected ? 'selected' : ''} ${nodeClassName}`}>
       {/* Input port */}
       <Handle
         type="target"

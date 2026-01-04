@@ -15,16 +15,20 @@ import './FlowNodes.css'
  * - 2.4: Have one input Port for incoming flow
  * - 2.5: Have output Port based on exit points
  * - 9.1: Use indigo color scheme
+ * - 9.4: Highlight selected node with glow effect
  */
 export const FlowSceneNode: React.FC<NodeProps> = memo((props) => {
   const { selected } = props
   const data = props.data as unknown as FlowNodeData
+  
+  // Get className from props (includes 'disconnected' if applicable)
+  const nodeClassName = (props as unknown as { className?: string }).className || ''
 
   // Parse preview lines
   const previewLines = data.preview?.split('\n') || []
 
   return (
-    <div className={`flow-node flow-scene-node ${selected ? 'selected' : ''}`}>
+    <div className={`flow-node flow-scene-node ${selected ? 'selected' : ''} ${nodeClassName}`}>
       {/* Input port */}
       {data.hasIncoming !== false && (
         <Handle

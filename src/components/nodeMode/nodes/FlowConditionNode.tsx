@@ -13,15 +13,19 @@ import './FlowNodes.css'
  * - 4.4: Create Branch_Node for each if statement with multiple branches
  * - 4.5: Have output Port for each condition (if, elif, else)
  * - 9.1: Use yellow color scheme
+ * - 9.4: Highlight selected node with glow effect
  */
 export const FlowConditionNode: React.FC<NodeProps> = memo((props) => {
   const { selected } = props
   const data = props.data as unknown as FlowNodeData
+  
+  // Get className from props (includes 'disconnected' if applicable)
+  const nodeClassName = (props as unknown as { className?: string }).className || ''
 
   const branches = data.branches || []
 
   return (
-    <div className={`flow-node flow-condition-node ${selected ? 'selected' : ''}`}>
+    <div className={`flow-node flow-condition-node ${selected ? 'selected' : ''} ${nodeClassName}`}>
       {/* Input port */}
       <Handle
         type="target"

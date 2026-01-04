@@ -13,16 +13,20 @@ import './FlowNodes.css'
  * - 4.2: Display each menu choice as a separate output Port
  * - 4.3: Label each output Port with the choice text
  * - 9.1: Use amber color scheme
+ * - 9.4: Highlight selected node with glow effect
  */
 export const FlowMenuNode: React.FC<NodeProps> = memo((props) => {
   const { selected } = props
   const data = props.data as unknown as FlowNodeData
+  
+  // Get className from props (includes 'disconnected' if applicable)
+  const nodeClassName = (props as unknown as { className?: string }).className || ''
 
   const choices = data.choices || []
   const prompt = data.prompt
 
   return (
-    <div className={`flow-node flow-menu-node ${selected ? 'selected' : ''}`}>
+    <div className={`flow-node flow-menu-node ${selected ? 'selected' : ''} ${nodeClassName}`}>
       {/* Input port */}
       <Handle
         type="target"
