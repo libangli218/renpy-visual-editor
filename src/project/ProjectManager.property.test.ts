@@ -51,7 +51,7 @@ function createFreshMockFileSystem(): FileSystem & {
     }),
     
     readDir: vi.fn(async (path: string) => {
-      const entries: { name: string; isDirectory: () => boolean }[] = []
+      const entries: { name: string; isDirectory: boolean }[] = []
       const prefix = path.endsWith('/') ? path : path + '/'
       
       // Find all direct children
@@ -66,7 +66,7 @@ function createFreshMockFileSystem(): FileSystem & {
             const isDir = rest.includes('/')
             entries.push({
               name: firstPart,
-              isDirectory: () => isDir,
+              isDirectory: isDir,
             })
           }
         }
@@ -80,7 +80,7 @@ function createFreshMockFileSystem(): FileSystem & {
             seen.add(firstPart)
             entries.push({
               name: firstPart,
-              isDirectory: () => true,
+              isDirectory: true,
             })
           }
         }
