@@ -264,29 +264,99 @@ const DialogueProperties: React.FC<PropertyProps<DialogueNode>> = ({ node, updat
   </div>
 )
 
-const MenuProperties: React.FC<PropertyProps<MenuNode>> = ({ node, updateProperty }) => (
-  <div className="property-group">
-    <PropertyField
-      label="Prompt"
-      value={node.prompt || ''}
-      onChange={(v) => updateProperty('prompt', v || undefined)}
-      placeholder="Optional menu prompt"
-    />
-    <div className="property-item">
-      <label>Choices ({node.choices.length})</label>
-      <div className="choices-list">
-        {node.choices.map((choice, index) => (
-          <div key={index} className="choice-item">
-            <span className="choice-text">"{choice.text}"</span>
-            {choice.condition && (
-              <span className="choice-condition">if {choice.condition}</span>
-            )}
-          </div>
-        ))}
+const MenuProperties: React.FC<PropertyProps<MenuNode>> = ({ node, updateProperty }) => {
+  // Add a new choice
+  const addChoice = () => {
+    const newChoices = [...node.choices, { text: 'New choice', body: [] }]
+    updateProperty('choices', newChoices)
+  }
+
+  // Update a choice's text
+  const updateChoiceText = (index: number, text: string) => {
+    const newChoices = [...node.choices]
+    newChoices[index] = { ...newChoices[index], text }
+    updateProperty('choices', newChoices)
+  }
+
+  // Update a choice's condition
+  const updateChoiceCondition = (index: number, condition: string) => {
+    const newChoices = [...node.choices]
+    newChoices[index] = { 
+      ...newChoices[index], 
+      condition: condition.trim() || undefined 
+    }
+    updateProperty('choices', newChoices)
+  }
+
+  // Remove a choice
+  const removeChoice = (index: number) => {
+    if (node.choices.length <= 1) return // Must have at least one choice
+    const newChoices = node.choices.filter((_, i) => i !== index)
+    updateProperty('choices', newChoices)
+  }
+
+  return (
+    <div className="property-group">
+      <PropertyField
+        label="Prompt"
+        value={node.prompt || ''}
+        onChange={(v) => updateProperty('prompt', v || undefined)}
+        placeholder="Optional menu prompt"
+      />
+      <div className="property-item">
+        <label>Choices ({node.choices.length})</label>
+        <div className="menu-choices-editor">
+          {node.choices.map((choice, index) => (
+            <div key={index} className="menu-choice-editor-item">
+              <div className="menu-choice-editor-header">
+                <span className="menu-choice-index">{index + 1}</span>
+                {node.choices.length > 1 && (
+                  <button
+                    className="menu-choice-remove-btn"
+                    onClick={() => removeChoice(index)}
+                    title="Remove choice"
+                    type="button"
+                  >
+                    ×
+                  </button>
+                )}
+              </div>
+              <div className="menu-choice-editor-fields">
+                <input
+                  type="text"
+                  value={choice.text}
+                  onChange={(e) => updateChoiceText(index, e.target.value)}
+                  placeholder="Choice text..."
+                  className="property-input menu-choice-text-input"
+                />
+                <div className="menu-choice-condition-row">
+                  <span className="menu-choice-condition-label">if</span>
+                  <input
+                    type="text"
+                    value={choice.condition || ''}
+                    onChange={(e) => updateChoiceCondition(index, e.target.value)}
+                    placeholder="condition (optional)"
+                    className="property-input menu-choice-condition-input"
+                  />
+                </div>
+              </div>
+              <div className="menu-choice-body-info">
+                {choice.body.length} statement{choice.body.length !== 1 ? 's' : ''} in body
+              </div>
+            </div>
+          ))}
+        </div>
+        <button
+          className="menu-choice-add-btn"
+          onClick={addChoice}
+          type="button"
+        >
+          + Add Choice
+        </button>
       </div>
     </div>
-  </div>
-)
+  )
+}
 
 const SceneProperties: React.FC<PropertyProps<SceneNode>> = ({ node, updateProperty }) => (
   <div className="property-group">
@@ -394,26 +464,107 @@ const ReturnProperties: React.FC<PropertyProps<ReturnNode>> = ({ node, updatePro
   </div>
 )
 
-const IfProperties: React.FC<PropertyProps<IfNode>> = ({ node }) => (
-  <div className="property-group">
-    <div className="property-item">
-      <label>Branches ({node.branches.length})</label>
-      <div className="branches-list">
-        {node.branches.map((branch, index) => (
-          <div key={index} className="branch-item">
-            {branch.condition ? (
-              <span className="branch-condition">
-                {index === 0 ? 'if' : 'elif'} {branch.condition}
-              </span>
-            ) : (
-              <span className="branch-else">else</span>
-            )}
-          </div>
-        ))}
+const IfProperties: React.FC<PropertyProps<IfNode>> = ({ node, updateProperty }) => {
+  // Add a new branch (elif or else)
+  const addBranch = (isElse: boolean) => {
+    const newBranches = [...node.branches]
+    
+    if (isElse) {
+      // Check if else already exists (last branch with null condition)
+      const hasElse = newBranches.length > 0 && newBranches[newBranches.length - 1].condition === null
+      if (hasElse) return // Can't add another else
+      
+      newBranches.push({ condition: null, body: [] })
+    } else {
+      // Add elif before else if exists
+      const hasElse = newBranches.length > 0 && newBranches[newBranches.length - 1].condition === null
+      if (hasElse) {
+        // Insert before else
+        newBranches.splice(newBranches.length - 1, 0, { condition: 'True', body: [] })
+      } else {
+        newBranches.push({ condition: 'True', body: [] })
+      }
+    }
+    
+    updateProperty('branches', newBranches)
+  }
+
+  // Update a branch condition
+  const updateBranchCondition = (index: number, condition: string) => {
+    const newBranches = [...node.branches]
+    newBranches[index] = { ...newBranches[index], condition: condition || null }
+    updateProperty('branches', newBranches)
+  }
+
+  // Remove a branch
+  const removeBranch = (index: number) => {
+    if (node.branches.length <= 1) return // Must have at least one branch
+    const newBranches = node.branches.filter((_, i) => i !== index)
+    updateProperty('branches', newBranches)
+  }
+
+  // Check if else branch exists
+  const hasElse = node.branches.length > 0 && node.branches[node.branches.length - 1].condition === null
+
+  return (
+    <div className="property-group">
+      <div className="property-item">
+        <label>Branches ({node.branches.length})</label>
+        <div className="branches-editor">
+          {node.branches.map((branch, index) => (
+            <div key={index} className="branch-editor-item">
+              <div className="branch-editor-header">
+                <span className="branch-editor-type">
+                  {index === 0 ? 'if' : branch.condition === null ? 'else' : 'elif'}
+                </span>
+                {node.branches.length > 1 && (
+                  <button
+                    className="branch-remove-btn"
+                    onClick={() => removeBranch(index)}
+                    title="Remove branch"
+                    type="button"
+                  >
+                    ×
+                  </button>
+                )}
+              </div>
+              {branch.condition !== null && (
+                <input
+                  type="text"
+                  value={branch.condition}
+                  onChange={(e) => updateBranchCondition(index, e.target.value)}
+                  placeholder="Enter condition..."
+                  className="property-input branch-condition-input"
+                />
+              )}
+              <div className="branch-body-info">
+                {branch.body.length} statement{branch.body.length !== 1 ? 's' : ''} in body
+              </div>
+            </div>
+          ))}
+        </div>
+        <div className="branch-add-buttons">
+          <button
+            className="branch-add-btn"
+            onClick={() => addBranch(false)}
+            type="button"
+          >
+            + Add elif
+          </button>
+          {!hasElse && (
+            <button
+              className="branch-add-btn branch-add-else"
+              onClick={() => addBranch(true)}
+              type="button"
+            >
+              + Add else
+            </button>
+          )}
+        </div>
       </div>
     </div>
-  </div>
-)
+  )
+}
 
 const SetProperties: React.FC<PropertyProps<SetNode>> = ({ node, updateProperty }) => (
   <div className="property-group">
