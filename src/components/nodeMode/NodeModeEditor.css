@@ -74,6 +74,58 @@
   font-weight: 500;
 }
 
+/* File selector styles - Implements Requirement 1.4 */
+.file-selector {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.file-select {
+  padding: 0.375rem 0.5rem;
+  font-size: 0.75rem;
+  background-color: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  color: var(--text-primary);
+  cursor: pointer;
+  min-width: 150px;
+}
+
+.file-select:focus {
+  outline: none;
+  border-color: var(--accent-primary);
+}
+
+.file-select option {
+  background-color: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
+.config-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: 0.6875rem;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.config-toggle input[type="checkbox"] {
+  width: 12px;
+  height: 12px;
+  cursor: pointer;
+}
+
+.no-files {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  font-style: italic;
+}
+
 /* Edge styling */
 .node-mode-editor-container .react-flow__edge-path {
   stroke: var(--accent-primary);
@@ -87,6 +139,29 @@
 
 .node-mode-editor-container .react-flow__edge:hover .react-flow__edge-path {
   stroke: var(--accent-secondary);
+}
+
+/* Flow edge type styles - Implements Requirements 5.3, 5.4, 5.5 */
+.flow-edge-normal .react-flow__edge-path {
+  stroke: #6366f1;
+}
+
+.flow-edge-jump .react-flow__edge-path {
+  stroke: #ec4899;
+}
+
+.flow-edge-call .react-flow__edge-path {
+  stroke: #14b8a6;
+  stroke-dasharray: 8, 4;
+}
+
+.flow-edge-return .react-flow__edge-path {
+  stroke: #f97316;
+}
+
+.flow-edge-invalid .react-flow__edge-path {
+  stroke: #ef4444;
+  stroke-dasharray: 5, 5;
 }
 
 /* Connection line styling */

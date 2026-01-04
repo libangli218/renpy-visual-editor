@@ -1,5 +1,6 @@
 export { NodeModeEditor } from './NodeModeEditor'
 export { NodePropertiesPanel } from './NodePropertiesPanel'
+export { NodeDetailPanel } from './NodeDetailPanel'
 export { nodeTypes, supportedNodeTypes, nodeTypeCategories, isNodeTypeSupported } from './nodeTypes'
 export { astToNodes, nodesToAst, getNodeTypeLabel, getNodeTypeColor } from './astNodeConverter'
 export {
