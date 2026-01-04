@@ -1,0 +1,142 @@
+/* Node Mode Editor Styles */
+
+.node-mode-editor-container {
+  width: 100%;
+  height: 100%;
+  background-color: var(--bg-primary);
+}
+
+/* React Flow overrides */
+.node-mode-editor-container .react-flow {
+  background-color: var(--bg-primary);
+}
+
+.node-mode-editor-container .react-flow__background {
+  background-color: var(--bg-primary);
+}
+
+.node-mode-editor-container .react-flow__background pattern circle {
+  fill: var(--border-color);
+}
+
+/* Controls styling */
+.node-mode-editor-container .react-flow__controls {
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.node-mode-editor-container .react-flow__controls-button {
+  background-color: var(--bg-secondary);
+  border-bottom: 1px solid var(--border-color);
+  color: var(--text-primary);
+  width: 28px;
+  height: 28px;
+}
+
+.node-mode-editor-container .react-flow__controls-button:hover {
+  background-color: var(--bg-tertiary);
+}
+
+.node-mode-editor-container .react-flow__controls-button:last-child {
+  border-bottom: none;
+}
+
+.node-mode-editor-container .react-flow__controls-button svg {
+  fill: var(--text-primary);
+}
+
+/* Minimap styling */
+.node-mode-minimap {
+  background-color: var(--bg-secondary) !important;
+  border: 1px solid var(--border-color) !important;
+  border-radius: 6px !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15) !important;
+}
+
+.node-mode-minimap .react-flow__minimap-mask {
+  fill: rgba(0, 0, 0, 0.3);
+}
+
+/* Panel styling */
+.node-mode-panel {
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.node-count {
+  font-weight: 500;
+}
+
+/* Edge styling */
+.node-mode-editor-container .react-flow__edge-path {
+  stroke: var(--accent-primary);
+  stroke-width: 2;
+}
+
+.node-mode-editor-container .react-flow__edge.selected .react-flow__edge-path {
+  stroke: var(--accent-secondary);
+  stroke-width: 3;
+}
+
+.node-mode-editor-container .react-flow__edge:hover .react-flow__edge-path {
+  stroke: var(--accent-secondary);
+}
+
+/* Connection line styling */
+.node-mode-editor-container .react-flow__connection-line {
+  stroke: var(--accent-primary);
+  stroke-width: 2;
+  stroke-dasharray: 5, 5;
+}
+
+/* Handle styling */
+.node-mode-editor-container .react-flow__handle {
+  width: 10px;
+  height: 10px;
+  background-color: var(--accent-primary);
+  border: 2px solid var(--bg-secondary);
+}
+
+.node-mode-editor-container .react-flow__handle:hover {
+  background-color: var(--accent-secondary);
+}
+
+.node-mode-editor-container .react-flow__handle-top {
+  top: -5px;
+}
+
+.node-mode-editor-container .react-flow__handle-bottom {
+  bottom: -5px;
+}
+
+.node-mode-editor-container .react-flow__handle-left {
+  left: -5px;
+}
+
+.node-mode-editor-container .react-flow__handle-right {
+  right: -5px;
+}
+
+/* Selection box */
+.node-mode-editor-container .react-flow__selection {
+  background: rgba(99, 102, 241, 0.1);
+  border: 1px dashed var(--accent-primary);
+}
+
+/* Attribution */
+.node-mode-editor-container .react-flow__attribution {
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 0.625rem;
+}
+
+.node-mode-editor-container .react-flow__attribution a {
+  color: var(--text-secondary);
+}

@@ -1,6 +1,7 @@
 import React from 'react'
 import { useEditorStore } from '../../store/editorStore'
 import { PreviewPanel } from './PreviewPanel'
+import { NodeModeEditor } from '../nodeMode'
 
 /**
  * EditorArea component - Main editing area with preview and editor
@@ -39,25 +40,6 @@ const StoryModeEditor: React.FC = () => {
         <p className="placeholder-hint">
           Edit your visual novel as a script with dialogue blocks, 
           scene changes, and character actions.
-        </p>
-      </div>
-    </div>
-  )
-}
-
-/**
- * Placeholder for Node Mode Editor
- * Will be implemented in Task 9
- */
-const NodeModeEditor: React.FC = () => {
-  return (
-    <div className="node-mode-editor" data-testid="node-mode-editor">
-      <div className="editor-placeholder">
-        <h3>Node Mode</h3>
-        <p>Flow chart editing view</p>
-        <p className="placeholder-hint">
-          Edit your visual novel as a flow chart with nodes 
-          representing scenes, dialogues, and branches.
         </p>
       </div>
     </div>

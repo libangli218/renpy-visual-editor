@@ -1,5 +1,6 @@
 import React from 'react'
 import { useEditorStore } from '../../store/editorStore'
+import { NodePropertiesPanel } from '../nodeMode'
 
 /**
  * RightPanel component - Properties panel for selected elements
@@ -11,9 +12,7 @@ import { useEditorStore } from '../../store/editorStore'
  * - Complexity level (shows code preview in 'preview' and 'advanced' modes)
  */
 export const RightPanel: React.FC = () => {
-  const { selectedNodeId, selectedBlockId, mode, complexity } = useEditorStore()
-
-  const hasSelection = mode === 'node' ? selectedNodeId : selectedBlockId
+  const { selectedBlockId, mode, complexity } = useEditorStore()
 
   return (
     <aside className="right-panel" aria-label="Properties panel">
@@ -22,7 +21,9 @@ export const RightPanel: React.FC = () => {
       </div>
       
       <div className="panel-content">
-        {!hasSelection ? (
+        {mode === 'node' ? (
+          <NodePropertiesPanel />
+        ) : !selectedBlockId ? (
           <div className="panel-empty">
             <p>Select an element to view its properties</p>
           </div>
@@ -34,7 +35,7 @@ export const RightPanel: React.FC = () => {
               <div className="property-item">
                 <label>ID</label>
                 <span className="property-value">
-                  {mode === 'node' ? selectedNodeId : selectedBlockId}
+                  {selectedBlockId}
                 </span>
               </div>
             </div>
