@@ -15,6 +15,7 @@ import { FlowGraph } from '../components/nodeMode/FlowGraphBuilder'
 import { parse } from '../parser/renpyParser'
 import { CacheEntry, CacheStats, CacheConfig, ICacheManager } from './types'
 import { computeHash, estimateSize } from './hashUtils'
+import { PersistentCache, PersistentCacheState, persistentCache } from './PersistentCache'
 
 /**
  * Default cache configuration
@@ -265,6 +266,160 @@ export class CacheManager implements ICacheManager {
     if (this.config.debug) {
       console.log(`[CacheManager] ${message}`)
     }
+  }
+
+  // ============================================
+  // Persistence Methods (Requirements 6.1, 6.2, 6.3)
+  // ============================================
+
+  /**
+   * Save cache state to persistent storage (IndexedDB)
+   * 
+   * **Validates: Requirements 6.1**
+   */
+  async saveToStorage(storage: PersistentCache = persistentCache): Promise<void> {
+    try {
+      const state = this.exportState()
+      await storage.save(state)
+      this.log('Cache saved to persistent storage')
+    } catch (error) {
+      console.error('[CacheManager] Failed to save cache:', error)
+      throw error
+    }
+  }
+
+  /**
+   * Load cache state from persistent storage and validate
+   * 
+   * **Validates: Requirements 6.2, 6.3**
+   * 
+   * @param getFileContent - Function to get current file content for validation
+   */
+  async loadFromStorage(
+    storage: PersistentCache = persistentCache,
+    getFileContent?: (filePath: string) => string | null
+  ): Promise<void> {
+    try {
+      const state = await storage.load()
+      if (!state) {
+        this.log('No persistent cache found')
+        return
+      }
+
+      this.importState(state, getFileContent)
+      this.log('Cache loaded from persistent storage')
+    } catch (error) {
+      console.error('[CacheManager] Failed to load cache:', error)
+      throw error
+    }
+  }
+
+  /**
+   * Export current cache state for persistence
+   */
+  exportState(): PersistentCacheState {
+    const astEntries = Array.from(this.astCache.values()).map(entry => ({
+      hash: entry.hash,
+      data: entry.data,
+      createdAt: entry.createdAt,
+      lastAccessedAt: entry.lastAccessedAt,
+      sizeEstimate: entry.sizeEstimate,
+    }))
+
+    const graphEntries = Array.from(this.graphCache.values()).map(entry => ({
+      hash: entry.hash,
+      data: entry.data,
+      createdAt: entry.createdAt,
+      lastAccessedAt: entry.lastAccessedAt,
+      sizeEstimate: entry.sizeEstimate,
+    }))
+
+    const fileHashes = Array.from(this.fileHashes.entries()).map(([filePath, hash]) => ({
+      filePath,
+      hash,
+    }))
+
+    return {
+      astEntries,
+      graphEntries,
+      fileHashes,
+      metadata: {
+        version: 1,
+        savedAt: Date.now(),
+        lruList: [...this.lruList],
+      },
+    }
+  }
+
+  /**
+   * Import cache state from persistence
+   * 
+   * @param state - The persisted cache state
+   * @param getFileContent - Optional function to get current file content for validation
+   */
+  importState(
+    state: PersistentCacheState,
+    getFileContent?: (filePath: string) => string | null
+  ): void {
+    // Clear current state
+    this.clear()
+
+    // Restore AST cache
+    for (const entry of state.astEntries) {
+      this.astCache.set(entry.hash, {
+        hash: entry.hash,
+        data: entry.data,
+        createdAt: entry.createdAt,
+        lastAccessedAt: entry.lastAccessedAt,
+        sizeEstimate: entry.sizeEstimate,
+      })
+      this.memoryUsage += entry.sizeEstimate
+    }
+
+    // Restore graph cache
+    for (const entry of state.graphEntries) {
+      this.graphCache.set(entry.hash, {
+        hash: entry.hash,
+        data: entry.data,
+        createdAt: entry.createdAt,
+        lastAccessedAt: entry.lastAccessedAt,
+        sizeEstimate: entry.sizeEstimate,
+      })
+      this.memoryUsage += entry.sizeEstimate
+    }
+
+    // Restore file hashes with validation
+    for (const { filePath, hash } of state.fileHashes) {
+      if (getFileContent) {
+        // Validate against current file content
+        const currentContent = getFileContent(filePath)
+        if (currentContent !== null) {
+          const currentHash = computeHash(currentContent)
+          if (currentHash === hash) {
+            // Hash matches - file hasn't changed
+            this.fileHashes.set(filePath, hash)
+          } else {
+            // Hash mismatch - file has changed, invalidate
+            this.log(`File changed since cache save: ${filePath}`)
+            // Remove the stale AST and graph entries
+            this.removeEntry(hash)
+          }
+        }
+        // If file doesn't exist anymore, don't restore the mapping
+      } else {
+        // No validation function - restore as-is
+        this.fileHashes.set(filePath, hash)
+      }
+    }
+
+    // Restore LRU list (only for hashes that still exist)
+    if (state.metadata.lruList) {
+      this.lruList = state.metadata.lruList.filter(
+        hash => this.astCache.has(hash) || this.graphCache.has(hash)
+      )
+    }
+
+    this.log(`Imported ${this.astCache.size} AST entries, ${this.graphCache.size} graph entries`)
   }
 }
 

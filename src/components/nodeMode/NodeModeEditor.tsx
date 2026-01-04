@@ -31,6 +31,8 @@ import { projectManager } from '../../project/ProjectManager'
 import { ASTSynchronizer } from './ASTSynchronizer'
 import { RenpyScript } from '../../types/ast'
 import { NodeDetailPanel } from './NodeDetailPanel'
+import { cacheManager } from '../../cache'
+import { computeHash } from '../../cache/hashUtils'
 import './NodeModeEditor.css'
 
 /**
@@ -238,6 +240,8 @@ const NodeModeEditorInner: React.FC = () => {
   const flowGraphBuilder = useMemo(() => new FlowGraphBuilder(), [])
   
   // Load and classify files when project changes
+  // Uses cacheManager for AST retrieval
+  // Implements Requirements 2.1, 2.2: Cache AST with content hash
   useEffect(() => {
     const loadProjectFiles = async () => {
       if (!projectPath) {
@@ -260,10 +264,18 @@ const NodeModeEditorInner: React.FC = () => {
           ) || classification.storyScripts[0]
           setSelectedFile(defaultFile)
           
-          // Load the AST for the selected file
-          const fileAst = project.scripts.get(defaultFile)
-          if (fileAst) {
-            setAst(fileAst)
+          // Load the AST for the selected file using cache
+          const originalContent = projectManager.getOriginalContent(defaultFile)
+          if (originalContent) {
+            // Use cached AST if available, otherwise parse and cache
+            const cachedAst = cacheManager.getAST(defaultFile, originalContent)
+            setAst(cachedAst)
+          } else {
+            // Fallback to project scripts if content not available
+            const fileAst = project.scripts.get(defaultFile)
+            if (fileAst) {
+              setAst(fileAst)
+            }
           }
         }
       }
@@ -273,14 +285,82 @@ const NodeModeEditorInner: React.FC = () => {
   }, [projectPath, fileClassifier, setAst, selectedFile])
   
   // Handle file selection change
+  // Uses cacheManager for AST retrieval when content is available
+  // Implements Requirements 2.1, 2.2: Cache AST with content hash
   const handleFileChange = useCallback((event: React.ChangeEvent<HTMLSelectElement>) => {
     const filePath = event.target.value
     setSelectedFile(filePath)
-    const fileAst = scripts.get(filePath)
-    if (fileAst) {
-      setAst(fileAst)
+    
+    // Try to get AST from cache using original content
+    const originalContent = projectManager.getOriginalContent(filePath)
+    if (originalContent) {
+      // Use cached AST if available, otherwise parse and cache
+      const cachedAst = cacheManager.getAST(filePath, originalContent)
+      setAst(cachedAst)
+    } else {
+      // Fallback to scripts map if content not available
+      const fileAst = scripts.get(filePath)
+      if (fileAst) {
+        setAst(fileAst)
+      }
     }
   }, [scripts, setAst])
+  
+  // Track previous content hash for change detection
+  // Implements Requirements 1.3, 2.3, 3.3: Cache invalidation on file change
+  const previousContentHashRef = useRef<string | null>(null)
+  
+  /**
+   * Detect file content changes and invalidate cache
+   * Implements Requirements 1.3, 2.3, 3.3: Cache invalidation on file change
+   * 
+   * When the AST is modified (via setAst), we need to:
+   * 1. Detect that the content has changed from the original
+   * 2. Invalidate the cache for the current file
+   * 
+   * This ensures that the next time the file is accessed, it will be
+   * re-parsed and the flow graph will be rebuilt.
+   */
+  useEffect(() => {
+    if (!selectedFile || !ast) {
+      previousContentHashRef.current = null
+      return
+    }
+    
+    // Get the current content hash from the cache
+    const currentHash = cacheManager.getFileHash(selectedFile)
+    
+    // Get the original content to compute its hash
+    const originalContent = projectManager.getOriginalContent(selectedFile)
+    if (!originalContent) {
+      previousContentHashRef.current = currentHash || null
+      return
+    }
+    
+    const originalHash = computeHash(originalContent)
+    
+    // If this is the first time we're seeing this file, just store the hash
+    if (previousContentHashRef.current === null) {
+      previousContentHashRef.current = originalHash
+      return
+    }
+    
+    // Check if the AST has been modified (different from original)
+    // When AST changes, we need to invalidate the cache so that
+    // the next load will re-parse the file
+    if (currentHash && currentHash !== originalHash) {
+      // Content has changed from original - invalidate cache
+      // This ensures the cache doesn't serve stale data
+      cacheManager.invalidate(selectedFile)
+      console.log(`[NodeModeEditor] Cache invalidated for modified file: ${selectedFile}`)
+      
+      // Mark the script as modified in the project manager
+      projectManager.markScriptModified(selectedFile)
+    }
+    
+    // Update the previous hash reference
+    previousContentHashRef.current = currentHash || originalHash
+  }, [selectedFile, ast])
   
   // Get available files based on filter
   const availableFiles = useMemo(() => {
@@ -291,13 +371,25 @@ const NodeModeEditorInner: React.FC = () => {
   }, [fileClassification, showConfigFiles])
   
   // Convert AST to React Flow nodes and edges using FlowGraphBuilder
+  // Uses cacheManager for FlowGraph caching
+  // Implements Requirements 3.1, 3.2: Cache FlowGraph with AST hash
   const { initialNodes, initialEdges } = useMemo(() => {
     if (!ast) {
       return { initialNodes: [] as Node[], initialEdges: [] as Edge[] }
     }
     
-    // Build flow graph from AST
-    const graph = flowGraphBuilder.buildGraph(ast)
+    // Get content hash for caching - use selectedFile to get the hash
+    const contentHash = selectedFile ? cacheManager.getFileHash(selectedFile) : null
+    
+    // Build flow graph from AST, using cache if hash is available
+    let graph
+    if (contentHash) {
+      // Use cached FlowGraph if available, otherwise build and cache
+      graph = cacheManager.getFlowGraph(contentHash, () => flowGraphBuilder.buildGraph(ast))
+    } else {
+      // Fallback to direct build if no hash available
+      graph = flowGraphBuilder.buildGraph(ast)
+    }
     
     // Apply auto-layout
     const layoutedGraph = flowGraphBuilder.autoLayout(graph)
@@ -324,7 +416,7 @@ const NodeModeEditorInner: React.FC = () => {
     }))
     
     return { initialNodes: nodes, initialEdges: edges }
-  }, [ast, flowGraphBuilder])
+  }, [ast, flowGraphBuilder, selectedFile])
 
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes)
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges)
@@ -586,6 +678,10 @@ const NodeModeEditorInner: React.FC = () => {
         }
         
         if (astModified) {
+          // Invalidate cache for the modified file
+          // Implements Requirements 1.3, 2.3, 3.3: Cache invalidation on file change
+          cacheManager.invalidate(selectedFile)
+          
           // Update the AST in the store to trigger modification tracking
           setAst({ ...ast })
         }
