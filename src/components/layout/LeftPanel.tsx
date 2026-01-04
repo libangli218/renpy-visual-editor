@@ -7,6 +7,7 @@ import {
   useCharacterStore,
   CharacterFormData,
 } from '../character'
+import { NewProjectWizard, ProjectConfig } from '../project'
 
 /**
  * LeftPanel component - Project browser panel
@@ -36,114 +37,6 @@ const sections: SectionConfig[] = [
   { id: 'audio', label: 'Audio', icon: '🎵' },
   { id: 'variables', label: 'Variables', icon: '📊' },
 ]
-
-/**
- * NewProjectDialog component - Custom dialog for entering project name
- */
-interface NewProjectDialogProps {
-  isOpen: boolean
-  onConfirm: (name: string) => void
-  onCancel: () => void
-}
-
-const NewProjectDialog: React.FC<NewProjectDialogProps> = ({ isOpen, onConfirm, onCancel }) => {
-  const [projectName, setProjectName] = useState('MyVisualNovel')
-
-  if (!isOpen) return null
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (projectName.trim()) {
-      onConfirm(projectName.trim())
-      setProjectName('MyVisualNovel')
-    }
-  }
-
-  const handleCancel = () => {
-    setProjectName('MyVisualNovel')
-    onCancel()
-  }
-
-  return (
-    <div className="dialog-overlay" style={{
-      position: 'fixed',
-      top: 0,
-      left: 0,
-      right: 0,
-      bottom: 0,
-      backgroundColor: 'rgba(0, 0, 0, 0.5)',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      zIndex: 1000,
-    }}>
-      <div className="dialog-content" style={{
-        backgroundColor: '#2d2d2d',
-        borderRadius: '8px',
-        padding: '24px',
-        minWidth: '300px',
-        boxShadow: '0 4px 20px rgba(0, 0, 0, 0.3)',
-      }}>
-        <h3 style={{ margin: '0 0 16px 0', color: '#fff' }}>New Project</h3>
-        <form onSubmit={handleSubmit}>
-          <div style={{ marginBottom: '16px' }}>
-            <label style={{ display: 'block', marginBottom: '8px', color: '#ccc' }}>
-              Project Name:
-            </label>
-            <input
-              type="text"
-              value={projectName}
-              onChange={(e) => setProjectName(e.target.value)}
-              autoFocus
-              style={{
-                width: '100%',
-                padding: '8px 12px',
-                borderRadius: '4px',
-                border: '1px solid #555',
-                backgroundColor: '#1e1e1e',
-                color: '#fff',
-                fontSize: '14px',
-                boxSizing: 'border-box',
-              }}
-              placeholder="Enter project name"
-            />
-          </div>
-          <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
-            <button
-              type="button"
-              onClick={handleCancel}
-              style={{
-                padding: '8px 16px',
-                borderRadius: '4px',
-                border: '1px solid #555',
-                backgroundColor: 'transparent',
-                color: '#ccc',
-                cursor: 'pointer',
-              }}
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={!projectName.trim()}
-              style={{
-                padding: '8px 16px',
-                borderRadius: '4px',
-                border: 'none',
-                backgroundColor: '#7c3aed',
-                color: '#fff',
-                cursor: projectName.trim() ? 'pointer' : 'not-allowed',
-                opacity: projectName.trim() ? 1 : 0.5,
-              }}
-            >
-              Create
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-  )
-}
 
 export const LeftPanel: React.FC = () => {
   const { projectPath, setProjectPath, setAst } = useEditorStore()
@@ -220,11 +113,11 @@ export const LeftPanel: React.FC = () => {
       return
     }
 
-    // Show the new project dialog
+    // Show the new project wizard
     setShowNewProjectDialog(true)
   }
 
-  const handleCreateProject = async (projectName: string) => {
+  const handleCreateProject = async (config: ProjectConfig) => {
     setShowNewProjectDialog(false)
     
     if (!window.electronAPI) {
@@ -236,17 +129,14 @@ export const LeftPanel: React.FC = () => {
       setIsLoading(true)
       setError(null)
 
-      // Select directory for the new project
-      const selectedPath = await window.electronAPI.selectDirectory('Select location for new project')
-      if (!selectedPath) {
-        setIsLoading(false)
-        return
-      }
-
       const result = await projectManager.createProject({
-        name: projectName,
-        path: selectedPath,
-        createDefaultScript: true,
+        name: config.name,
+        path: config.path,
+        width: config.width,
+        height: config.height,
+        accentColor: config.accentColor,
+        backgroundColor: config.backgroundColor,
+        lightTheme: config.lightTheme,
       })
 
       if (result.success && result.project) {
@@ -360,10 +250,10 @@ export const LeftPanel: React.FC = () => {
         onCancel={closeDialog}
       />
 
-      {/* New Project Dialog */}
-      <NewProjectDialog
+      {/* New Project Wizard */}
+      <NewProjectWizard
         isOpen={showNewProjectDialog}
-        onConfirm={handleCreateProject}
+        onComplete={handleCreateProject}
         onCancel={() => setShowNewProjectDialog(false)}
       />
     </aside>

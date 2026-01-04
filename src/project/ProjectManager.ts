@@ -30,6 +30,9 @@ export interface FileSystem {
   readDir(path: string): Promise<{ name: string; isDirectory: boolean }[]>
   exists(path: string): Promise<boolean>
   mkdir(path: string): Promise<void>
+  copyDir(src: string, dest: string): Promise<void>
+  copyFile(src: string, dest: string): Promise<void>
+  getAppPath(): Promise<string>
 }
 
 /**
@@ -43,6 +46,9 @@ declare global {
       readDir: (path: string) => Promise<{ name: string; isDirectory: boolean }[]>
       exists: (path: string) => Promise<boolean>
       mkdir: (path: string) => Promise<void>
+      copyDir: (src: string, dest: string) => Promise<void>
+      copyFile: (src: string, dest: string) => Promise<void>
+      getAppPath: () => Promise<string>
       openDirectory: () => Promise<string | null>
       selectDirectory: (title?: string) => Promise<string | null>
     }
@@ -82,6 +88,24 @@ export const electronFileSystem: FileSystem = {
       throw new Error('Electron API not available')
     }
     return window.electronAPI.mkdir(path)
+  },
+  copyDir: (src: string, dest: string) => {
+    if (!window.electronAPI) {
+      throw new Error('Electron API not available')
+    }
+    return window.electronAPI.copyDir(src, dest)
+  },
+  copyFile: (src: string, dest: string) => {
+    if (!window.electronAPI) {
+      throw new Error('Electron API not available')
+    }
+    return window.electronAPI.copyFile(src, dest)
+  },
+  getAppPath: () => {
+    if (!window.electronAPI) {
+      throw new Error('Electron API not available')
+    }
+    return window.electronAPI.getAppPath()
   },
 }
 
@@ -140,7 +164,7 @@ export class ProjectManager {
    */
   async createProject(options: CreateProjectOptions): Promise<OpenProjectResult> {
     try {
-      const { name, path, createDefaultScript = true } = options
+      const { name, path } = options
       const projectPath = joinPath(path, name)
 
       // Check if directory already exists
@@ -151,13 +175,23 @@ export class ProjectManager {
         }
       }
 
-      // Create standard Ren'Py directory structure
-      await this.createProjectStructure(projectPath)
+      // Get template path
+      const appPath = await this.fs.getAppPath()
+      const templatePath = joinPath(appPath, 'templates', 'default-project')
 
-      // Create default script.rpy if requested
-      if (createDefaultScript) {
-        await this.createDefaultScript(projectPath, name)
+      // Check if template exists
+      if (!await this.fs.exists(templatePath)) {
+        return {
+          success: false,
+          error: `Project template not found at: ${templatePath}. Please ensure the templates directory is properly installed.`,
+        }
       }
+
+      // Copy template to project path
+      await this.fs.copyDir(templatePath, projectPath)
+      
+      // Customize project files based on options
+      await this.customizeProjectFiles(projectPath, options)
 
       // Open the newly created project
       return this.openProject(projectPath)
@@ -170,33 +204,104 @@ export class ProjectManager {
   }
 
   /**
-   * Create the standard Ren'Py project directory structure
+   * Customize project files after copying from template
    */
-  private async createProjectStructure(projectPath: string): Promise<void> {
-    // Create all required directories
-    const directories = Object.values(RENPY_PROJECT_STRUCTURE)
+  private async customizeProjectFiles(projectPath: string, options: CreateProjectOptions): Promise<void> {
+    const { name, width = 1920, height = 1080, accentColor = '#99ccff' } = options
+
+    // Read and customize options.rpy
+    const optionsPath = joinPath(projectPath, 'game', 'options.rpy')
+    let optionsContent = await this.fs.readFile(optionsPath)
     
-    for (const dir of directories) {
-      const fullPath = joinPath(projectPath, dir)
-      await this.fs.mkdir(fullPath)
-    }
+    // Replace project name
+    optionsContent = optionsContent.replace(
+      /define config\.name = _\(".*?"\)/,
+      `define config.name = _("${name}")`
+    )
+    optionsContent = optionsContent.replace(
+      /define build\.name = ".*?"/,
+      `define build.name = "${name.replace(/[^A-Za-z0-9]/g, '')}"`
+    )
+    optionsContent = optionsContent.replace(
+      /define config\.save_directory = ".*?"/,
+      `define config.save_directory = "${name.replace(/[^A-Za-z0-9]/g, '')}-${Date.now()}"`
+    )
+    
+    await this.fs.writeFile(optionsPath, optionsContent)
+
+    // Read and customize gui.rpy
+    const guiPath = joinPath(projectPath, 'game', 'gui.rpy')
+    let guiContent = await this.fs.readFile(guiPath)
+    
+    // Replace resolution
+    guiContent = guiContent.replace(
+      /gui\.init\(\d+,\s*\d+\)/,
+      `gui.init(${width}, ${height})`
+    )
+    
+    // Replace accent color
+    guiContent = guiContent.replace(
+      /define gui\.accent_color = ['"].*?['"]/,
+      `define gui.accent_color = '${accentColor}'`
+    )
+    
+    // Calculate and replace related colors
+    const hoverColor = this.lightenColor(accentColor, 0.2)
+    guiContent = guiContent.replace(
+      /define gui\.hover_color = ['"].*?['"]/,
+      `define gui.hover_color = '${hoverColor}'`
+    )
+    
+    await this.fs.writeFile(guiPath, guiContent)
+
+    // Customize script.rpy
+    const scriptPath = joinPath(projectPath, 'game', 'script.rpy')
+    let scriptContent = await this.fs.readFile(scriptPath)
+    
+    // Update welcome message
+    scriptContent = scriptContent.replace(
+      /e "您已创建一个新的 Ren'Py 游戏。"/,
+      `e "欢迎来到 ${name}！"`
+    )
+    
+    await this.fs.writeFile(scriptPath, scriptContent)
   }
 
   /**
-   * Create a default script.rpy file
+   * Lighten a hex color
    */
-  private async createDefaultScript(projectPath: string, projectName: string): Promise<void> {
-    const scriptPath = joinPath(projectPath, 'game', 'script.rpy')
-    const defaultContent = `# ${projectName}
-# Created with Ren'Py Visual Editor
-
-label start:
-    "Welcome to ${projectName}!"
-    return
-`
-    await this.fs.writeFile(scriptPath, defaultContent)
+  private lightenColor(hex: string, amount: number): string {
+    const rgb = this.hexToRgb(hex)
+    if (!rgb) return hex
+    
+    const r = Math.min(255, Math.round(rgb.r + (255 - rgb.r) * amount))
+    const g = Math.min(255, Math.round(rgb.g + (255 - rgb.g) * amount))
+    const b = Math.min(255, Math.round(rgb.b + (255 - rgb.b) * amount))
+    
+    return this.rgbToHex(r, g, b)
   }
 
+  /**
+   * Convert hex to RGB
+   */
+  private hexToRgb(hex: string): { r: number; g: number; b: number } | null {
+    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex)
+    return result ? {
+      r: parseInt(result[1], 16),
+      g: parseInt(result[2], 16),
+      b: parseInt(result[3], 16)
+    } : null
+  }
+
+  /**
+   * Convert RGB to hex
+   */
+  private rgbToHex(r: number, g: number, b: number): string {
+    return '#' + [r, g, b].map(x => {
+      const hex = x.toString(16)
+      return hex.length === 1 ? '0' + hex : hex
+    }).join('')
+  }
 
   /**
    * Open an existing Ren'Py project

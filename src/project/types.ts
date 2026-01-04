@@ -96,7 +96,16 @@ export const AUDIO_EXTENSIONS = ['.mp3', '.ogg', '.wav', '.opus'] as const
 export interface CreateProjectOptions {
   name: string
   path: string
-  createDefaultScript?: boolean
+  /** Game resolution width */
+  width?: number
+  /** Game resolution height */
+  height?: number
+  /** Accent color for GUI */
+  accentColor?: string
+  /** Background color for GUI */
+  backgroundColor?: string
+  /** Whether to use light theme */
+  lightTheme?: boolean
 }
 
 /**

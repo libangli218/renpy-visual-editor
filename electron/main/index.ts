@@ -96,6 +96,47 @@ ipcMain.handle('fs:mkdir', async (_event, path: string) => {
   await fs.mkdir(path, { recursive: true })
 })
 
+ipcMain.handle('fs:copyDir', async (_event, src: string, dest: string) => {
+  const fs = await import('fs/promises')
+  const path = await import('path')
+  
+  // Recursive copy function
+  async function copyRecursive(srcPath: string, destPath: string) {
+    const stat = await fs.stat(srcPath)
+    
+    if (stat.isDirectory()) {
+      await fs.mkdir(destPath, { recursive: true })
+      const entries = await fs.readdir(srcPath)
+      
+      for (const entry of entries) {
+        await copyRecursive(
+          path.join(srcPath, entry),
+          path.join(destPath, entry)
+        )
+      }
+    } else {
+      await fs.copyFile(srcPath, destPath)
+    }
+  }
+  
+  await copyRecursive(src, dest)
+})
+
+ipcMain.handle('fs:copyFile', async (_event, src: string, dest: string) => {
+  const fs = await import('fs/promises')
+  await fs.copyFile(src, dest)
+})
+
+ipcMain.handle('fs:getAppPath', async () => {
+  // In development, return the renpy-visual-editor directory
+  // In production, return the app resources path
+  if (process.env.VITE_DEV_SERVER_URL) {
+    // __dirname is dist-electron/main, so go up 2 levels to get renpy-visual-editor root
+    return join(__dirname, '../..')
+  }
+  return app.getAppPath()
+})
+
 // Dialog handlers for project management
 ipcMain.handle('dialog:openDirectory', async () => {
   if (!mainWindow) return null

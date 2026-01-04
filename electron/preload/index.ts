@@ -9,6 +9,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   readDir: (path: string) => ipcRenderer.invoke('fs:readDir', path),
   exists: (path: string) => ipcRenderer.invoke('fs:exists', path),
   mkdir: (path: string) => ipcRenderer.invoke('fs:mkdir', path),
+  copyDir: (src: string, dest: string) => ipcRenderer.invoke('fs:copyDir', src, dest),
+  copyFile: (src: string, dest: string) => ipcRenderer.invoke('fs:copyFile', src, dest),
+  getAppPath: () => ipcRenderer.invoke('fs:getAppPath'),
   
   // Dialog operations
   openDirectory: () => ipcRenderer.invoke('dialog:openDirectory'),
@@ -24,6 +27,9 @@ declare global {
       readDir: (path: string) => Promise<{ name: string; isDirectory: boolean }[]>
       exists: (path: string) => Promise<boolean>
       mkdir: (path: string) => Promise<void>
+      copyDir: (src: string, dest: string) => Promise<void>
+      copyFile: (src: string, dest: string) => Promise<void>
+      getAppPath: () => Promise<string>
       openDirectory: () => Promise<string | null>
       selectDirectory: (title?: string) => Promise<string | null>
     }

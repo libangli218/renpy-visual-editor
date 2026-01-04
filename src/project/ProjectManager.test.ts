@@ -98,6 +98,38 @@ function createMockFileSystem(): FileSystem & {
         directories.add(parts.slice(0, i).join('/'))
       }
     }),
+
+    copyDir: vi.fn(async (src: string, dest: string) => {
+      // Copy all files from src to dest
+      const prefix = src.endsWith('/') ? src : src + '/'
+      for (const [filePath, content] of files.entries()) {
+        if (filePath.startsWith(prefix) || filePath === src) {
+          const relativePath = filePath.substring(src.length)
+          const newPath = dest + relativePath
+          files.set(newPath, content)
+        }
+      }
+      // Copy directories
+      for (const dirPath of directories) {
+        if (dirPath.startsWith(prefix) || dirPath === src) {
+          const relativePath = dirPath.substring(src.length)
+          const newPath = dest + relativePath
+          directories.add(newPath)
+        }
+      }
+      directories.add(dest)
+    }),
+
+    copyFile: vi.fn(async (src: string, dest: string) => {
+      const content = files.get(src)
+      if (content !== undefined) {
+        files.set(dest, content)
+      }
+    }),
+
+    getAppPath: vi.fn(async () => {
+      return '/app'
+    }),
   }
 }
 
@@ -108,6 +140,40 @@ describe('ProjectManager', () => {
   beforeEach(() => {
     mockFs = createMockFileSystem()
     projectManager = new ProjectManager(mockFs)
+    
+    // Set up template directory for createProject tests
+    mockFs.directories.add('/app/templates/default-project')
+    mockFs.directories.add('/app/templates/default-project/game')
+    mockFs.directories.add('/app/templates/default-project/game/gui')
+    mockFs.directories.add('/app/templates/default-project/game/images')
+    mockFs.directories.add('/app/templates/default-project/game/audio')
+    mockFs.directories.add('/app/templates/default-project/game/tl')
+    mockFs.directories.add('/app/templates/default-project/game/saves')
+    
+    // Add template files
+    mockFs.files.set('/app/templates/default-project/game/script.rpy', `
+define e = Character("艾琳")
+
+label start:
+    e "您已创建一个新的 Ren'Py 游戏。"
+    return
+`)
+    mockFs.files.set('/app/templates/default-project/game/options.rpy', `
+define config.name = _("Project structure for new Renpy files")
+define build.name = "ProjectstructurefornewRenpyfiles"
+define config.save_directory = "ProjectstructurefornewRenpyfiles-1767496293"
+`)
+    mockFs.files.set('/app/templates/default-project/game/gui.rpy', `
+init offset = -2
+init python:
+    gui.init(1920, 1080)
+define gui.accent_color = '#99ccff'
+define gui.hover_color = '#c1e0ff'
+`)
+    mockFs.files.set('/app/templates/default-project/.gitignore', `
+*.rpyc
+*.rpymc
+`)
   })
 
   describe('createProject', () => {
@@ -121,27 +187,24 @@ describe('ProjectManager', () => {
       expect(result.project).toBeDefined()
       expect(result.project?.name).toBe('TestProject')
 
-      // Verify directory structure was created
-      for (const dir of Object.values(RENPY_PROJECT_STRUCTURE)) {
-        const fullPath = `/projects/TestProject/${dir}`
-        expect(await mockFs.exists(fullPath)).toBe(true)
-      }
+      // Verify project was created (copied from template)
+      expect(await mockFs.exists('/projects/TestProject/game')).toBe(true)
     })
 
-    it('should create default script.rpy when requested', async () => {
+    it('should customize project files after copying template', async () => {
       const result = await projectManager.createProject({
         name: 'TestProject',
         path: '/projects',
-        createDefaultScript: true,
+        accentColor: '#ff0000',
       })
 
       expect(result.success).toBe(true)
       
-      const scriptPath = '/projects/TestProject/game/script.rpy'
-      expect(mockFs.files.has(scriptPath)).toBe(true)
+      const optionsPath = '/projects/TestProject/game/options.rpy'
+      expect(mockFs.files.has(optionsPath)).toBe(true)
       
-      const content = mockFs.files.get(scriptPath)
-      expect(content).toContain('label start:')
+      const content = mockFs.files.get(optionsPath)
+      expect(content).toContain('TestProject')
     })
 
     it('should fail if directory already exists', async () => {
