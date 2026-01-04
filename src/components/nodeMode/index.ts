@@ -35,4 +35,11 @@ export {
   type MenuChoice,
   type ConditionBranch,
 } from './FlowGraphBuilder'
+export {
+  ASTSynchronizer,
+  astSynchronizer,
+  type SyncResult,
+  type SyncError,
+  type CreateStatementOptions,
+} from './ASTSynchronizer'
 export * from './nodes'
