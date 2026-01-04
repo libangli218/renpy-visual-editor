@@ -1,3 +1,5 @@
+import { RenpyScript } from './ast'
+
 // Editor mode types
 export type EditorMode = 'story' | 'node'
 export type ComplexityLevel = 'simple' | 'preview' | 'advanced'
@@ -11,6 +13,8 @@ export interface EditorState {
   modified: boolean
   selectedNodeId: string | null
   selectedBlockId: string | null
+  // AST data - shared between modes
+  ast: RenpyScript | null
 }
 
 // Preview state
