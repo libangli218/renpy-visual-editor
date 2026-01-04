@@ -8,7 +8,6 @@
 import { describe, it, expect } from 'vitest'
 import {
   LayeredImageDef,
-  LayerAttribute,
   generateLayeredImageCode,
   parseLayeredImageCode,
   isValidLayerName,

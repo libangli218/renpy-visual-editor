@@ -148,7 +148,7 @@ function formatDialogueText(text: string): React.ReactNode {
   // In a full implementation, this would parse Ren'Py text tags
   
   // Remove common Ren'Py tags for preview display
-  let formatted = text
+  const formatted = text
     .replace(/\{[^}]+\}/g, '') // Remove {tags}
     .replace(/\[\[/g, '[')     // Escape brackets
     .replace(/\]\]/g, ']')

@@ -42,7 +42,7 @@ export function getNodePorts(nodeType: string, data?: Record<string, unknown>): 
         targetPorts: [defaultTargetPort],
       }
 
-    case 'menu':
+    case 'menu': {
       // Menu has multiple source ports (one per choice)
       const choices = (data?.choices as Array<{ text: string }>) || []
       return {
@@ -53,8 +53,9 @@ export function getNodePorts(nodeType: string, data?: Record<string, unknown>): 
         })),
         targetPorts: [defaultTargetPort],
       }
+    }
 
-    case 'if':
+    case 'if': {
       // If has multiple source ports (one per branch)
       const branches = (data?.branches as Array<{ condition: string | null }>) || []
       return {
@@ -65,6 +66,7 @@ export function getNodePorts(nodeType: string, data?: Record<string, unknown>): 
         })),
         targetPorts: [defaultTargetPort],
       }
+    }
 
     case 'define':
     case 'default':

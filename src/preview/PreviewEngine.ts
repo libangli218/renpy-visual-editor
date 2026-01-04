@@ -368,7 +368,7 @@ export class PreviewEngine {
    */
   private applyCharacterChange(state: PreviewState, change: CharacterChange): void {
     switch (change.action) {
-      case 'show':
+      case 'show': {
         state.characters.set(change.name, {
           name: change.name,
           attributes: change.attributes || [],
@@ -376,10 +376,11 @@ export class PreviewEngine {
           visible: true,
         })
         break
+      }
       case 'hide':
         state.characters.delete(change.name)
         break
-      case 'update':
+      case 'update': {
         const existing = state.characters.get(change.name)
         if (existing) {
           state.characters.set(change.name, {
@@ -389,6 +390,7 @@ export class PreviewEngine {
           })
         }
         break
+      }
     }
   }
   

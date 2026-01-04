@@ -3,6 +3,7 @@ import { useEditorStore } from '../../store/editorStore'
 import { ASTNode, LabelNode, DialogueNode, MenuNode, SceneNode, ShowNode, HideNode, WithNode, JumpNode, CallNode, ReturnNode, IfNode, SetNode, PythonNode, PlayNode, StopNode, PauseNode, NVLNode, DefineNode, DefaultNode, RawNode } from '../../types/ast'
 import { getNodeTypeLabel, getNodeTypeColor } from './astNodeConverter'
 import { generateNode } from '../../generator/codeGenerator'
+import { PythonCodeEditor } from '../python'
 import './NodePropertiesPanel.css'
 
 /**
@@ -590,22 +591,32 @@ const SetProperties: React.FC<PropertyProps<SetNode>> = ({ node, updateProperty 
 const PythonProperties: React.FC<PropertyProps<PythonNode>> = ({ node, updateProperty }) => (
   <div className="property-group">
     <PropertyCheckbox
-      label="Early"
+      label="Early (init python early)"
       checked={node.early || false}
       onChange={(v) => updateProperty('early', v || undefined)}
     />
     <PropertyCheckbox
-      label="Hide"
+      label="Hide (python hide)"
       checked={node.hide || false}
       onChange={(v) => updateProperty('hide', v || undefined)}
     />
-    <PropertyTextArea
-      label="Code"
-      value={node.code}
-      onChange={(v) => updateProperty('code', v)}
-      rows={6}
-      monospace
-    />
+    <div className="property-item">
+      <label>Code</label>
+      <PythonCodeEditor
+        value={node.code}
+        onChange={(v) => updateProperty('code', v)}
+        height="200px"
+        showLineNumbers={true}
+        minimap={false}
+        placeholder="# Enter Python code here..."
+      />
+    </div>
+    <div className="python-code-hint">
+      <span className="hint-icon">💡</span>
+      <span className="hint-text">
+        Single-line code generates <code>$ code</code>, multi-line generates <code>python:</code> block
+      </span>
+    </div>
   </div>
 )
 

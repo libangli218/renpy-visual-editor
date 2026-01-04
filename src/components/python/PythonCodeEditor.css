@@ -1,0 +1,64 @@
+/* Python Code Editor Styles */
+
+.python-code-editor {
+  position: relative;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  overflow: hidden;
+  background-color: #1e1e1e;
+}
+
+.python-code-editor .monaco-editor {
+  border-radius: 4px;
+}
+
+.python-editor-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  min-height: 100px;
+  color: var(--text-secondary);
+  font-size: 0.8125rem;
+  background-color: #1e1e1e;
+}
+
+.python-editor-placeholder {
+  position: absolute;
+  top: 8px;
+  left: 60px;
+  color: #6b7280;
+  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+  font-size: 13px;
+  pointer-events: none;
+  opacity: 0.6;
+}
+
+/* Adjust placeholder position when line numbers are hidden */
+.python-code-editor.no-line-numbers .python-editor-placeholder {
+  left: 16px;
+}
+
+/* Error indicator styles */
+.python-code-editor.has-error {
+  border-color: var(--error-color, #dc2626);
+}
+
+.python-code-editor.has-error::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 4px;
+  height: 100%;
+  background-color: var(--error-color, #dc2626);
+}
+
+/* Compact mode for smaller displays */
+.python-code-editor.compact {
+  min-height: 80px;
+}
+
+.python-code-editor.compact .monaco-editor {
+  font-size: 12px;
+}

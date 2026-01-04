@@ -411,3 +411,34 @@
   margin-top: 0.5rem;
   font-style: italic;
 }
+
+
+/* Python code editor hint */
+.python-code-hint {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.375rem;
+  padding: 0.5rem;
+  background-color: var(--bg-tertiary);
+  border-radius: 4px;
+  margin-top: 0.5rem;
+}
+
+.python-code-hint .hint-icon {
+  font-size: 0.875rem;
+  flex-shrink: 0;
+}
+
+.python-code-hint .hint-text {
+  font-size: 0.6875rem;
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+
+.python-code-hint .hint-text code {
+  font-family: 'Consolas', 'Monaco', monospace;
+  background-color: var(--bg-primary);
+  padding: 0.0625rem 0.25rem;
+  border-radius: 3px;
+  font-size: 0.625rem;
+}
