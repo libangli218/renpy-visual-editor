@@ -355,6 +355,8 @@ export class RenpyParser {
   /**
    * Parse a menu statement
    * Format: menu:
+   *     "prompt text"  # optional prompt (no colon at end)
+   *     speaker "prompt text"  # optional prompt with speaker (no colon at end)
    *     "choice text":
    *         body
    */
@@ -362,7 +364,7 @@ export class RenpyParser {
     const match = line.content.match(/^menu(?:\s+(\w+))?\s*:\s*$/)
     if (!match) return null
     
-    const prompt = match[1]
+    let prompt = match[1]
     this.advance()
     
     const choices: MenuChoice[] = []
@@ -382,10 +384,32 @@ export class RenpyParser {
         continue
       }
       
+      // Check if this is a prompt text (quoted string without colon at end)
+      // Format 1: "prompt text"
+      const promptMatch = choiceLine.content.match(/^"((?:[^"\\]|\\.)*)"\s*$/)
+      if (promptMatch && !choiceLine.content.endsWith(':')) {
+        // This is a menu prompt, not a choice
+        prompt = this.unescapeString(promptMatch[1])
+        this.advance()
+        continue
+      }
+      
+      // Format 2: speaker "prompt text" (dialogue as prompt)
+      const dialoguePromptMatch = choiceLine.content.match(/^(\w+)\s+"((?:[^"\\]|\\.)*)"\s*$/)
+      if (dialoguePromptMatch && !choiceLine.content.endsWith(':')) {
+        // This is a dialogue used as menu prompt
+        const speaker = dialoguePromptMatch[1]
+        const text = this.unescapeString(dialoguePromptMatch[2])
+        prompt = `${speaker}: "${text}"`
+        this.advance()
+        continue
+      }
+      
       const choice = this.parseMenuChoice(choiceLine, choiceIndent)
       if (choice) {
         choices.push(choice)
       } else {
+        // If we can't parse as a choice, break to avoid infinite loop
         break
       }
     }

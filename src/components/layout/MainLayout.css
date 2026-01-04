@@ -505,3 +505,48 @@
   margin: 1rem auto 0;
   line-height: 1.5;
 }
+
+
+/* Save Status Indicator */
+.save-status {
+  position: fixed;
+  top: 60px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  z-index: 1000;
+  animation: slideDown 0.2s ease-out;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+.save-status-saving {
+  background-color: var(--bg-tertiary);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+}
+
+.save-status-saved {
+  background-color: #16a34a;
+  color: white;
+  border: 1px solid #22c55e;
+}
+
+.save-status-error {
+  background-color: #dc2626;
+  color: white;
+  border: 1px solid #ef4444;
+}

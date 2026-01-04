@@ -1,6 +1,8 @@
 import React, { useState, useCallback } from 'react'
 import { Node } from '@xyflow/react'
 import { FlowNodeData } from './FlowGraphBuilder'
+import { useEditorStore } from '../../store/editorStore'
+import { ASTSynchronizer } from './ASTSynchronizer'
 import './NodeDetailPanel.css'
 
 /**
@@ -19,10 +21,46 @@ import './NodeDetailPanel.css'
 interface NodeDetailPanelProps {
   node: Node
   onClose: () => void
+  onNodeDataChange?: (nodeId: string, newData: FlowNodeData) => void
 }
 
-export const NodeDetailPanel: React.FC<NodeDetailPanelProps> = ({ node, onClose }) => {
+export const NodeDetailPanel: React.FC<NodeDetailPanelProps> = ({ node, onClose, onNodeDataChange }) => {
   const data = node.data as unknown as FlowNodeData
+  const { ast, setAst } = useEditorStore()
+  
+  /**
+   * Handle dialogue text change
+   */
+  const handleDialogueChange = useCallback((index: number, newText: string) => {
+    if (!data.dialogues) return
+    
+    // Update the dialogue in the node data
+    const newDialogues = [...data.dialogues]
+    newDialogues[index] = { ...newDialogues[index], text: newText }
+    
+    const newData: FlowNodeData = {
+      ...data,
+      dialogues: newDialogues,
+    }
+    
+    // Notify parent of data change
+    if (onNodeDataChange) {
+      onNodeDataChange(node.id, newData)
+    }
+    
+    // Sync to AST
+    if (ast && data.dialogues[index].id) {
+      const synchronizer = new ASTSynchronizer()
+      const updated = synchronizer.updateDialogueText(data.dialogues[index].id, newText, ast)
+      if (updated) {
+        // Trigger AST update to mark as modified
+        setAst({ ...ast })
+      }
+    } else if (ast) {
+      // Even if we can't find the specific dialogue, mark as modified
+      setAst({ ...ast })
+    }
+  }, [data, node.id, onNodeDataChange, ast, setAst])
   
   return (
     <div className="detail-panel">
@@ -36,7 +74,7 @@ export const NodeDetailPanel: React.FC<NodeDetailPanelProps> = ({ node, onClose 
       </div>
       
       <div className="detail-panel-content">
-        {renderNodeContent(node.type || '', data)}
+        {renderNodeContent(node.type || '', data, handleDialogueChange)}
       </div>
     </div>
   )
@@ -77,12 +115,16 @@ function getNodeTypeLabel(type: string): string {
 /**
  * Render content based on node type
  */
-function renderNodeContent(type: string, data: FlowNodeData): React.ReactNode {
+function renderNodeContent(
+  type: string, 
+  data: FlowNodeData, 
+  onDialogueChange?: (index: number, newText: string) => void
+): React.ReactNode {
   switch (type) {
     case 'scene':
       return <SceneContent data={data} />
     case 'dialogue-block':
-      return <DialogueBlockContent data={data} />
+      return <DialogueBlockContent data={data} onDialogueChange={onDialogueChange} />
     case 'menu':
       return <MenuContent data={data} />
     case 'condition':
@@ -135,7 +177,10 @@ const SceneContent: React.FC<{ data: FlowNodeData }> = ({ data }) => {
 /**
  * Dialogue block content with editing support
  */
-const DialogueBlockContent: React.FC<{ data: FlowNodeData }> = ({ data }) => {
+const DialogueBlockContent: React.FC<{ 
+  data: FlowNodeData
+  onDialogueChange?: (index: number, newText: string) => void 
+}> = ({ data, onDialogueChange }) => {
   const [editingIndex, setEditingIndex] = useState<number | null>(null)
   const [editText, setEditText] = useState('')
   
@@ -145,10 +190,12 @@ const DialogueBlockContent: React.FC<{ data: FlowNodeData }> = ({ data }) => {
   }, [])
   
   const handleSaveEdit = useCallback(() => {
-    // TODO: Implement save to AST
+    if (editingIndex !== null && onDialogueChange) {
+      onDialogueChange(editingIndex, editText)
+    }
     setEditingIndex(null)
     setEditText('')
-  }, [])
+  }, [editingIndex, editText, onDialogueChange])
   
   const handleCancelEdit = useCallback(() => {
     setEditingIndex(null)

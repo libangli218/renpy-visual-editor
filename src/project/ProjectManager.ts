@@ -146,6 +146,10 @@ function getExtension(path: string): string {
 export class ProjectManager {
   private fs: FileSystem
   private currentProject: Project | null = null
+  /** Original file contents - used to detect if a file was actually modified */
+  private originalContents: Map<string, string> = new Map()
+  /** Set of file paths that have been modified */
+  private modifiedScripts: Set<string> = new Set()
 
   constructor(fileSystem: FileSystem = electronFileSystem) {
     this.fs = fileSystem
@@ -156,6 +160,37 @@ export class ProjectManager {
    */
   getProject(): Project | null {
     return this.currentProject
+  }
+
+  /**
+   * Mark a script as modified
+   */
+  markScriptModified(filePath: string): void {
+    this.modifiedScripts.add(filePath)
+    if (this.currentProject) {
+      this.currentProject.modified = true
+    }
+  }
+
+  /**
+   * Check if a script has been modified
+   */
+  isScriptModified(filePath: string): boolean {
+    return this.modifiedScripts.has(filePath)
+  }
+
+  /**
+   * Get the original content of a file
+   */
+  getOriginalContent(filePath: string): string | undefined {
+    return this.originalContents.get(filePath)
+  }
+
+  /**
+   * Get all modified script paths
+   */
+  getModifiedScripts(): string[] {
+    return Array.from(this.modifiedScripts)
   }
 
   /**
@@ -324,6 +359,10 @@ export class ProjectManager {
       // Scan for .rpy files
       const scanResult = await this.scanRpyFiles(projectPath)
       
+      // Clear previous state
+      this.originalContents.clear()
+      this.modifiedScripts.clear()
+      
       // Parse all script files
       const scripts = new Map<string, RenpyScript>()
       const characters: Character[] = []
@@ -332,6 +371,9 @@ export class ProjectManager {
       for (const filePath of scanResult.files) {
         try {
           const content = await this.fs.readFile(filePath)
+          // Save original content for later comparison
+          this.originalContents.set(filePath, content)
+          
           const parseResult = parse(content, filePath)
           scripts.set(filePath, parseResult.ast)
 
@@ -515,6 +557,9 @@ export class ProjectManager {
   /**
    * Save the current project
    * Implements Requirements 1.5, 1.6
+   * 
+   * Only saves scripts that have been explicitly marked as modified.
+   * This preserves the original formatting of unmodified files.
    */
   async saveProject(): Promise<SaveResult> {
     if (!this.currentProject) {
@@ -524,13 +569,28 @@ export class ProjectManager {
       }
     }
 
-    const errors: string[] = []
+    // If no scripts are modified, nothing to save
+    if (this.modifiedScripts.size === 0) {
+      return { success: true }
+    }
 
-    // Save all modified scripts
-    for (const [filePath, ast] of this.currentProject.scripts) {
+    const errors: string[] = []
+    let savedCount = 0
+
+    // Only save modified scripts
+    for (const filePath of this.modifiedScripts) {
+      const ast = this.currentProject.scripts.get(filePath)
+      if (!ast) {
+        errors.push(`Script not found in project: ${filePath}`)
+        continue
+      }
+
       try {
         const code = generate(ast)
         await this.fs.writeFile(filePath, code)
+        // Update original content after successful save
+        this.originalContents.set(filePath, code)
+        savedCount++
       } catch (error) {
         errors.push(`Failed to save ${filePath}: ${error instanceof Error ? error.message : String(error)}`)
       }
@@ -543,9 +603,13 @@ export class ProjectManager {
       }
     }
 
+    // Clear modified scripts set after successful save
+    this.modifiedScripts.clear()
+    
     // Mark project as not modified
     this.currentProject.modified = false
 
+    console.log(`Saved ${savedCount} modified script(s)`)
     return { success: true }
   }
 

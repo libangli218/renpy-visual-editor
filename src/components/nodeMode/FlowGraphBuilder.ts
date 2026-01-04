@@ -186,7 +186,7 @@ export class FlowGraphBuilder {
       edges: [],
     }
 
-    // First pass: collect all label names
+    // First pass: collect all label names and pre-assign node IDs
     this.collectLabelNames(ast.statements, context)
 
     // Second pass: build nodes
@@ -211,13 +211,17 @@ export class FlowGraphBuilder {
   }
 
   /**
-   * Collect all label names from the AST
+   * Collect all label names from the AST and pre-assign node IDs
+   * This ensures that jump edges can reference labels that appear later in the script
    */
   private collectLabelNames(statements: ASTNode[], context: BuildContext): void {
     for (const statement of statements) {
       if (statement.type === 'label') {
         const labelNode = statement as LabelNode
         context.labelNames.add(labelNode.name)
+        // Pre-assign node ID so that edges can reference it before the node is created
+        const nodeId = this.generateId('scene', context)
+        context.labelNodeIds.set(labelNode.name, nodeId)
       }
     }
   }
@@ -233,8 +237,8 @@ export class FlowGraphBuilder {
    * Build a scene node from a label
    */
   private buildSceneNode(label: LabelNode, context: BuildContext): FlowNode {
-    const nodeId = this.generateId('scene', context)
-    context.labelNodeIds.set(label.name, nodeId)
+    // Use pre-assigned node ID from collectLabelNames
+    const nodeId = context.labelNodeIds.get(label.name) || this.generateId('scene', context)
 
     // Generate preview from first few dialogues
     const preview = this.generatePreview(label.body)
@@ -442,8 +446,8 @@ export class FlowGraphBuilder {
         }
 
         case 'scene': {
-          // Scene starts a new block
-          flushDialogueBlock()
+          // Scene changes background but doesn't break dialogue flow
+          // Just add it to visual commands without flushing
           const scene = statement as ASTSceneNode
           currentVisualCommands.push({
             type: 'scene',

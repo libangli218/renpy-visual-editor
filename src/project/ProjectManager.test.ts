@@ -300,15 +300,27 @@ label start:
       await projectManager.openProject('/projects/MyGame')
     })
 
-    it('should save all scripts', async () => {
+    it('should save modified scripts', async () => {
+      // Mark the script as modified first
+      projectManager.markScriptModified('/projects/MyGame/game/script.rpy')
+      
       const result = await projectManager.saveProject()
 
       expect(result.success).toBe(true)
       expect(mockFs.writeFile).toHaveBeenCalled()
     })
 
+    it('should not save if no scripts are modified', async () => {
+      // Don't mark any scripts as modified
+      const result = await projectManager.saveProject()
+
+      expect(result.success).toBe(true)
+      expect(mockFs.writeFile).not.toHaveBeenCalled()
+    })
+
     it('should mark project as not modified after save', async () => {
-      projectManager.setModified(true)
+      // Mark script as modified
+      projectManager.markScriptModified('/projects/MyGame/game/script.rpy')
       expect(projectManager.isModified()).toBe(true)
 
       await projectManager.saveProject()
@@ -386,6 +398,9 @@ label start:
       const originalAst = projectManager.getScript('/projects/MyGame/game/script.rpy')
       expect(originalAst).toBeDefined()
 
+      // Mark script as modified
+      projectManager.markScriptModified('/projects/MyGame/game/script.rpy')
+
       // Make writeFile throw an error
       mockFs.writeFile = vi.fn().mockRejectedValue(new Error('Disk full'))
 
@@ -400,6 +415,10 @@ label start:
     })
 
     it('should report all errors when multiple files fail to save', async () => {
+      // Mark both scripts as modified
+      projectManager.markScriptModified('/projects/MyGame/game/script.rpy')
+      projectManager.markScriptModified('/projects/MyGame/game/chars.rpy')
+
       // Make writeFile throw an error
       mockFs.writeFile = vi.fn().mockRejectedValue(new Error('Write failed'))
 
@@ -412,6 +431,10 @@ label start:
     })
 
     it('should continue saving other files when one fails', async () => {
+      // Mark both scripts as modified
+      projectManager.markScriptModified('/projects/MyGame/game/script.rpy')
+      projectManager.markScriptModified('/projects/MyGame/game/chars.rpy')
+
       let callCount = 0
       mockFs.writeFile = vi.fn().mockImplementation(async (path: string, content: string) => {
         callCount++

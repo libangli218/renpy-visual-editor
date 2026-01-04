@@ -308,7 +308,9 @@ describe('Property 3: Dialogue Block Merging Preserves Content', () => {
     )
   })
 
-  it('should create separate blocks when scene command appears', () => {
+  it('should keep dialogues in same block when scene command appears', () => {
+    // Scene command only changes background, it should NOT break dialogue flow
+    // This matches Ren'Py's actual behavior where scene is just a visual command
     fc.assert(
       fc.property(
         arbitraryDialogueSequence,
@@ -327,16 +329,22 @@ describe('Property 3: Dialogue Block Merging Preserves Content', () => {
           const graph = builder.buildGraph(ast)
           const dialogueBlocks = graph.nodes.filter(n => n.type === 'dialogue-block')
           
-          // Should have at least 2 dialogue blocks (before and after scene)
-          // The scene command starts a new block, so dialogues after scene are in a new block
-          expect(dialogueBlocks.length).toBeGreaterThanOrEqual(2)
+          // Should have exactly 1 dialogue block (scene doesn't break dialogue flow)
+          expect(dialogueBlocks.length).toBe(1)
           
-          // Total dialogues should be preserved
+          // Total dialogues should be preserved in the single block
           const totalDialogues = dialogueBlocks.reduce(
             (sum, block) => sum + (block.data.dialogues?.length || 0),
             0
           )
           expect(totalDialogues).toBe(dialoguesBefore.length + dialoguesAfter.length)
+          
+          // Scene command should be in visual commands
+          const totalVisualCommands = dialogueBlocks.reduce(
+            (sum, block) => sum + (block.data.visualCommands?.length || 0),
+            0
+          )
+          expect(totalVisualCommands).toBeGreaterThanOrEqual(1)
           
           return true
         }

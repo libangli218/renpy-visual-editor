@@ -28,6 +28,7 @@ import { FlowGraphBuilder, FlowEdgeType } from './FlowGraphBuilder'
 import { FileClassifier, FileClassification } from './FileClassifier'
 import { isValidConnection, createEdgeId, handleNodeDeletion, findDisconnectedNodes } from './connectionUtils'
 import { projectManager } from '../../project/ProjectManager'
+import { ASTSynchronizer } from './ASTSynchronizer'
 import { RenpyScript } from '../../types/ast'
 import { NodeDetailPanel } from './NodeDetailPanel'
 import './NodeModeEditor.css'
@@ -562,8 +563,35 @@ const NodeModeEditorInner: React.FC = () => {
       
       // Select the newly created node
       setSelectedNodeId(nodeId)
+      
+      // Sync to AST - add the new node to the AST
+      if (ast && selectedFile) {
+        const synchronizer = new ASTSynchronizer()
+        let astModified = false
+        
+        // Create corresponding AST node based on type
+        if (type === 'scene' && data.label) {
+          const labelName = data.label as string
+          astModified = synchronizer.addLabel(labelName, ast)
+        } else if (type === 'dialogue-block' && data.dialogues) {
+          // Dialogue blocks need to be added to an existing label
+          // For now, just mark as modified
+          astModified = true
+        } else if (type === 'jump' && data.target) {
+          // Jump nodes need to be added to an existing label
+          astModified = true
+        } else if (type === 'call' && data.target) {
+          // Call nodes need to be added to an existing label
+          astModified = true
+        }
+        
+        if (astModified) {
+          // Update the AST in the store to trigger modification tracking
+          setAst({ ...ast })
+        }
+      }
     },
-    [contextMenu.flowPosition, generateNodeId, setNodes, closeContextMenu, setSelectedNodeId]
+    [contextMenu.flowPosition, generateNodeId, setNodes, closeContextMenu, setSelectedNodeId, ast, selectedFile, setAst]
   )
 
   // Handle node deletion - also remove connected edges
