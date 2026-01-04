@@ -1,18 +1,22 @@
 import React from 'react'
 import { useEditorStore } from '../../store/editorStore'
 import { NodePropertiesPanel } from '../nodeMode'
+import { CharacterPropertiesPanel, useCharacterStore } from '../character'
 
 /**
  * RightPanel component - Properties panel for selected elements
  * Implements Requirements 5.4, 6.6: Show properties for selected node/block
+ * Implements Requirements 7.3: Character property editing
  * 
  * Shows different content based on:
+ * - Selected character (shows CharacterPropertiesPanel)
  * - Selected node in Node Mode
  * - Selected block in Story Mode
  * - Complexity level (shows code preview in 'preview' and 'advanced' modes)
  */
 export const RightPanel: React.FC = () => {
   const { selectedBlockId, mode, complexity } = useEditorStore()
+  const { selectedCharacterId } = useCharacterStore()
 
   return (
     <aside className="right-panel" aria-label="Properties panel">
@@ -21,7 +25,13 @@ export const RightPanel: React.FC = () => {
       </div>
       
       <div className="panel-content">
-        {mode === 'node' ? (
+        {/* Character properties panel - shown when a character is selected */}
+        {selectedCharacterId ? (
+          <CharacterPropertiesPanel
+            showCodePreview={complexity === 'preview' || complexity === 'advanced'}
+            allowCodeEdit={complexity === 'advanced'}
+          />
+        ) : mode === 'node' ? (
           <NodePropertiesPanel />
         ) : !selectedBlockId ? (
           <div className="panel-empty">

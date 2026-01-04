@@ -1,9 +1,16 @@
 import React, { useState } from 'react'
 import { useEditorStore } from '../../store/editorStore'
+import {
+  CharacterList,
+  CharacterDialog,
+  useCharacterStore,
+  CharacterFormData,
+} from '../character'
 
 /**
  * LeftPanel component - Project browser panel
  * Implements Requirements 1.3: Display project structure
+ * Implements Requirements 7.1: Display all defined characters
  * 
  * Sections:
  * - Labels (Scenes)
@@ -32,8 +39,22 @@ const sections: SectionConfig[] = [
 export const LeftPanel: React.FC = () => {
   const { projectPath } = useEditorStore()
   const [expandedSections, setExpandedSections] = useState<Set<PanelSection>>(
-    new Set(['labels'])
+    new Set(['labels', 'characters'])
   )
+
+  // Character store
+  const {
+    characters,
+    selectedCharacterId,
+    dialogOpen,
+    editingCharacter,
+    selectCharacter,
+    openDialog,
+    closeDialog,
+    addCharacter,
+    updateCharacter,
+    deleteCharacter,
+  } = useCharacterStore()
 
   const toggleSection = (section: PanelSection) => {
     setExpandedSections((prev) => {
@@ -45,6 +66,41 @@ export const LeftPanel: React.FC = () => {
       }
       return next
     })
+  }
+
+  const handleSaveCharacter = (data: CharacterFormData) => {
+    if (editingCharacter) {
+      updateCharacter(editingCharacter.id, data)
+    } else {
+      addCharacter(data)
+    }
+  }
+
+  const handleDeleteCharacter = (id: string) => {
+    if (window.confirm('Are you sure you want to delete this character?')) {
+      deleteCharacter(id)
+    }
+  }
+
+  const renderSectionContent = (sectionId: PanelSection) => {
+    switch (sectionId) {
+      case 'characters':
+        return (
+          <CharacterList
+            characters={characters}
+            selectedId={selectedCharacterId}
+            onSelect={(char) => selectCharacter(char.id)}
+            onAdd={() => openDialog()}
+            onDelete={handleDeleteCharacter}
+          />
+        )
+      default:
+        return (
+          <p className="section-empty">
+            No {sections.find((s) => s.id === sectionId)?.label.toLowerCase()} found
+          </p>
+        )
+    }
   }
 
   return (
@@ -76,13 +132,22 @@ export const LeftPanel: React.FC = () => {
               </button>
               {expandedSections.has(id) && (
                 <div className="section-content">
-                  <p className="section-empty">No {label.toLowerCase()} found</p>
+                  {renderSectionContent(id)}
                 </div>
               )}
             </div>
           ))}
         </div>
       )}
+
+      {/* Character Dialog */}
+      <CharacterDialog
+        isOpen={dialogOpen}
+        character={editingCharacter}
+        existingNames={characters.map((c) => c.name)}
+        onSave={handleSaveCharacter}
+        onCancel={closeDialog}
+      />
     </aside>
   )
 }
