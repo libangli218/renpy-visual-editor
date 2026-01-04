@@ -30,6 +30,36 @@ import {
 } from './FlowGraphBuilder'
 
 /**
+ * Dialogue data for insertion
+ */
+export interface DialogueData {
+  speaker: string | null
+  text: string
+  attributes?: string[]
+}
+
+/**
+ * Menu data for insertion
+ */
+export interface MenuData {
+  prompt?: string
+  choices: Array<{
+    text: string
+    condition?: string
+    body: ASTNode[]
+  }>
+}
+
+/**
+ * Insert position information
+ */
+export interface InsertPosition {
+  labelName: string
+  afterNodeId: string | null
+  beforeNodeId: string | null
+}
+
+/**
  * Synchronization result
  */
 export interface SyncResult {
@@ -1195,6 +1225,336 @@ export class ASTSynchronizer {
     }
     
     return false
+  }
+
+  /**
+   * Insert a dialogue into a label at a specified position
+   * 
+   * Implements Requirements:
+   * - 1.2: 将对话节点添加到对应 label 的 body 中
+   * - 7.2: 连接到 Scene 节点的输出时添加到 label body 开头
+   * - 7.3: 连接到另一个节点的输出时添加到源节点之后
+   * 
+   * @param labelName - The target label name
+   * @param dialogue - The dialogue data to insert
+   * @param ast - The AST to modify
+   * @param afterNodeId - Insert after this node ID (null = insert at beginning)
+   * @returns The ID of the inserted dialogue node, or null if insertion failed
+   */
+  insertDialogue(
+    labelName: string,
+    dialogue: DialogueData,
+    ast: RenpyScript,
+    afterNodeId?: string
+  ): string | null {
+    const labelMap = this.buildLabelMap(ast)
+    const label = labelMap.get(labelName)
+    
+    if (!label) {
+      return null
+    }
+
+    // Create the dialogue node
+    const dialogueNode = this.createDialogue(dialogue.text, dialogue.speaker)
+    if (dialogue.attributes) {
+      dialogueNode.attributes = dialogue.attributes
+    }
+
+    // Determine insertion position
+    if (afterNodeId === undefined || afterNodeId === null) {
+      // Insert at the beginning of the label body
+      label.body.unshift(dialogueNode)
+    } else {
+      // Find the position of afterNodeId in the label body
+      const insertIndex = this.findNodeIndexInBody(label.body, afterNodeId)
+      
+      if (insertIndex === -1) {
+        // Node not found in direct body, try to find in nested structures
+        const inserted = this.insertAfterNodeInBody(label.body, afterNodeId, dialogueNode)
+        if (!inserted) {
+          // Fallback: insert at the end
+          label.body.push(dialogueNode)
+        }
+      } else {
+        // Insert after the found node
+        label.body.splice(insertIndex + 1, 0, dialogueNode)
+      }
+    }
+
+    return dialogueNode.id
+  }
+
+  /**
+   * Insert a menu into a label at a specified position
+   * 
+   * Implements Requirements:
+   * - 3.2: 将 Menu 节点连接到流程中时在对应位置插入 menu 语句
+   * 
+   * @param labelName - The target label name
+   * @param menu - The menu data to insert
+   * @param ast - The AST to modify
+   * @param afterNodeId - Insert after this node ID (null = insert at beginning)
+   * @returns The ID of the inserted menu node, or null if insertion failed
+   */
+  insertMenu(
+    labelName: string,
+    menu: MenuData,
+    ast: RenpyScript,
+    afterNodeId?: string
+  ): string | null {
+    const labelMap = this.buildLabelMap(ast)
+    const label = labelMap.get(labelName)
+    
+    if (!label) {
+      return null
+    }
+
+    // Create the menu node with choices
+    const choices: MenuChoice[] = menu.choices.map(choice => ({
+      text: choice.text,
+      condition: choice.condition,
+      body: choice.body || [],
+    }))
+
+    const menuNode = this.createMenu(choices, menu.prompt)
+
+    // Determine insertion position
+    if (afterNodeId === undefined || afterNodeId === null) {
+      // Insert at the beginning of the label body
+      label.body.unshift(menuNode)
+    } else {
+      // Find the position of afterNodeId in the label body
+      const insertIndex = this.findNodeIndexInBody(label.body, afterNodeId)
+      
+      if (insertIndex === -1) {
+        // Node not found in direct body, try to find in nested structures
+        const inserted = this.insertAfterNodeInBody(label.body, afterNodeId, menuNode)
+        if (!inserted) {
+          // Fallback: insert at the end
+          label.body.push(menuNode)
+        }
+      } else {
+        // Insert after the found node
+        label.body.splice(insertIndex + 1, 0, menuNode)
+      }
+    }
+
+    return menuNode.id
+  }
+
+  /**
+   * Determine the insert position for a new node based on source and target nodes
+   * 
+   * Implements Requirements:
+   * - 5.1: 确定节点 B 在 AST 中的插入位置
+   * - 7.1: 新节点连接在两个现有节点之间时插入到两者之间
+   * - 7.2: 新节点连接到 Scene 节点的输出时添加到 label body 开头
+   * - 7.3: 新节点连接到另一个节点的输出时添加到源节点之后
+   * 
+   * @param sourceNodeId - The source node ID (connection start)
+   * @param targetNodeId - The target node ID (new node or connection end)
+   * @param graph - The current flow graph
+   * @returns Insert position information, or null if cannot determine
+   */
+  determineInsertPosition(
+    sourceNodeId: string,
+    targetNodeId: string,
+    graph: FlowGraph
+  ): InsertPosition | null {
+    // Find the source node
+    const sourceNode = graph.nodes.find(n => n.id === sourceNodeId)
+    if (!sourceNode) {
+      return null
+    }
+
+    // Determine the label name
+    let labelName: string | null = null
+
+    if (sourceNode.type === 'scene') {
+      // Source is a scene node, use its label
+      labelName = sourceNode.data.label || null
+    } else {
+      // Find the label by traversing up the graph
+      labelName = this.findLabelForNode(sourceNodeId, graph)
+    }
+
+    if (!labelName) {
+      return null
+    }
+
+    // Determine insertion position based on source node type
+    if (sourceNode.type === 'scene') {
+      // Connecting to Scene output: insert at the beginning of label body
+      // Check if there's an existing successor
+      const existingSuccessor = this.findSuccessorNode(sourceNodeId, graph)
+      return {
+        labelName,
+        afterNodeId: null, // Insert at beginning
+        beforeNodeId: existingSuccessor,
+      }
+    } else {
+      // Connecting to another node's output: insert after source node
+      const existingSuccessor = this.findSuccessorNode(sourceNodeId, graph)
+      
+      // Get the AST node ID from the source node
+      const afterNodeId = this.getAstNodeIdFromFlowNode(sourceNode)
+      
+      return {
+        labelName,
+        afterNodeId,
+        beforeNodeId: existingSuccessor,
+      }
+    }
+  }
+
+  /**
+   * Insert a jump statement into a menu choice body
+   * 
+   * Implements Requirements:
+   * - 3.4: 从菜单选项连接到目标 Scene 时在 choice body 中添加 jump 语句
+   * 
+   * @param menuNodeId - The menu node ID
+   * @param choiceIndex - The index of the choice to insert into
+   * @param targetLabel - The jump target label
+   * @param ast - The AST to modify
+   * @returns Whether insertion was successful
+   */
+  insertJumpIntoChoice(
+    menuNodeId: string,
+    choiceIndex: number,
+    targetLabel: string,
+    ast: RenpyScript
+  ): boolean {
+    // Find the menu node in the AST
+    const menuNode = this.findNodeById(ast, menuNodeId) as ASTMenuNode | null
+    
+    if (!menuNode || menuNode.type !== 'menu') {
+      return false
+    }
+
+    // Check if choice index is valid
+    if (choiceIndex < 0 || choiceIndex >= menuNode.choices.length) {
+      return false
+    }
+
+    // Create the jump statement
+    const jumpNode = this.createJumpStatement(targetLabel)
+
+    // Check if there's already a jump in this choice
+    const choice = menuNode.choices[choiceIndex]
+    const existingJumpIndex = choice.body.findIndex(n => n.type === 'jump')
+    
+    if (existingJumpIndex !== -1) {
+      // Replace existing jump
+      choice.body[existingJumpIndex] = jumpNode
+    } else {
+      // Add jump at the end of choice body
+      choice.body.push(jumpNode)
+    }
+
+    return true
+  }
+
+  /**
+   * Find the index of a node in a body array by ID
+   */
+  private findNodeIndexInBody(body: ASTNode[], nodeId: string): number {
+    return body.findIndex(node => node.id === nodeId)
+  }
+
+  /**
+   * Insert a node after a specific node ID in a body array (including nested structures)
+   * Returns true if insertion was successful
+   */
+  private insertAfterNodeInBody(body: ASTNode[], afterNodeId: string, newNode: ASTNode): boolean {
+    for (let i = 0; i < body.length; i++) {
+      const node = body[i]
+      
+      if (node.id === afterNodeId) {
+        body.splice(i + 1, 0, newNode)
+        return true
+      }
+
+      // Check nested structures
+      if (node.type === 'menu') {
+        const menu = node as ASTMenuNode
+        for (const choice of menu.choices) {
+          if (this.insertAfterNodeInBody(choice.body, afterNodeId, newNode)) {
+            return true
+          }
+        }
+      } else if (node.type === 'if') {
+        const ifNode = node as ASTIfNode
+        for (const branch of ifNode.branches) {
+          if (this.insertAfterNodeInBody(branch.body, afterNodeId, newNode)) {
+            return true
+          }
+        }
+      }
+    }
+
+    return false
+  }
+
+  /**
+   * Find the label name for a node by traversing up the graph
+   */
+  private findLabelForNode(nodeId: string, graph: FlowGraph): string | null {
+    const visited = new Set<string>()
+    const queue: string[] = [nodeId]
+
+    while (queue.length > 0) {
+      const currentId = queue.shift()!
+      
+      if (visited.has(currentId)) {
+        continue
+      }
+      visited.add(currentId)
+
+      // Find the current node
+      const currentNode = graph.nodes.find(n => n.id === currentId)
+      if (currentNode?.type === 'scene') {
+        return currentNode.data.label || null
+      }
+
+      // Find incoming edges
+      const incomingEdges = graph.edges.filter(e => e.target === currentId)
+      for (const edge of incomingEdges) {
+        if (!visited.has(edge.source)) {
+          queue.push(edge.source)
+        }
+      }
+    }
+
+    return null
+  }
+
+  /**
+   * Find the successor node ID in the graph
+   */
+  private findSuccessorNode(nodeId: string, graph: FlowGraph): string | null {
+    const outgoingEdge = graph.edges.find(e => e.source === nodeId)
+    return outgoingEdge?.target || null
+  }
+
+  /**
+   * Get the AST node ID from a flow node
+   */
+  private getAstNodeIdFromFlowNode(flowNode: FlowNode): string | null {
+    // If the flow node has AST nodes, return the last one's ID
+    // (typically the main statement, not visual commands)
+    const astNodes = flowNode.data.astNodes
+    if (astNodes && astNodes.length > 0) {
+      // For dialogue blocks, find the last dialogue
+      if (flowNode.type === 'dialogue-block' && flowNode.data.dialogues) {
+        const lastDialogue = flowNode.data.dialogues[flowNode.data.dialogues.length - 1]
+        if (lastDialogue) {
+          return lastDialogue.id
+        }
+      }
+      return astNodes[astNodes.length - 1].id
+    }
+    return null
   }
 }
 

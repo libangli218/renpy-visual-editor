@@ -1139,3 +1139,487 @@ describe('Property 7: Node Deletion Consistency', () => {
     )
   })
 })
+
+
+describe('Property 1: Node Insertion Position Correctness', () => {
+  /**
+   * Property 1: 节点插入位置正确性
+   * 
+   * For any newly created node and valid connection relationship, when the node
+   * is connected to the flow, its position in the AST should correctly reflect
+   * its position in the flow graph:
+   * - Nodes connected to Scene output should be at the beginning of label body
+   * - Nodes connected to other node outputs should be after the source node
+   * - Nodes inserted between two nodes should be between them in the AST
+   * 
+   * Feature: node-creation-persistence, Property 1: Node Insertion Position Correctness
+   * Validates: Requirements 1.2, 5.1, 5.2, 7.1, 7.2, 7.3
+   */
+
+  // Arbitrary for valid label names
+  const arbitraryLabelName = fc.stringOf(
+    fc.constantFrom(...'abcdefghijklmnopqrstuvwxyz_'),
+    { minLength: 1, maxLength: 15 }
+  ).filter(s => /^[a-z_][a-z0-9_]*$/.test(s))
+
+  // Arbitrary for speaker names
+  const arbitrarySpeaker = fc.oneof(
+    fc.constant(null),
+    fc.stringOf(fc.constantFrom(...'abcdefghijklmnopqrstuvwxyz'), { minLength: 1, maxLength: 10 })
+  )
+
+  // Arbitrary for dialogue text
+  const arbitraryText = fc.stringOf(
+    fc.constantFrom(...'abcdefghijklmnopqrstuvwxyz '),
+    { minLength: 1, maxLength: 50 }
+  )
+
+  it('should insert dialogue at the beginning when afterNodeId is null', () => {
+    fc.assert(
+      fc.property(
+        arbitraryLabelName,
+        arbitrarySpeaker,
+        arbitraryText,
+        fc.array(arbitraryText, { minLength: 1, maxLength: 3 }),
+        (labelName, speaker, newText, existingTexts) => {
+          const synchronizer = new ASTSynchronizer()
+
+          // Create existing dialogues
+          const existingDialogues = existingTexts.map((text, i) =>
+            createDialogue(`d-existing-${i}`, null, text)
+          )
+          const label = createLabel(labelName, existingDialogues)
+          const ast = createScript([label])
+
+          // Insert new dialogue at the beginning (afterNodeId = undefined)
+          const newDialogueId = synchronizer.insertDialogue(
+            labelName,
+            { speaker, text: newText },
+            ast,
+            undefined // Insert at beginning
+          )
+
+          expect(newDialogueId).not.toBeNull()
+
+          // Verify the new dialogue is at the beginning
+          const updatedLabel = ast.statements.find(
+            s => s.type === 'label' && (s as LabelNode).name === labelName
+          ) as LabelNode
+
+          expect(updatedLabel.body.length).toBe(existingTexts.length + 1)
+          
+          const firstNode = updatedLabel.body[0] as DialogueNode
+          expect(firstNode.id).toBe(newDialogueId)
+          expect(firstNode.text).toBe(newText)
+          expect(firstNode.speaker).toBe(speaker)
+
+          return true
+        }
+      ),
+      { numRuns: 100 }
+    )
+  })
+
+  it('should insert dialogue after specified node', () => {
+    fc.assert(
+      fc.property(
+        arbitraryLabelName,
+        arbitrarySpeaker,
+        arbitraryText,
+        fc.array(arbitraryText, { minLength: 2, maxLength: 5 }),
+        fc.integer({ min: 0, max: 4 }),
+        (labelName, speaker, newText, existingTexts, insertAfterIndex) => {
+          // Ensure insertAfterIndex is valid
+          const validIndex = Math.min(insertAfterIndex, existingTexts.length - 1)
+          
+          const synchronizer = new ASTSynchronizer()
+
+          // Create existing dialogues
+          const existingDialogues = existingTexts.map((text, i) =>
+            createDialogue(`d-existing-${i}`, null, text)
+          )
+          const label = createLabel(labelName, existingDialogues)
+          const ast = createScript([label])
+
+          // Get the ID of the node to insert after
+          const afterNodeId = existingDialogues[validIndex].id
+
+          // Insert new dialogue after the specified node
+          const newDialogueId = synchronizer.insertDialogue(
+            labelName,
+            { speaker, text: newText },
+            ast,
+            afterNodeId
+          )
+
+          expect(newDialogueId).not.toBeNull()
+
+          // Verify the new dialogue is at the correct position
+          const updatedLabel = ast.statements.find(
+            s => s.type === 'label' && (s as LabelNode).name === labelName
+          ) as LabelNode
+
+          expect(updatedLabel.body.length).toBe(existingTexts.length + 1)
+          
+          // The new node should be at position validIndex + 1
+          const insertedNode = updatedLabel.body[validIndex + 1] as DialogueNode
+          expect(insertedNode.id).toBe(newDialogueId)
+          expect(insertedNode.text).toBe(newText)
+
+          // The node before should be the one we specified
+          const nodeBefore = updatedLabel.body[validIndex] as DialogueNode
+          expect(nodeBefore.id).toBe(afterNodeId)
+
+          return true
+        }
+      ),
+      { numRuns: 100 }
+    )
+  })
+
+  it('should return null when inserting into non-existent label', () => {
+    fc.assert(
+      fc.property(
+        arbitraryLabelName,
+        arbitraryLabelName,
+        arbitrarySpeaker,
+        arbitraryText,
+        (existingLabelName, nonExistentLabelName, speaker, text) => {
+          // Ensure the labels are different
+          if (existingLabelName === nonExistentLabelName) return true
+
+          const synchronizer = new ASTSynchronizer()
+
+          // Create a label
+          const label = createLabel(existingLabelName, [
+            createDialogue('d-1', null, 'existing dialogue')
+          ])
+          const ast = createScript([label])
+
+          // Try to insert into non-existent label
+          const result = synchronizer.insertDialogue(
+            nonExistentLabelName,
+            { speaker, text },
+            ast
+          )
+
+          expect(result).toBeNull()
+
+          // Original AST should be unchanged
+          expect(ast.statements.length).toBe(1)
+          const originalLabel = ast.statements[0] as LabelNode
+          expect(originalLabel.body.length).toBe(1)
+
+          return true
+        }
+      ),
+      { numRuns: 100 }
+    )
+  })
+
+  it('should insert menu at the beginning when afterNodeId is null', () => {
+    fc.assert(
+      fc.property(
+        arbitraryLabelName,
+        fc.array(arbitraryText, { minLength: 1, maxLength: 3 }),
+        fc.array(arbitraryText, { minLength: 1, maxLength: 3 }),
+        (labelName, choiceTexts, existingTexts) => {
+          const synchronizer = new ASTSynchronizer()
+
+          // Create existing dialogues
+          const existingDialogues = existingTexts.map((text, i) =>
+            createDialogue(`d-existing-${i}`, null, text)
+          )
+          const label = createLabel(labelName, existingDialogues)
+          const ast = createScript([label])
+
+          // Create menu data
+          const menuData = {
+            prompt: 'Choose an option',
+            choices: choiceTexts.map(text => ({
+              text,
+              body: [] as ASTNode[],
+            })),
+          }
+
+          // Insert menu at the beginning
+          const newMenuId = synchronizer.insertMenu(
+            labelName,
+            menuData,
+            ast,
+            undefined
+          )
+
+          expect(newMenuId).not.toBeNull()
+
+          // Verify the menu is at the beginning
+          const updatedLabel = ast.statements.find(
+            s => s.type === 'label' && (s as LabelNode).name === labelName
+          ) as LabelNode
+
+          expect(updatedLabel.body.length).toBe(existingTexts.length + 1)
+          
+          const firstNode = updatedLabel.body[0] as MenuNode
+          expect(firstNode.id).toBe(newMenuId)
+          expect(firstNode.type).toBe('menu')
+          expect(firstNode.choices.length).toBe(choiceTexts.length)
+
+          return true
+        }
+      ),
+      { numRuns: 100 }
+    )
+  })
+
+  it('should insert menu after specified node', () => {
+    fc.assert(
+      fc.property(
+        arbitraryLabelName,
+        fc.array(arbitraryText, { minLength: 1, maxLength: 3 }),
+        fc.array(arbitraryText, { minLength: 2, maxLength: 4 }),
+        fc.integer({ min: 0, max: 3 }),
+        (labelName, choiceTexts, existingTexts, insertAfterIndex) => {
+          const validIndex = Math.min(insertAfterIndex, existingTexts.length - 1)
+          
+          const synchronizer = new ASTSynchronizer()
+
+          // Create existing dialogues
+          const existingDialogues = existingTexts.map((text, i) =>
+            createDialogue(`d-existing-${i}`, null, text)
+          )
+          const label = createLabel(labelName, existingDialogues)
+          const ast = createScript([label])
+
+          const afterNodeId = existingDialogues[validIndex].id
+
+          // Create menu data
+          const menuData = {
+            choices: choiceTexts.map(text => ({
+              text,
+              body: [] as ASTNode[],
+            })),
+          }
+
+          // Insert menu after specified node
+          const newMenuId = synchronizer.insertMenu(
+            labelName,
+            menuData,
+            ast,
+            afterNodeId
+          )
+
+          expect(newMenuId).not.toBeNull()
+
+          // Verify the menu is at the correct position
+          const updatedLabel = ast.statements.find(
+            s => s.type === 'label' && (s as LabelNode).name === labelName
+          ) as LabelNode
+
+          expect(updatedLabel.body.length).toBe(existingTexts.length + 1)
+          
+          const insertedNode = updatedLabel.body[validIndex + 1] as MenuNode
+          expect(insertedNode.id).toBe(newMenuId)
+          expect(insertedNode.type).toBe('menu')
+
+          return true
+        }
+      ),
+      { numRuns: 100 }
+    )
+  })
+
+  it('should insert jump into menu choice body', () => {
+    fc.assert(
+      fc.property(
+        arbitraryLabelName,
+        arbitraryLabelName,
+        fc.array(arbitraryText, { minLength: 1, maxLength: 4 }),
+        fc.integer({ min: 0, max: 3 }),
+        (labelName, targetLabel, choiceTexts, choiceIndex) => {
+          const validChoiceIndex = Math.min(choiceIndex, choiceTexts.length - 1)
+          
+          const synchronizer = new ASTSynchronizer()
+
+          // Create menu with choices
+          const choices: MenuChoice[] = choiceTexts.map(text => ({
+            text,
+            body: [],
+          }))
+          const menu = createMenu('menu-1', choices)
+          const label = createLabel(labelName, [menu])
+          const ast = createScript([label])
+
+          // Insert jump into the specified choice
+          const result = synchronizer.insertJumpIntoChoice(
+            'menu-1',
+            validChoiceIndex,
+            targetLabel,
+            ast
+          )
+
+          expect(result).toBe(true)
+
+          // Verify the jump was inserted
+          const updatedLabel = ast.statements.find(
+            s => s.type === 'label' && (s as LabelNode).name === labelName
+          ) as LabelNode
+
+          const updatedMenu = updatedLabel.body[0] as MenuNode
+          const updatedChoice = updatedMenu.choices[validChoiceIndex]
+          
+          expect(updatedChoice.body.length).toBe(1)
+          expect(updatedChoice.body[0].type).toBe('jump')
+          expect((updatedChoice.body[0] as JumpNode).target).toBe(targetLabel)
+
+          return true
+        }
+      ),
+      { numRuns: 100 }
+    )
+  })
+
+  it('should replace existing jump in menu choice', () => {
+    fc.assert(
+      fc.property(
+        arbitraryLabelName,
+        arbitraryLabelName,
+        arbitraryLabelName,
+        fc.array(arbitraryText, { minLength: 1, maxLength: 3 }),
+        fc.integer({ min: 0, max: 2 }),
+        (labelName, oldTarget, newTarget, choiceTexts, choiceIndex) => {
+          if (oldTarget === newTarget) return true
+          
+          const validChoiceIndex = Math.min(choiceIndex, choiceTexts.length - 1)
+          
+          const synchronizer = new ASTSynchronizer()
+
+          // Create menu with choices that already have jumps
+          const choices: MenuChoice[] = choiceTexts.map((text, i) => ({
+            text,
+            body: i === validChoiceIndex ? [createJump(`j-${i}`, oldTarget)] : [],
+          }))
+          const menu = createMenu('menu-1', choices)
+          const label = createLabel(labelName, [menu])
+          const ast = createScript([label])
+
+          // Insert new jump (should replace existing)
+          const result = synchronizer.insertJumpIntoChoice(
+            'menu-1',
+            validChoiceIndex,
+            newTarget,
+            ast
+          )
+
+          expect(result).toBe(true)
+
+          // Verify the jump was replaced
+          const updatedLabel = ast.statements.find(
+            s => s.type === 'label' && (s as LabelNode).name === labelName
+          ) as LabelNode
+
+          const updatedMenu = updatedLabel.body[0] as MenuNode
+          const updatedChoice = updatedMenu.choices[validChoiceIndex]
+          
+          // Should still have only one jump
+          expect(updatedChoice.body.length).toBe(1)
+          expect(updatedChoice.body[0].type).toBe('jump')
+          expect((updatedChoice.body[0] as JumpNode).target).toBe(newTarget)
+
+          return true
+        }
+      ),
+      { numRuns: 100 }
+    )
+  })
+
+  it('should return false when inserting jump into invalid choice index', () => {
+    fc.assert(
+      fc.property(
+        arbitraryLabelName,
+        arbitraryLabelName,
+        fc.array(arbitraryText, { minLength: 1, maxLength: 3 }),
+        (labelName, targetLabel, choiceTexts) => {
+          const synchronizer = new ASTSynchronizer()
+
+          // Create menu with choices
+          const choices: MenuChoice[] = choiceTexts.map(text => ({
+            text,
+            body: [],
+          }))
+          const menu = createMenu('menu-1', choices)
+          const label = createLabel(labelName, [menu])
+          const ast = createScript([label])
+
+          // Try to insert into invalid choice index
+          const result = synchronizer.insertJumpIntoChoice(
+            'menu-1',
+            choiceTexts.length + 10, // Invalid index
+            targetLabel,
+            ast
+          )
+
+          expect(result).toBe(false)
+
+          // Verify no changes were made
+          const updatedLabel = ast.statements.find(
+            s => s.type === 'label' && (s as LabelNode).name === labelName
+          ) as LabelNode
+
+          const updatedMenu = updatedLabel.body[0] as MenuNode
+          for (const choice of updatedMenu.choices) {
+            expect(choice.body.length).toBe(0)
+          }
+
+          return true
+        }
+      ),
+      { numRuns: 100 }
+    )
+  })
+
+  it('should preserve existing content when inserting new nodes', () => {
+    fc.assert(
+      fc.property(
+        arbitraryLabelName,
+        arbitrarySpeaker,
+        arbitraryText,
+        fc.array(fc.tuple(arbitrarySpeaker, arbitraryText), { minLength: 2, maxLength: 5 }),
+        (labelName, newSpeaker, newText, existingDialogues) => {
+          const synchronizer = new ASTSynchronizer()
+
+          // Create existing dialogues
+          const dialogues = existingDialogues.map(([speaker, text], i) =>
+            createDialogue(`d-existing-${i}`, speaker, text)
+          )
+          const label = createLabel(labelName, dialogues)
+          const ast = createScript([label])
+
+          // Insert new dialogue at the beginning
+          synchronizer.insertDialogue(
+            labelName,
+            { speaker: newSpeaker, text: newText },
+            ast,
+            undefined
+          )
+
+          // Verify all existing dialogues are preserved
+          const updatedLabel = ast.statements.find(
+            s => s.type === 'label' && (s as LabelNode).name === labelName
+          ) as LabelNode
+
+          expect(updatedLabel.body.length).toBe(existingDialogues.length + 1)
+
+          // Check that existing dialogues are still there (shifted by 1)
+          for (let i = 0; i < existingDialogues.length; i++) {
+            const dialogue = updatedLabel.body[i + 1] as DialogueNode
+            expect(dialogue.speaker).toBe(existingDialogues[i][0])
+            expect(dialogue.text).toBe(existingDialogues[i][1])
+          }
+
+          return true
+        }
+      ),
+      { numRuns: 100 }
+    )
+  })
+})
