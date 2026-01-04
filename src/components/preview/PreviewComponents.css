@@ -1,0 +1,345 @@
+/* Preview Components Styles */
+
+/* Scene Renderer */
+.scene-renderer {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+  overflow: hidden;
+}
+
+.scene-empty {
+  background: var(--bg-primary);
+}
+
+.scene-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--text-secondary);
+}
+
+.scene-placeholder-icon {
+  font-size: 2.5rem;
+  opacity: 0.5;
+}
+
+.scene-placeholder-text {
+  font-size: 0.875rem;
+  opacity: 0.7;
+}
+
+.scene-background-image {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.scene-name-overlay {
+  position: absolute;
+  top: 0.5rem;
+  left: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.25rem 0.5rem;
+  background-color: rgba(0, 0, 0, 0.6);
+  border-radius: 4px;
+  font-size: 0.75rem;
+  z-index: 10;
+}
+
+.scene-name-label {
+  color: var(--accent-secondary);
+  font-weight: 500;
+}
+
+.scene-name-value {
+  color: white;
+  font-family: monospace;
+}
+
+.scene-gradient-overlay {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 40%;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.5) 0%, transparent 100%);
+  pointer-events: none;
+}
+
+/* Character Renderer */
+.character-renderer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.character-sprite {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  pointer-events: auto;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.character-sprite:hover {
+  transform: translate(-50%, -100%) scale(1.02);
+}
+
+.character-sprite:focus {
+  outline: 2px solid var(--accent-primary);
+  outline-offset: 4px;
+  border-radius: 4px;
+}
+
+.character-image {
+  max-height: 80%;
+  max-width: 200px;
+  object-fit: contain;
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.3));
+}
+
+.character-info {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.125rem;
+  padding: 0.25rem 0.5rem;
+  background-color: rgba(0, 0, 0, 0.7);
+  border-radius: 4px;
+  margin-top: 0.25rem;
+}
+
+.character-name {
+  color: var(--accent-primary);
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.character-attributes {
+  color: var(--text-secondary);
+  font-size: 0.625rem;
+  font-family: monospace;
+}
+
+.character-position-indicator {
+  position: absolute;
+  bottom: -8px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.position-dot {
+  display: block;
+  width: 8px;
+  height: 8px;
+  background-color: var(--accent-primary);
+  border-radius: 50%;
+  box-shadow: 0 0 4px var(--accent-primary);
+}
+
+/* Dialogue Renderer - ADV Mode */
+.dialogue-renderer {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 20;
+}
+
+.dialogue-box-adv {
+  background: linear-gradient(to bottom, rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0.95));
+  border-top: 2px solid var(--accent-primary);
+  padding: 1rem 1.5rem;
+  min-height: 80px;
+}
+
+.dialogue-speaker {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.speaker-name {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--accent-primary);
+  padding: 0.125rem 0.5rem;
+  background-color: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+}
+
+.speaker-name.narration {
+  color: var(--text-secondary);
+  font-style: italic;
+}
+
+.dialogue-text {
+  color: white;
+  font-size: 0.9375rem;
+  line-height: 1.6;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+/* Dialogue Renderer - NVL Mode */
+.dialogue-box-nvl {
+  position: absolute;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.9);
+  padding: 2rem;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.nvl-entry {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.nvl-speaker {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--accent-primary);
+}
+
+.nvl-speaker.narration {
+  color: var(--text-secondary);
+  font-style: italic;
+}
+
+.nvl-text {
+  color: white;
+  font-size: 0.9375rem;
+  line-height: 1.6;
+  padding-left: 1rem;
+}
+
+.nvl-current {
+  background-color: rgba(255, 255, 255, 0.05);
+  padding: 0.5rem;
+  border-radius: 4px;
+  border-left: 3px solid var(--accent-primary);
+}
+
+/* Menu Renderer */
+.menu-renderer {
+  position: absolute;
+  bottom: 100px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-width: 300px;
+  max-width: 80%;
+  z-index: 25;
+}
+
+.menu-prompt {
+  text-align: center;
+  color: white;
+  font-size: 1rem;
+  margin-bottom: 0.5rem;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+.menu-choice {
+  padding: 0.75rem 1.5rem;
+  background: linear-gradient(to right, rgba(0, 0, 0, 0.8), rgba(0, 0, 0, 0.6));
+  border: 1px solid var(--accent-secondary);
+  border-radius: 4px;
+  color: white;
+  font-size: 0.9375rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: center;
+}
+
+.menu-choice:hover {
+  background: linear-gradient(to right, var(--accent-primary), var(--accent-secondary));
+  border-color: var(--accent-primary);
+  transform: scale(1.02);
+}
+
+.menu-choice:focus {
+  outline: 2px solid var(--accent-primary);
+  outline-offset: 2px;
+}
+
+/* Empty Dialogue State */
+.dialogue-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+  font-style: italic;
+  background-color: rgba(0, 0, 0, 0.3);
+}
+
+/* Preview Controls */
+.preview-step-indicator {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+}
+
+.step-current {
+  color: var(--accent-primary);
+  font-weight: 600;
+}
+
+.step-total {
+  color: var(--text-secondary);
+}
+
+/* Audio Indicator */
+.audio-indicator {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  z-index: 10;
+}
+
+.audio-item {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.25rem 0.5rem;
+  background-color: rgba(0, 0, 0, 0.6);
+  border-radius: 4px;
+  font-size: 0.625rem;
+}
+
+.audio-icon {
+  font-size: 0.75rem;
+}
+
+.audio-name {
+  color: white;
+  font-family: monospace;
+  max-width: 100px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
