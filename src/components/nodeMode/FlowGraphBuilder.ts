@@ -327,11 +327,15 @@ export class FlowGraphBuilder {
     const nodes: FlowNode[] = []
     let prevNodeId = sceneNodeId
     let prevHandle: string | undefined
+    // Track nodes that need to connect to the next statement (for if branch fall-through)
+    let pendingConnections: Array<{ nodeId: string; handle?: string }> = []
 
     // Merge dialogues into blocks
     const mergedStatements = this.mergeDialogueBlocks(label.body)
 
-    for (const item of mergedStatements) {
+    for (let i = 0; i < mergedStatements.length; i++) {
+      const item = mergedStatements[i]
+      
       if (item.type === 'dialogue-block') {
         // Create dialogue block node
         const blockNode = this.createDialogueBlockNode(item.dialogues, item.visualCommands, context)
@@ -339,6 +343,13 @@ export class FlowGraphBuilder {
 
         // Connect from previous node
         this.addEdge(prevNodeId, blockNode.id, 'normal', context, prevHandle)
+        
+        // Connect any pending connections (from if branches that fall through)
+        for (const pending of pendingConnections) {
+          this.addEdge(pending.nodeId, blockNode.id, 'normal', context, pending.handle)
+        }
+        pendingConnections = []
+        
         prevNodeId = blockNode.id
         prevHandle = undefined
       } else if (item.type === 'menu') {
@@ -348,6 +359,12 @@ export class FlowGraphBuilder {
 
         // Connect from previous node
         this.addEdge(prevNodeId, menuNode.id, 'normal', context, prevHandle)
+        
+        // Connect any pending connections
+        for (const pending of pendingConnections) {
+          this.addEdge(pending.nodeId, menuNode.id, 'normal', context, pending.handle)
+        }
+        pendingConnections = []
 
         // Process menu choices and create edges
         this.processMenuChoices(menuNode, item.node as ASTMenuNode, context, nodes)
@@ -362,9 +379,38 @@ export class FlowGraphBuilder {
 
         // Connect from previous node
         this.addEdge(prevNodeId, conditionNode.id, 'normal', context, prevHandle)
+        
+        // Connect any pending connections
+        for (const pending of pendingConnections) {
+          this.addEdge(pending.nodeId, conditionNode.id, 'normal', context, pending.handle)
+        }
+        pendingConnections = []
 
-        // Process branches
-        this.processConditionBranches(conditionNode, item.node as ASTIfNode, context, nodes)
+        // Process branches and get nodes that need to connect to next statement
+        const branchEndNodes = this.processConditionBranches(conditionNode, item.node as ASTIfNode, context, nodes)
+        
+        // Check if there's an else branch
+        const ifNode = item.node as ASTIfNode
+        const hasElseBranch = ifNode.branches.some(b => b.condition === null)
+        
+        // If no else branch, the condition node itself needs a fall-through connection
+        if (!hasElseBranch) {
+          // Add a fall-through port for when condition is false
+          const fallThroughPortId = `branch-fallthrough`
+          pendingConnections.push({ nodeId: conditionNode.id, handle: fallThroughPortId })
+          
+          // Update the condition node to include the fall-through branch
+          if (conditionNode.data.branches) {
+            conditionNode.data.branches.push({
+              condition: null, // null means "else" / fall-through
+              portId: fallThroughPortId,
+              body: [],
+            })
+          }
+        }
+        
+        // Add branch end nodes that need to connect to next statement
+        pendingConnections.push(...branchEndNodes)
         
         prevNodeId = conditionNode.id
         prevHandle = undefined
@@ -375,6 +421,12 @@ export class FlowGraphBuilder {
 
         // Connect from previous node
         this.addEdge(prevNodeId, jumpNode.id, 'normal', context, prevHandle)
+        
+        // Connect any pending connections
+        for (const pending of pendingConnections) {
+          this.addEdge(pending.nodeId, jumpNode.id, 'normal', context, pending.handle)
+        }
+        pendingConnections = []
 
         // Create edge to target label
         const targetLabel = (item.node as ASTJumpNode).target
@@ -389,6 +441,12 @@ export class FlowGraphBuilder {
 
         // Connect from previous node
         this.addEdge(prevNodeId, callNode.id, 'normal', context, prevHandle)
+        
+        // Connect any pending connections
+        for (const pending of pendingConnections) {
+          this.addEdge(pending.nodeId, callNode.id, 'normal', context, pending.handle)
+        }
+        pendingConnections = []
 
         // Create edge to target label
         const targetLabel = (item.node as ASTCallNode).target
@@ -403,6 +461,12 @@ export class FlowGraphBuilder {
 
         // Connect from previous node
         this.addEdge(prevNodeId, returnNode.id, 'normal', context, prevHandle)
+        
+        // Connect any pending connections
+        for (const pending of pendingConnections) {
+          this.addEdge(pending.nodeId, returnNode.id, 'normal', context, pending.handle)
+        }
+        pendingConnections = []
         
         prevNodeId = returnNode.id
         prevHandle = undefined
@@ -619,13 +683,16 @@ export class FlowGraphBuilder {
 
   /**
    * Process condition branches and create edges
+   * Returns nodes that need to connect to the next statement (branch end nodes without jumps)
    */
   private processConditionBranches(
     conditionNode: FlowNode,
     ifNode: ASTIfNode,
     context: BuildContext,
     nodes: FlowNode[]
-  ): void {
+  ): Array<{ nodeId: string; handle?: string }> {
+    const branchEndNodes: Array<{ nodeId: string; handle?: string }> = []
+    
     for (let i = 0; i < ifNode.branches.length; i++) {
       const branch = ifNode.branches[i]
       const portId = `branch-${i}`
@@ -634,14 +701,28 @@ export class FlowGraphBuilder {
       const jumpTarget = this.findJumpTarget(branch.body)
       
       if (jumpTarget) {
-        // Create edge to target label
+        // Create edge to target label - this branch doesn't fall through
         this.addJumpEdge(conditionNode.id, jumpTarget, 'jump', context, portId)
       } else if (branch.body.length > 0) {
         // Process branch body as nested content
         const childNodes = this.processNestedStatements(branch.body, conditionNode.id, portId, context)
         nodes.push(...childNodes)
+        
+        // The last node in this branch needs to connect to the next statement
+        // (unless it's a jump/return which doesn't fall through)
+        if (childNodes.length > 0) {
+          const lastNode = childNodes[childNodes.length - 1]
+          if (lastNode.type !== 'jump' && lastNode.type !== 'return') {
+            branchEndNodes.push({ nodeId: lastNode.id })
+          }
+        }
+      } else {
+        // Empty branch body - the condition node port connects directly to next statement
+        branchEndNodes.push({ nodeId: conditionNode.id, handle: portId })
       }
     }
+    
+    return branchEndNodes
   }
 
   /**

@@ -23,6 +23,12 @@ export const FlowConditionNode: React.FC<NodeProps> = memo((props) => {
   const nodeClassName = (props as unknown as { className?: string }).className || ''
 
   const branches = data.branches || []
+  
+  // Check if there's an explicit else branch (not auto-generated fallthrough)
+  const hasExplicitElseBranch = branches.some(b => b.condition === null && b.portId !== 'branch-fallthrough')
+  
+  // Check if there's a fallthrough branch (auto-generated)
+  const hasFallthroughBranch = branches.some(b => b.portId === 'branch-fallthrough')
 
   return (
     <div className={`flow-node flow-condition-node ${selected ? 'selected' : ''} ${nodeClassName}`}>
@@ -35,23 +41,29 @@ export const FlowConditionNode: React.FC<NodeProps> = memo((props) => {
 
       {/* Node header */}
       <div className="flow-node-header flow-condition-header">
-        <span className="flow-node-icon">❓</span>
-        <span className="flow-node-label">Condition</span>
+        <span className="flow-node-icon">🔀</span>
+        <span className="flow-node-label">条件分支</span>
+        <span className="flow-branch-count">{branches.length} 分支</span>
       </div>
 
       {/* Content */}
-      <div className="flow-node-content">
+      <div className="flow-node-content flow-condition-content">
         <div className="flow-branches-list">
           {branches.map((branch, index) => (
             <BranchItem 
               key={index} 
               branch={branch} 
-              index={index}
               isFirst={index === 0}
-              isLast={index === branches.length - 1}
             />
           ))}
         </div>
+        
+        {/* Warning if no else branch and no fallthrough */}
+        {!hasExplicitElseBranch && !hasFallthroughBranch && branches.length > 0 && (
+          <div className="flow-condition-warning">
+            ⚠️ 无 else 分支
+          </div>
+        )}
       </div>
 
       {/* Default output port (if no branches) */}
@@ -73,38 +85,48 @@ FlowConditionNode.displayName = 'FlowConditionNode'
  */
 interface BranchItemProps {
   branch: ConditionBranch
-  index: number
   isFirst: boolean
-  isLast: boolean
 }
 
-const BranchItem: React.FC<BranchItemProps> = memo(({ branch, index, isFirst }) => {
+const BranchItem: React.FC<BranchItemProps> = memo(({ branch, isFirst }) => {
   // Determine branch type
-  const branchType = getBranchType(branch.condition, isFirst)
+  const branchType = getBranchType(branch.condition, isFirst, branch.portId)
+  
+  // Get icon for branch type
+  const branchIcon = getBranchIcon(branchType)
+  
+  // Get color class for branch type
+  const colorClass = `flow-branch-${branchType === 'fallthrough' ? 'else' : branchType}`
   
   return (
-    <div className="flow-branch-item">
-      <span className="flow-branch-marker">{index + 1}</span>
-      <div className="flow-branch-content">
-        <span className={`flow-branch-keyword ${branchType}`}>
-          {branchType}
+    <div className={`flow-branch-item ${colorClass}`}>
+      {/* Branch type indicator */}
+      <div className={`flow-branch-type-badge ${branchType === 'fallthrough' ? 'else' : branchType}`}>
+        <span className="flow-branch-icon">{branchIcon}</span>
+        <span className="flow-branch-keyword">
+          {branchType === 'fallthrough' ? '否则' : branchType.toUpperCase()}
         </span>
+      </div>
+      
+      {/* Branch content */}
+      <div className="flow-branch-content">
         {branch.condition ? (
-          <div className="flow-branch-condition">
+          <code className="flow-branch-condition">
             {branch.condition}
-          </div>
+          </code>
         ) : (
-          <div className="flow-branch-else">
-            (default branch)
-          </div>
+          <span className="flow-branch-else-text">
+            {branchType === 'fallthrough' ? '继续执行' : '其他情况'}
+          </span>
         )}
       </div>
+      
       {/* Output handle for this branch */}
       <Handle
         type="source"
         position={Position.Right}
         id={branch.portId}
-        className="flow-handle flow-handle-source flow-branch-handle"
+        className={`flow-handle flow-handle-source flow-branch-handle ${colorClass}-handle`}
       />
     </div>
   )
@@ -115,9 +137,29 @@ BranchItem.displayName = 'BranchItem'
 /**
  * Get branch type label
  */
-function getBranchType(condition: string | null, isFirst: boolean): 'if' | 'elif' | 'else' {
+function getBranchType(condition: string | null, isFirst: boolean, portId?: string): 'if' | 'elif' | 'else' | 'fallthrough' {
+  // Check if this is an auto-generated fall-through branch
+  if (portId === 'branch-fallthrough') {
+    return 'fallthrough'
+  }
   if (condition === null) {
     return 'else'
   }
   return isFirst ? 'if' : 'elif'
+}
+
+/**
+ * Get icon for branch type
+ */
+function getBranchIcon(branchType: 'if' | 'elif' | 'else' | 'fallthrough'): string {
+  switch (branchType) {
+    case 'if':
+      return '✓'
+    case 'elif':
+      return '◇'
+    case 'else':
+      return '○'
+    case 'fallthrough':
+      return '↓'
+  }
 }
