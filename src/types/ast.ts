@@ -153,6 +153,7 @@ export interface PlayNode extends BaseNode {
   fadeIn?: number
   loop?: boolean
   volume?: number
+  queue?: boolean  // For queue music syntax
 }
 
 // Stop node
