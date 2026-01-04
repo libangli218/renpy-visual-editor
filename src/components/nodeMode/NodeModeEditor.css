@@ -572,3 +572,178 @@
   border-left: 1px solid var(--border-color);
   padding-left: 0.375rem;
 }
+
+
+/* ======================== */
+/* Orphan Node Indicator    */
+/* Implements Requirement 1.5, 6.1: 孤立节点处理 */
+/* ======================== */
+
+.orphan-indicator {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  color: #f59e0b;
+  font-size: 0.6875rem;
+  padding-left: 0.5rem;
+  margin-left: 0.5rem;
+  border-left: 1px solid var(--border-color);
+  cursor: pointer;
+}
+
+.orphan-indicator:hover {
+  color: #fbbf24;
+}
+
+.orphan-indicator .warning-icon {
+  animation: warning-pulse 2s ease-in-out infinite;
+}
+
+@keyframes warning-pulse {
+  0%, 100% {
+    opacity: 0.7;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+/* Pending node indicator */
+.pending-indicator {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  color: var(--accent-primary, #6366f1);
+  font-size: 0.6875rem;
+  padding-left: 0.5rem;
+  margin-left: 0.5rem;
+  border-left: 1px solid var(--border-color);
+}
+
+.pending-indicator .pending-icon {
+  font-size: 0.75rem;
+}
+
+
+/* ======================== */
+/* Orphan Dialog Styles     */
+/* Implements Requirement 6.2, 6.3: 保存前孤立节点检查 */
+/* ======================== */
+
+.orphan-dialog-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  animation: fade-in 0.2s ease-out;
+}
+
+.orphan-dialog {
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  min-width: 360px;
+  max-width: 480px;
+  animation: dialog-appear 0.2s ease-out;
+}
+
+@keyframes dialog-appear {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.orphan-dialog-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem 1.25rem;
+  background-color: var(--bg-tertiary);
+  border-bottom: 1px solid var(--border-color);
+  border-radius: 12px 12px 0 0;
+}
+
+.orphan-dialog-icon {
+  font-size: 1.5rem;
+}
+
+.orphan-dialog-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.orphan-dialog-content {
+  padding: 1.25rem;
+  color: var(--text-primary);
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+.orphan-dialog-content p {
+  margin: 0 0 0.75rem 0;
+}
+
+.orphan-dialog-content p:last-child {
+  margin-bottom: 0;
+}
+
+.orphan-dialog-hint {
+  color: var(--text-secondary);
+  font-size: 0.8125rem;
+}
+
+.orphan-dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  padding: 1rem 1.25rem;
+  border-top: 1px solid var(--border-color);
+  background-color: var(--bg-tertiary);
+  border-radius: 0 0 12px 12px;
+}
+
+.orphan-dialog-btn {
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.15s ease, transform 0.1s ease;
+}
+
+.orphan-dialog-btn:active {
+  transform: scale(0.98);
+}
+
+.orphan-dialog-btn-cancel {
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+}
+
+.orphan-dialog-btn-cancel:hover {
+  background-color: var(--bg-tertiary);
+}
+
+.orphan-dialog-btn-confirm {
+  background-color: #f59e0b;
+  border: none;
+  color: white;
+}
+
+.orphan-dialog-btn-confirm:hover {
+  background-color: #d97706;
+}

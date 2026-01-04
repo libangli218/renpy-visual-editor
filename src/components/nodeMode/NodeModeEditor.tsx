@@ -24,7 +24,7 @@ import {
 import '@xyflow/react/dist/style.css'
 import { useEditorStore } from '../../store/editorStore'
 import { flowNodeTypesSync } from './nodes/flowNodes'
-import { FlowGraphBuilder, FlowEdgeType, FlowNodeData } from './FlowGraphBuilder'
+import { FlowGraphBuilder, FlowEdgeType, FlowNodeData, FlowNodeType } from './FlowGraphBuilder'
 import { FileClassifier, FileClassification } from './FileClassifier'
 import { isValidConnection, createEdgeId, handleNodeDeletion, findDisconnectedNodes } from './connectionUtils'
 import { projectManager } from '../../project/ProjectManager'
@@ -32,6 +32,8 @@ import { RenpyScript } from '../../types/ast'
 import { NodeDetailPanel } from './NodeDetailPanel'
 import { cacheManager } from '../../cache'
 import { computeHash } from '../../cache/hashUtils'
+import { NodeOperationHandler } from './NodeOperationHandler'
+import { PendingNodePool } from './PendingNodePool'
 import './NodeModeEditor.css'
 
 /**
@@ -231,12 +233,20 @@ const NodeModeEditorInner: React.FC = () => {
   // Track previous file for viewport persistence
   const previousFileRef = useRef<string | null>(null)
   
-  // Node ID counter for generating unique IDs
-  const nodeIdCounter = useRef(0)
-  
   // Initialize file classifier and flow graph builder
   const fileClassifier = useMemo(() => new FileClassifier(), [])
   const flowGraphBuilder = useMemo(() => new FlowGraphBuilder(), [])
+  
+  // Initialize NodeOperationHandler and PendingNodePool for node creation persistence
+  // Implements Requirement 1.1: 对话节点创建与持久化
+  const pendingNodePoolRef = useRef(new PendingNodePool())
+  const nodeOperationHandlerRef = useRef(new NodeOperationHandler(pendingNodePoolRef.current))
+  
+  // Orphan node confirmation dialog state
+  // Implements Requirement 6.2, 6.3: 保存前孤立节点检查
+  const [showOrphanDialog, setShowOrphanDialog] = useState(false)
+  const [orphanNodesForDialog, setOrphanNodesForDialog] = useState<string[]>([])
+  const pendingSaveCallbackRef = useRef<(() => void) | null>(null)
   
   // Load and classify files when project changes
   // Uses cacheManager for AST retrieval
@@ -445,13 +455,59 @@ const NodeModeEditorInner: React.FC = () => {
     return findDisconnectedNodes(nodes, edges)
   }, [nodes, edges])
 
-  // Add disconnected class to nodes
-  const nodesWithDisconnectedClass = useMemo(() => {
-    return nodes.map(node => ({
-      ...node,
-      className: disconnectedNodeIds.has(node.id) ? 'disconnected' : '',
-    }))
-  }, [nodes, disconnectedNodeIds])
+  // Detect orphan nodes from PendingNodePool - Implements Requirement 1.5, 6.1
+  const orphanNodeIds = useMemo(() => {
+    const orphanIds = new Set<string>()
+    const pendingNodes = pendingNodePoolRef.current.getAll()
+    
+    for (const pendingNode of pendingNodes) {
+      // A pending node is orphan if it's not connected to any edge
+      const hasIncomingEdge = edges.some(e => e.target === pendingNode.id)
+      const hasOutgoingEdge = edges.some(e => e.source === pendingNode.id)
+      
+      if (!hasIncomingEdge && !hasOutgoingEdge) {
+        orphanIds.add(pendingNode.id)
+      }
+    }
+    
+    return orphanIds
+  }, [edges])
+
+  // Add disconnected/orphan/pending class to nodes
+  // Implements Requirements 1.5, 6.1: 孤立节点视觉标记
+  const nodesWithStatusClass = useMemo(() => {
+    return nodes.map(node => {
+      const classes: string[] = []
+      
+      // Check if node is pending (in PendingNodePool)
+      const isPending = pendingNodePoolRef.current.isPending(node.id)
+      
+      if (isPending) {
+        // Check if it's an orphan (pending and not connected)
+        if (orphanNodeIds.has(node.id)) {
+          classes.push('orphan-node')
+        } else {
+          classes.push('pending-node')
+        }
+      } else if (disconnectedNodeIds.has(node.id)) {
+        // Existing node that's disconnected from main flow
+        classes.push('disconnected')
+      }
+      
+      // Preserve existing className if any
+      if (node.className) {
+        const existingClasses = node.className.split(' ').filter(c => 
+          c && !['orphan-node', 'pending-node', 'disconnected'].includes(c)
+        )
+        classes.push(...existingClasses)
+      }
+      
+      return {
+        ...node,
+        className: classes.join(' ') || undefined,
+      }
+    })
+  }, [nodes, disconnectedNodeIds, orphanNodeIds])
 
   // Validate connections before allowing them
   // Implements Requirements 6.1, 6.2: Connection validation
@@ -494,6 +550,10 @@ const NodeModeEditorInner: React.FC = () => {
   /**
    * Handle new connections between nodes
    * Implements Requirement 6.2: Create new edge when dropped on valid input port
+   * Implements Requirement 1.2: 将对话节点添加到对应 label 的 body 中
+   * Implements Requirement 5.2: 连接建立后将节点 AST 表示插入到正确的 label body 中
+   * 
+   * Uses NodeOperationHandler to sync pending nodes to AST when connected.
    */
   const onConnect = useCallback(
     (params: Connection) => {
@@ -524,19 +584,104 @@ const NodeModeEditorInner: React.FC = () => {
         }
         setEdges((eds) => addEdge(newEdge, eds))
         
-        // Sync to AST - create jump statement for the new connection
-        if (ast && params.target) {
-          const targetNode = nodes.find(n => n.id === params.target)
-          if (targetNode && targetNode.data && typeof targetNode.data === 'object' && 'label' in targetNode.data) {
-            const targetLabel = (targetNode.data as { label: string }).label
-            // Note: Full AST sync would be implemented here
-            // For now, we just update the visual representation
-            console.log(`Created connection to label: ${targetLabel}`)
+        // Check if target is a pending node and sync to AST
+        if (ast && params.source && params.target) {
+          const isPendingTarget = pendingNodePoolRef.current.isPending(params.target)
+          
+          if (isPendingTarget) {
+            // Build current flow graph for context
+            const currentGraph = {
+              nodes: nodes.map(n => ({
+                id: n.id,
+                type: n.type as FlowNodeType,
+                position: n.position,
+                data: n.data as FlowNodeData,
+              })),
+              edges: [...edges.map(e => ({
+                id: e.id,
+                source: e.source,
+                target: e.target,
+                sourceHandle: e.sourceHandle ?? undefined,
+                targetHandle: e.targetHandle ?? undefined,
+                type: 'normal' as const,
+              })), {
+                id: newEdge.id,
+                source: newEdge.source,
+                target: newEdge.target,
+                sourceHandle: newEdge.sourceHandle ?? undefined,
+                targetHandle: newEdge.targetHandle ?? undefined,
+                type: edgeType,
+              }],
+            }
+            
+            // Use NodeOperationHandler to connect and sync to AST
+            const result = nodeOperationHandlerRef.current.connectNodes(
+              params.source,
+              params.target,
+              params.sourceHandle || undefined,
+              currentGraph,
+              ast
+            )
+            
+            if (result.success) {
+              // Remove pending class from the node since it's now synced
+              setNodes((nds) => 
+                nds.map((n) => 
+                  n.id === params.target 
+                    ? { ...n, className: n.className?.replace('pending-node', '').trim() || undefined }
+                    : n
+                )
+              )
+              
+              // Mark the script as modified
+              if (selectedFile) {
+                projectManager.updateScript(selectedFile, ast)
+                projectManager.markScriptModified(selectedFile)
+              }
+              
+              console.log(`[NodeModeEditor] Synced pending node ${params.target} to AST`)
+            } else {
+              console.warn(`[NodeModeEditor] Failed to sync pending node: ${result.error}`)
+            }
+          } else {
+            // Handle connection between existing nodes (e.g., menu choice to scene)
+            const targetNode = nodes.find(n => n.id === params.target)
+            if (targetNode && targetNode.data && typeof targetNode.data === 'object' && 'label' in targetNode.data) {
+              const currentGraph = {
+                nodes: nodes.map(n => ({
+                  id: n.id,
+                  type: n.type as FlowNodeType,
+                  position: n.position,
+                  data: n.data as FlowNodeData,
+                })),
+                edges: edges.map(e => ({
+                  id: e.id,
+                  source: e.source,
+                  target: e.target,
+                  sourceHandle: e.sourceHandle ?? undefined,
+                  targetHandle: e.targetHandle ?? undefined,
+                  type: 'normal' as const,
+                })),
+              }
+              
+              const result = nodeOperationHandlerRef.current.connectNodes(
+                params.source,
+                params.target,
+                params.sourceHandle || undefined,
+                currentGraph,
+                ast
+              )
+              
+              if (result.success && selectedFile) {
+                projectManager.updateScript(selectedFile, ast)
+                projectManager.markScriptModified(selectedFile)
+              }
+            }
           }
         }
       }
     },
-    [nodes, edges, setEdges, ast]
+    [nodes, edges, setEdges, setNodes, ast, selectedFile]
   )
 
   // Handle node selection
@@ -583,102 +728,51 @@ const NodeModeEditorInner: React.FC = () => {
   }, [])
 
   /**
-   * Generate a unique node ID
-   */
-  const generateNodeId = useCallback((type: string) => {
-    nodeIdCounter.current += 1
-    return `${type}-${Date.now()}-${nodeIdCounter.current}`
-  }, [])
-
-  /**
    * Create a new node at the specified position
    * Implements Requirement 6.3: Support creating new label, dialogue, etc.
+   * Implements Requirement 1.1: 对话节点创建与持久化
+   * 
+   * Uses NodeOperationHandler to create nodes and add them to PendingNodePool.
+   * Nodes are stored in the pending pool until connected to the flow.
    */
   const createNode = useCallback(
     (type: string) => {
       const position = contextMenu.flowPosition
-      const nodeId = generateNodeId(type)
       
-      // Create default data based on node type
-      let data: Record<string, unknown> = {}
-      
-      switch (type) {
-        case 'scene':
-          data = {
-            label: `new_scene_${nodeIdCounter.current}`,
-            preview: 'New scene - double click to edit',
-            hasIncoming: true,
-            exitType: 'fall-through',
-          }
-          break
-        case 'dialogue-block':
-          data = {
-            dialogues: [
-              { speaker: 'Character', text: 'New dialogue line' }
-            ],
-            visualCommands: [],
-            expanded: false,
-          }
-          break
-        case 'menu':
-          data = {
-            prompt: 'What do you want to do?',
-            choices: [
-              { text: 'Option 1', portId: 'choice-0' },
-              { text: 'Option 2', portId: 'choice-1' },
-            ],
-          }
-          break
-        case 'condition':
-          data = {
-            branches: [
-              { condition: 'variable == True', portId: 'branch-0' },
-              { condition: null, portId: 'branch-1' }, // else branch
-            ],
-          }
-          break
-        case 'jump':
-          data = {
-            target: 'target_label',
-          }
-          break
-        case 'call':
-          data = {
-            target: 'target_label',
-          }
-          break
-        case 'return':
-          data = {
-            expression: null,
-          }
-          break
-        default:
-          data = {}
-      }
-      
-      const newNode: Node = {
-        id: nodeId,
-        type,
+      // Use NodeOperationHandler to create the node and add to PendingNodePool
+      const nodeId = nodeOperationHandlerRef.current.createNode(
+        type as FlowNodeType,
         position,
-        data,
+        {} // Use default data from NodeOperationHandler
+      )
+      
+      // Get the pending node to create the React Flow node
+      const pendingNode = pendingNodePoolRef.current.get(nodeId)
+      
+      if (pendingNode) {
+        // Create React Flow node from pending node
+        const newNode: Node = {
+          id: pendingNode.id,
+          type: pendingNode.type,
+          position: pendingNode.position,
+          data: pendingNode.data as Record<string, unknown>,
+          // Mark as pending for visual styling
+          className: 'pending-node',
+        }
+        
+        setNodes((nds) => [...nds, newNode])
       }
       
-      setNodes((nds) => [...nds, newNode])
       closeContextMenu()
       
       // Select the newly created node
       setSelectedNodeId(nodeId)
       
-      // Note: We don't sync to AST immediately because the node needs to be
-      // connected to an existing label first. The AST sync will happen when:
-      // 1. The user connects this node to an existing flow
-      // 2. The user explicitly saves the file
-      // For now, the node exists only in the visual editor state.
-      
-      // TODO: Implement proper AST sync when node is connected to a label
-      // This requires knowing which label the node belongs to
+      // Note: Node is now in PendingNodePool. It will be synced to AST when:
+      // 1. The user connects this node to an existing flow (via onConnect)
+      // 2. The user explicitly saves the file (via commitPendingNodes)
     },
-    [contextMenu.flowPosition, generateNodeId, setNodes, closeContextMenu, setSelectedNodeId]
+    [contextMenu.flowPosition, setNodes, closeContextMenu, setSelectedNodeId]
   )
 
   // Handle node deletion - also remove connected edges
@@ -740,6 +834,70 @@ const NodeModeEditorInner: React.FC = () => {
       previousFileRef.current = selectedFile
     }
   }, [selectedFile, reactFlowInstance])
+
+  /**
+   * Handle save with orphan node check
+   * Implements Requirement 6.2, 6.3: 保存前孤立节点检查
+   */
+  const handleSaveWithOrphanCheck = useCallback(() => {
+    // Check for orphan nodes
+    const orphanIds = Array.from(orphanNodeIds)
+    
+    if (orphanIds.length > 0) {
+      // Show confirmation dialog
+      setOrphanNodesForDialog(orphanIds)
+      setShowOrphanDialog(true)
+      
+      // Store the callback to continue save after confirmation
+      pendingSaveCallbackRef.current = () => {
+        // Dispatch the actual save event
+        window.dispatchEvent(new CustomEvent('editor:save:confirmed'))
+      }
+    } else {
+      // No orphan nodes, proceed with save
+      window.dispatchEvent(new CustomEvent('editor:save:confirmed'))
+    }
+  }, [orphanNodeIds])
+
+  /**
+   * Handle orphan dialog confirmation
+   */
+  const handleOrphanDialogConfirm = useCallback(() => {
+    setShowOrphanDialog(false)
+    
+    // Execute the pending save callback
+    if (pendingSaveCallbackRef.current) {
+      pendingSaveCallbackRef.current()
+      pendingSaveCallbackRef.current = null
+    }
+  }, [])
+
+  /**
+   * Handle orphan dialog cancel
+   */
+  const handleOrphanDialogCancel = useCallback(() => {
+    setShowOrphanDialog(false)
+    pendingSaveCallbackRef.current = null
+  }, [])
+
+  /**
+   * Listen for save events and intercept to check for orphan nodes
+   * Implements Requirement 6.2, 6.3: 保存前孤立节点检查
+   */
+  useEffect(() => {
+    const handleSaveEvent = (event: Event) => {
+      // Prevent the default save and do orphan check first
+      event.stopPropagation()
+      handleSaveWithOrphanCheck()
+    }
+
+    // Listen for the original save event
+    window.addEventListener('editor:save', handleSaveEvent, true)
+
+    return () => {
+      window.removeEventListener('editor:save', handleSaveEvent, true)
+    }
+  }, [handleSaveWithOrphanCheck])
 
   /**
    * Fit all nodes in view
@@ -804,7 +962,7 @@ const NodeModeEditorInner: React.FC = () => {
       data-testid="node-mode-editor"
     >
       <ReactFlow
-        nodes={nodesWithDisconnectedClass}
+        nodes={nodesWithStatusClass}
         edges={edges}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
@@ -890,6 +1048,12 @@ const NodeModeEditorInner: React.FC = () => {
             {nodes.length} nodes • {edges.length} connections
             {selectedNodesCount > 1 && (
               <span className="selection-count"> • {selectedNodesCount} selected</span>
+            )}
+            {orphanNodeIds.size > 0 && (
+              <span className="orphan-indicator" title="Nodes not connected to any flow">
+                <span className="warning-icon">⚠️</span>
+                {orphanNodeIds.size} orphan
+              </span>
             )}
             {disconnectedNodeIds.size > 0 && (
               <span className="disconnected-indicator">
@@ -1008,6 +1172,41 @@ const NodeModeEditorInner: React.FC = () => {
                 </div>
               </button>
             ))}
+          </div>
+        </div>
+      )}
+      
+      {/* Orphan node confirmation dialog - Implements Requirement 6.2, 6.3 */}
+      {showOrphanDialog && (
+        <div className="orphan-dialog-overlay">
+          <div className="orphan-dialog">
+            <div className="orphan-dialog-header">
+              <span className="orphan-dialog-icon">⚠️</span>
+              <span className="orphan-dialog-title">Orphan Nodes Detected</span>
+            </div>
+            <div className="orphan-dialog-content">
+              <p>
+                There are <strong>{orphanNodesForDialog.length}</strong> orphan node(s) 
+                that are not connected to any flow. These nodes will not be saved.
+              </p>
+              <p className="orphan-dialog-hint">
+                Connect these nodes to a scene or delete them before saving.
+              </p>
+            </div>
+            <div className="orphan-dialog-actions">
+              <button 
+                className="orphan-dialog-btn orphan-dialog-btn-cancel"
+                onClick={handleOrphanDialogCancel}
+              >
+                Cancel
+              </button>
+              <button 
+                className="orphan-dialog-btn orphan-dialog-btn-confirm"
+                onClick={handleOrphanDialogConfirm}
+              >
+                Save Anyway
+              </button>
+            </div>
           </div>
         </div>
       )}

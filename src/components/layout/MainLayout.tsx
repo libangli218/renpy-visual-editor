@@ -95,16 +95,21 @@ export const MainLayout: React.FC = () => {
   }, [])
 
   /**
-   * Listen for editor:save event (triggered by Ctrl+S)
+   * Listen for editor:save:confirmed event (triggered after orphan check passes)
+   * Also listen for editor:save event for backward compatibility when not in node mode
    */
   useEffect(() => {
     const handleSaveEvent = () => {
       handleSave()
     }
 
+    // Listen for confirmed save (after orphan check)
+    window.addEventListener('editor:save:confirmed', handleSaveEvent)
+    // Also listen for direct save (when not in node mode)
     window.addEventListener('editor:save', handleSaveEvent)
 
     return () => {
+      window.removeEventListener('editor:save:confirmed', handleSaveEvent)
       window.removeEventListener('editor:save', handleSaveEvent)
     }
   }, [handleSave])

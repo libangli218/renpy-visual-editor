@@ -939,3 +939,86 @@
 .flow-node.selected {
   animation: node-glow 2s ease-in-out infinite;
 }
+
+
+/* ======================== */
+/* Pending Node Styles      */
+/* Implements Requirement 1.1: 对话节点创建与持久化 */
+/* ======================== */
+
+.flow-node.pending-node {
+  border-style: dashed;
+  border-color: var(--accent-primary, #6366f1);
+  opacity: 0.85;
+}
+
+.flow-node.pending-node::before {
+  content: '⏳';
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  font-size: 0.875rem;
+  background-color: var(--bg-secondary, #1e1e2e);
+  border-radius: 50%;
+  padding: 2px;
+  z-index: 10;
+}
+
+.flow-node.pending-node:hover {
+  opacity: 1;
+}
+
+/* ======================== */
+/* Orphan Node Styles       */
+/* Implements Requirement 1.5, 6.1: 孤立节点处理 */
+/* ======================== */
+
+.flow-node.orphan-node {
+  opacity: 0.6;
+  filter: grayscale(40%);
+  border-color: #f59e0b;
+  border-style: dashed;
+}
+
+.flow-node.orphan-node:hover {
+  opacity: 0.8;
+  filter: grayscale(20%);
+}
+
+.flow-node.orphan-node .flow-node-header::after {
+  content: '⚠️';
+  margin-left: auto;
+  font-size: 0.875rem;
+  animation: orphan-warning-pulse 2s ease-in-out infinite;
+}
+
+@keyframes orphan-warning-pulse {
+  0%, 100% {
+    opacity: 0.7;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+/* Orphan node tooltip indicator */
+.flow-node.orphan-node::after {
+  content: 'Not connected to flow';
+  position: absolute;
+  bottom: -24px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 0.625rem;
+  color: #f59e0b;
+  background-color: var(--bg-secondary, #1e1e2e);
+  padding: 2px 8px;
+  border-radius: 4px;
+  white-space: nowrap;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  pointer-events: none;
+}
+
+.flow-node.orphan-node:hover::after {
+  opacity: 1;
+}
