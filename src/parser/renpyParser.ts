@@ -202,10 +202,10 @@ export class RenpyParser {
       () => this.parseVoice(line),
       () => this.parsePause(line),
       () => this.parseNVL(line),
-      () => this.parsePython(line),
       () => this.parseDefine(line),
       () => this.parseDefault(line),
-      () => this.parseSet(line),
+      () => this.parseSet(line),      // parseSet before parsePython so $ var = value is parsed as Set
+      () => this.parsePython(line),
       () => this.parseDialogue(line),
     ]
     
