@@ -20,4 +20,18 @@ export {
   type FileClassification,
   type SingleFileClassification,
 } from './FileClassifier'
+export {
+  FlowGraphBuilder,
+  flowGraphBuilder,
+  type FlowGraph,
+  type FlowNode,
+  type FlowEdge,
+  type FlowNodeType,
+  type FlowEdgeType,
+  type FlowNodeData,
+  type DialogueItem,
+  type VisualCommand,
+  type MenuChoice,
+  type ConditionBranch,
+} from './FlowGraphBuilder'
 export * from './nodes'
