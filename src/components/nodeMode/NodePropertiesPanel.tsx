@@ -470,23 +470,37 @@ const PlayProperties: React.FC<PropertyProps<PlayNode>> = ({ node, updatePropert
       label="File"
       value={node.file}
       onChange={(v) => updateProperty('file', v)}
+      placeholder="audio/music.ogg"
     />
-    <PropertyField
-      label="Fade In"
-      value={node.fadeIn?.toString() || ''}
-      onChange={(v) => updateProperty('fadeIn', v ? parseFloat(v) : undefined)}
-      placeholder="seconds"
+    <PropertyNumber
+      label="Fade In (seconds)"
+      value={node.fadeIn}
+      onChange={(v) => updateProperty('fadeIn', v)}
+      min={0}
+      step={0.1}
+      placeholder="0.0"
+    />
+    <PropertyNumber
+      label="Volume"
+      value={node.volume}
+      onChange={(v) => updateProperty('volume', v)}
+      min={0}
+      max={1}
+      step={0.1}
+      placeholder="1.0"
     />
     <PropertyCheckbox
       label="Loop"
       checked={node.loop || false}
       onChange={(v) => updateProperty('loop', v || undefined)}
     />
-    <PropertyCheckbox
-      label="Queue"
-      checked={node.queue || false}
-      onChange={(v) => updateProperty('queue', v || undefined)}
-    />
+    {node.channel === 'music' && (
+      <PropertyCheckbox
+        label="Queue (add to playlist)"
+        checked={node.queue || false}
+        onChange={(v) => updateProperty('queue', v || undefined)}
+      />
+    )}
   </div>
 )
 
@@ -498,11 +512,13 @@ const StopProperties: React.FC<PropertyProps<StopNode>> = ({ node, updatePropert
       options={['music', 'sound', 'voice']}
       onChange={(v) => updateProperty('channel', v)}
     />
-    <PropertyField
-      label="Fade Out"
-      value={node.fadeOut?.toString() || ''}
-      onChange={(v) => updateProperty('fadeOut', v ? parseFloat(v) : undefined)}
-      placeholder="seconds"
+    <PropertyNumber
+      label="Fade Out (seconds)"
+      value={node.fadeOut}
+      onChange={(v) => updateProperty('fadeOut', v)}
+      min={0}
+      step={0.1}
+      placeholder="0.0"
     />
   </div>
 )
@@ -678,5 +694,42 @@ const PropertySelect: React.FC<PropertySelectProps> = ({
         </option>
       ))}
     </select>
+  </div>
+)
+
+interface PropertyNumberProps {
+  label: string
+  value: number | undefined
+  onChange: (value: number | undefined) => void
+  min?: number
+  max?: number
+  step?: number
+  placeholder?: string
+}
+
+const PropertyNumber: React.FC<PropertyNumberProps> = ({
+  label,
+  value,
+  onChange,
+  min,
+  max,
+  step = 1,
+  placeholder,
+}) => (
+  <div className="property-item">
+    <label>{label}</label>
+    <input
+      type="number"
+      value={value ?? ''}
+      onChange={(e) => {
+        const val = e.target.value
+        onChange(val === '' ? undefined : parseFloat(val))
+      }}
+      min={min}
+      max={max}
+      step={step}
+      placeholder={placeholder}
+      className="property-input"
+    />
   </div>
 )

@@ -285,6 +285,24 @@ describe('CodeGenerator', () => {
       expect(code).toBe('play music "audio/bgm.ogg" fadein 1 loop')
     })
 
+    it('should generate play music with volume', () => {
+      const play = createPlayNode('music', 'audio/bgm.ogg', { volume: 0.5 })
+      const code = generateNode(play, 0)
+      expect(code).toBe('play music "audio/bgm.ogg" volume 0.5')
+    })
+
+    it('should generate play music with all options', () => {
+      const play = createPlayNode('music', 'audio/bgm.ogg', { fadeIn: 2.0, loop: true, volume: 0.8 })
+      const code = generateNode(play, 0)
+      expect(code).toBe('play music "audio/bgm.ogg" fadein 2 loop volume 0.8')
+    })
+
+    it('should generate play music with noloop', () => {
+      const play = createPlayNode('music', 'audio/bgm.ogg', { loop: false })
+      const code = generateNode(play, 0)
+      expect(code).toBe('play music "audio/bgm.ogg" noloop')
+    })
+
     it('should generate play sound', () => {
       const play = createPlayNode('sound', 'audio/click.ogg')
       const code = generateNode(play, 0)
@@ -303,6 +321,12 @@ describe('CodeGenerator', () => {
       expect(code).toBe('queue music "audio/next.ogg"')
     })
 
+    it('should generate queue music with options', () => {
+      const play = createPlayNode('music', 'audio/next.ogg', { queue: true, fadeIn: 1.5, loop: true })
+      const code = generateNode(play, 0)
+      expect(code).toBe('queue music "audio/next.ogg" fadein 1.5 loop')
+    })
+
     it('should generate stop music', () => {
       const stop = createStopNode('music')
       const code = generateNode(stop, 0)
@@ -313,6 +337,18 @@ describe('CodeGenerator', () => {
       const stop = createStopNode('music', { fadeOut: 2.0 })
       const code = generateNode(stop, 0)
       expect(code).toBe('stop music fadeout 2')
+    })
+
+    it('should generate stop sound', () => {
+      const stop = createStopNode('sound')
+      const code = generateNode(stop, 0)
+      expect(code).toBe('stop sound')
+    })
+
+    it('should generate stop voice', () => {
+      const stop = createStopNode('voice')
+      const code = generateNode(stop, 0)
+      expect(code).toBe('stop voice')
     })
   })
 
