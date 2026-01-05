@@ -52,5 +52,10 @@ export * from './EditorModeSwitch'
 // Breadcrumb Navigation
 export * from './Breadcrumb'
 
+// Validation Components
+export * from './ValidationOverlay'
+export * from './ErrorTooltip'
+export * from './ErrorSummary'
+
 // Main Editor Component
 export * from './BlockModeEditor'

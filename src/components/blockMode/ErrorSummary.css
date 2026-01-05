@@ -1,0 +1,341 @@
+/**
+ * ErrorSummary Styles
+ * 错误汇总组件样式
+ * 
+ * Requirements: 10.5
+ */
+
+/* ========================================
+ * Error Summary Container
+ * ======================================== */
+
+.error-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.error-summary-top {
+  margin-bottom: 12px;
+}
+
+.error-summary-bottom {
+  margin-top: 12px;
+}
+
+.error-summary-inline {
+  display: inline-flex;
+  align-items: center;
+}
+
+/* ========================================
+ * Summary Badge
+ * ======================================== */
+
+.error-summary-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border: none;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.error-summary-badge.success {
+  background-color: rgba(76, 175, 80, 0.1);
+  color: #4CAF50;
+  cursor: default;
+}
+
+.error-summary-badge.error {
+  background-color: rgba(244, 67, 54, 0.1);
+  color: #f44336;
+}
+
+.error-summary-badge.error:hover {
+  background-color: rgba(244, 67, 54, 0.15);
+}
+
+.error-summary-badge .badge-icon {
+  font-size: 14px;
+}
+
+.error-summary-badge .badge-count {
+  font-weight: 700;
+  font-size: 15px;
+}
+
+.error-summary-badge .badge-text {
+  color: var(--text-secondary, #666666);
+}
+
+.error-summary-badge .badge-expand-icon {
+  font-size: 10px;
+  margin-left: 4px;
+  transition: transform 0.2s ease;
+}
+
+.error-summary-badge .badge-expand-icon.expanded {
+  transform: rotate(180deg);
+}
+
+/* ========================================
+ * Error Details Panel
+ * ======================================== */
+
+.error-summary-details {
+  background-color: var(--bg-secondary, #f5f5f5);
+  border: 1px solid var(--border-color, #e0e0e0);
+  border-radius: 8px;
+  padding: 12px;
+  animation: slideDown 0.2s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ========================================
+ * Error Type List
+ * ======================================== */
+
+.error-type-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.error-type-group {
+  background-color: var(--bg-primary, #ffffff);
+  border-radius: 6px;
+  border-left: 3px solid var(--error-color, #f44336);
+  overflow: hidden;
+}
+
+.error-type-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 10px 12px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+  transition: background-color 0.15s ease;
+}
+
+.error-type-header:hover {
+  background-color: rgba(var(--error-color-rgb, 244, 67, 54), 0.05);
+}
+
+.error-type-icon {
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+.error-type-label {
+  flex: 1;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-primary, #333333);
+}
+
+.error-type-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 6px;
+  border-radius: 11px;
+  background-color: var(--error-color, #f44336);
+  color: white;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+/* ========================================
+ * Error Items
+ * ======================================== */
+
+.error-type-items {
+  list-style: none;
+  margin: 0;
+  padding: 0 12px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.error-type-items li {
+  margin: 0;
+}
+
+.error-item-button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 6px 8px;
+  border: none;
+  border-radius: 4px;
+  background-color: rgba(var(--error-color-rgb, 244, 67, 54), 0.05);
+  cursor: pointer;
+  text-align: left;
+  transition: background-color 0.15s ease;
+}
+
+.error-item-button:hover {
+  background-color: rgba(var(--error-color-rgb, 244, 67, 54), 0.1);
+}
+
+.error-item-message {
+  flex: 1;
+  font-size: 12px;
+  color: var(--text-primary, #333333);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.error-item-slot {
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 10px;
+  background-color: var(--bg-tertiary, #e0e0e0);
+  color: var(--text-secondary, #666666);
+  flex-shrink: 0;
+}
+
+.error-type-more {
+  font-size: 11px;
+  color: var(--text-secondary, #666666);
+  font-style: italic;
+  padding: 4px 8px;
+}
+
+/* ========================================
+ * Error Badge (Compact)
+ * ======================================== */
+
+.error-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border: none;
+  border-radius: 10px;
+  background-color: var(--badge-color, #f44336);
+  color: white;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.error-badge:hover {
+  transform: scale(1.1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+/* ========================================
+ * No Errors State
+ * ======================================== */
+
+.error-summary.no-errors .error-summary-badge {
+  background-color: rgba(76, 175, 80, 0.1);
+  color: #4CAF50;
+}
+
+/* ========================================
+ * Dark Mode Support
+ * ======================================== */
+
+@media (prefers-color-scheme: dark) {
+  .error-summary-details {
+    background-color: var(--bg-secondary, #2d2d2d);
+    border-color: var(--border-color, #3e3e3e);
+  }
+
+  .error-type-group {
+    background-color: var(--bg-primary, #1e1e1e);
+  }
+
+  .error-type-label {
+    color: var(--text-primary, #e0e0e0);
+  }
+
+  .error-item-message {
+    color: var(--text-primary, #e0e0e0);
+  }
+
+  .error-item-slot {
+    background-color: var(--bg-tertiary, #3e3e3e);
+    color: var(--text-secondary, #a0a0a0);
+  }
+}
+
+/* ========================================
+ * Responsive Adjustments
+ * ======================================== */
+
+@media (max-width: 400px) {
+  .error-summary-badge {
+    padding: 6px 10px;
+    font-size: 12px;
+  }
+
+  .error-summary-details {
+    padding: 8px;
+  }
+
+  .error-type-header {
+    padding: 8px 10px;
+  }
+
+  .error-type-items {
+    padding: 0 8px 6px;
+  }
+
+  .error-item-button {
+    padding: 4px 6px;
+  }
+
+  .error-item-message {
+    font-size: 11px;
+  }
+}
+
+/* ========================================
+ * Animation for Error Count Change
+ * ======================================== */
+
+@keyframes countPulse {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.2);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.error-summary-badge.count-changed .badge-count {
+  animation: countPulse 0.3s ease-out;
+}

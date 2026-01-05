@@ -1,0 +1,277 @@
+/**
+ * ValidationOverlay Styles
+ * 验证覆盖层样式
+ * 
+ * Requirements: 10.1, 10.2, 10.3
+ */
+
+/* ========================================
+ * Validation Overlay Container
+ * ======================================== */
+
+.validation-overlay {
+  position: relative;
+}
+
+.validation-overlay.has-errors {
+  /* Apply border color based on error type */
+  border-color: var(--validation-border-color, inherit) !important;
+}
+
+/* ========================================
+ * Error Markers Container
+ * ======================================== */
+
+.validation-error-markers {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 4px 8px;
+  background-color: rgba(244, 67, 54, 0.05);
+  border-top: 1px solid var(--validation-border-color, var(--border-color));
+}
+
+/* ========================================
+ * Individual Error Marker
+ * ======================================== */
+
+.validation-error-marker {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 11px;
+  background-color: rgba(var(--marker-color-rgb, 244, 67, 54), 0.1);
+  color: var(--marker-color, #f44336);
+  cursor: help;
+  transition: background-color 0.15s ease;
+}
+
+.validation-error-marker:hover {
+  background-color: rgba(var(--marker-color-rgb, 244, 67, 54), 0.2);
+}
+
+.validation-error-marker .marker-icon {
+  font-size: 12px;
+}
+
+.validation-error-marker .marker-slot-name {
+  font-weight: 500;
+  max-width: 100px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Error type specific styles */
+.validation-error-marker.error-type-required {
+  --marker-color: #f44336;
+  --marker-color-rgb: 244, 67, 54;
+}
+
+.validation-error-marker.error-type-invalid-target {
+  --marker-color: #ffc107;
+  --marker-color-rgb: 255, 193, 7;
+}
+
+.validation-error-marker.error-type-missing-resource {
+  --marker-color: #ff9800;
+  --marker-color-rgb: 255, 152, 0;
+}
+
+.validation-error-marker.error-type-syntax {
+  --marker-color: #f44336;
+  --marker-color-rgb: 244, 67, 54;
+}
+
+/* ========================================
+ * Slot Validation Indicator
+ * ======================================== */
+
+.slot-validation-indicator {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 4px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  background-color: rgba(var(--indicator-color-rgb, 244, 67, 54), 0.1);
+  color: var(--indicator-color, #f44336);
+}
+
+.slot-validation-indicator .indicator-icon {
+  font-size: 12px;
+  flex-shrink: 0;
+}
+
+.slot-validation-indicator .indicator-message {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ========================================
+ * Block-level Validation Styles
+ * ======================================== */
+
+/* Required error - Red border */
+.has-required-error {
+  border-color: #f44336 !important;
+}
+
+.has-required-error .block-header {
+  background-color: rgba(244, 67, 54, 0.08);
+}
+
+/* Invalid target error - Yellow border */
+.has-target-error:not(.has-required-error):not(.has-syntax-error) {
+  border-color: #ffc107 !important;
+}
+
+.has-target-error:not(.has-required-error):not(.has-syntax-error) .block-header {
+  background-color: rgba(255, 193, 7, 0.08);
+}
+
+/* Missing resource error - Orange border */
+.has-resource-error:not(.has-required-error):not(.has-syntax-error):not(.has-target-error) {
+  border-color: #ff9800 !important;
+}
+
+.has-resource-error:not(.has-required-error):not(.has-syntax-error):not(.has-target-error) .block-header {
+  background-color: rgba(255, 152, 0, 0.08);
+}
+
+/* Syntax error - Red border (same as required) */
+.has-syntax-error {
+  border-color: #f44336 !important;
+}
+
+.has-syntax-error .block-header {
+  background-color: rgba(244, 67, 54, 0.08);
+}
+
+/* ========================================
+ * Slot Input Error States
+ * ======================================== */
+
+/* Required slot empty */
+.block-slot-input.slot-error-required,
+.block-slot-textarea.slot-error-required,
+.block-slot-select.slot-error-required {
+  border-color: #f44336;
+  background-color: rgba(244, 67, 54, 0.05);
+}
+
+.block-slot-input.slot-error-required:focus,
+.block-slot-textarea.slot-error-required:focus,
+.block-slot-select.slot-error-required:focus {
+  box-shadow: 0 0 0 2px rgba(244, 67, 54, 0.2);
+}
+
+/* Invalid target */
+.block-slot-input.slot-error-invalid-target,
+.block-slot-select.slot-error-invalid-target {
+  border-color: #ffc107;
+  background-color: rgba(255, 193, 7, 0.05);
+}
+
+.block-slot-input.slot-error-invalid-target:focus,
+.block-slot-select.slot-error-invalid-target:focus {
+  box-shadow: 0 0 0 2px rgba(255, 193, 7, 0.2);
+}
+
+/* Missing resource */
+.block-slot-input.slot-error-missing-resource,
+.block-slot-select.slot-error-missing-resource {
+  border-color: #ff9800;
+  background-color: rgba(255, 152, 0, 0.05);
+}
+
+.block-slot-input.slot-error-missing-resource:focus,
+.block-slot-select.slot-error-missing-resource:focus {
+  box-shadow: 0 0 0 2px rgba(255, 152, 0, 0.2);
+}
+
+/* Syntax error */
+.block-slot-input.slot-error-syntax,
+.block-slot-textarea.slot-error-syntax {
+  border-color: #f44336;
+  background-color: rgba(244, 67, 54, 0.05);
+}
+
+.block-slot-input.slot-error-syntax:focus,
+.block-slot-textarea.slot-error-syntax:focus {
+  box-shadow: 0 0 0 2px rgba(244, 67, 54, 0.2);
+}
+
+/* ========================================
+ * Error Badge on Block Header
+ * ======================================== */
+
+.block-error-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  border-radius: 9px;
+  font-size: 10px;
+  font-weight: 600;
+  background-color: #f44336;
+  color: white;
+  margin-left: auto;
+}
+
+.block-error-badge.warning {
+  background-color: #ff9800;
+}
+
+.block-error-badge.info {
+  background-color: #ffc107;
+  color: #333;
+}
+
+/* ========================================
+ * Animation for Error Appearance
+ * ======================================== */
+
+@keyframes errorPulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(244, 67, 54, 0.4);
+  }
+  70% {
+    box-shadow: 0 0 0 6px rgba(244, 67, 54, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(244, 67, 54, 0);
+  }
+}
+
+.validation-overlay.has-errors.animate-error {
+  animation: errorPulse 0.5s ease-out;
+}
+
+/* ========================================
+ * Responsive Adjustments
+ * ======================================== */
+
+@media (max-width: 400px) {
+  .validation-error-markers {
+    padding: 2px 4px;
+    gap: 2px;
+  }
+
+  .validation-error-marker {
+    padding: 2px 6px;
+    font-size: 10px;
+  }
+
+  .slot-validation-indicator {
+    padding: 2px 6px;
+    font-size: 10px;
+  }
+}
