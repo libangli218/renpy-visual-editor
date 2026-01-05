@@ -24,10 +24,19 @@ import { Block, BlockSlot, ValidationContext, ValidationError, SlotType, BlockTy
 const arbitraryIdentifier = fc.stringMatching(/^[a-z_][a-z0-9_]{0,19}$/)
 
 /**
- * Generate simple text
+ * Generate simple text (may include whitespace)
  */
 const arbitrarySimpleText = fc.stringOf(
   fc.constantFrom(...'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 .,!?-'),
+  { minLength: 1, maxLength: 50 }
+)
+
+/**
+ * Generate non-whitespace text (guaranteed to have at least one non-whitespace character)
+ * Used for testing non-empty required slots
+ */
+const arbitraryNonWhitespaceText = fc.stringOf(
+  fc.constantFrom(...'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789.,!?-'),
   { minLength: 1, maxLength: 50 }
 )
 
@@ -226,7 +235,7 @@ describe('Property 3: 积木验证正确性 (Block Validation Correctness)', () 
     fc.assert(
       fc.property(
         arbitraryIdentifier,
-        arbitrarySimpleText,
+        arbitraryNonWhitespaceText, // Use non-whitespace text to ensure truly non-empty values
         arbitraryBlockType,
         (slotName, slotValue, blockType) => {
           // Create a block with a non-empty required slot
@@ -238,7 +247,7 @@ describe('Property 3: 积木验证正确性 (Block Validation Correctness)', () 
             slots: [{
               name: slotName,
               type: 'text',
-              value: slotValue, // Non-empty value
+              value: slotValue, // Non-empty, non-whitespace value
               required: true,
             }],
             collapsed: false,
