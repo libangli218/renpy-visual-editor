@@ -6,10 +6,15 @@
  * vertical content area for child blocks, and empty state placeholder.
  * Supports drag-and-drop reordering of internal blocks.
  * 
+ * Performance optimizations:
+ * - React.memo to prevent unnecessary re-renders
+ * - useMemo for expensive computations
+ * - useCallback for event handlers
+ * 
  * Requirements: 2.1-2.5
  */
 
-import React, { useCallback, useState, useRef } from 'react'
+import React, { useCallback, useState, useRef, useMemo, memo } from 'react'
 import { Block } from './types'
 import './LabelContainer.css'
 
@@ -63,7 +68,7 @@ interface DropPosition {
  * - 2.4: Show placeholder when empty
  * - 2.5: Support drag-drop reordering
  */
-export const LabelContainer: React.FC<LabelContainerProps> = ({
+export const LabelContainer: React.FC<LabelContainerProps> = memo(({
   block,
   labelName,
   onBlockClick,
@@ -84,7 +89,8 @@ export const LabelContainer: React.FC<LabelContainerProps> = ({
   const containerRef = useRef<HTMLDivElement>(null)
   const contentRef = useRef<HTMLDivElement>(null)
 
-  const children = block.children || []
+  // Memoize children array reference
+  const children = useMemo(() => block.children || [], [block.children])
   const isEmpty = children.length === 0
 
   /**
@@ -271,14 +277,14 @@ export const LabelContainer: React.FC<LabelContainerProps> = ({
     )
   }, [renderBlock, selectedBlockId, draggedBlockId, readOnly, onBlockClick, onBlockDoubleClick, handleBlockDragStart, handleBlockDragEnd])
 
-  // Build class names
-  const containerClasses = [
+  // Build class names - memoized for performance
+  const containerClasses = useMemo(() => [
     'label-container',
     isDragOver && 'drag-over',
     isEmpty && 'empty',
     readOnly && 'read-only',
     className,
-  ].filter(Boolean).join(' ')
+  ].filter(Boolean).join(' '), [isDragOver, isEmpty, readOnly, className])
 
   return (
     <div
@@ -332,6 +338,9 @@ export const LabelContainer: React.FC<LabelContainerProps> = ({
       </div>
     </div>
   )
-}
+})
+
+// Display name for debugging
+LabelContainer.displayName = 'LabelContainer'
 
 export default LabelContainer

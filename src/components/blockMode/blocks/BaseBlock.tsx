@@ -5,10 +5,15 @@
  * Provides common block appearance: color, icon, title,
  * selection state, error state, and collapse/expand functionality.
  * 
+ * Performance optimizations:
+ * - React.memo to prevent unnecessary re-renders
+ * - useMemo for expensive computations
+ * - useCallback for event handlers
+ * 
  * Requirements: 1.4, 15.1
  */
 
-import React, { useCallback, useState } from 'react'
+import React, { useCallback, useState, useMemo, memo } from 'react'
 import { Block } from '../types'
 import { getBlockDefinition, isContainerBlockType } from '../constants'
 import './Block.css'
@@ -88,7 +93,7 @@ function getCollapsedSummary(block: Block): string {
  * - 1.4: Use different colors and icons for each block type
  * - 15.1: Container blocks support collapse/expand
  */
-export const BaseBlock: React.FC<BaseBlockProps> = ({
+export const BaseBlock: React.FC<BaseBlockProps> = memo(({
   block,
   selected = false,
   hasError = false,
@@ -110,9 +115,9 @@ export const BaseBlock: React.FC<BaseBlockProps> = ({
 }) => {
   const [isDragging, setIsDragging] = useState(false)
   
-  // Get block definition for visual properties
-  const definition = getBlockDefinition(block.type)
-  const isContainer = isContainerBlockType(block.type)
+  // Get block definition for visual properties - memoized
+  const definition = useMemo(() => getBlockDefinition(block.type), [block.type])
+  const isContainer = useMemo(() => isContainerBlockType(block.type), [block.type])
   
   // Determine if collapse button should be shown
   const shouldShowCollapseButton = showCollapseButton ?? (isContainer && block.children && block.children.length > 0)
@@ -160,8 +165,8 @@ export const BaseBlock: React.FC<BaseBlockProps> = ({
     onDragEnd?.(e)
   }, [onDragEnd])
   
-  // Build class names
-  const blockClasses = [
+  // Build class names - memoized for performance
+  const blockClasses = useMemo(() => [
     'base-block',
     `block-type-${block.type}`,
     `block-category-${block.category}`,
@@ -174,7 +179,7 @@ export const BaseBlock: React.FC<BaseBlockProps> = ({
     isPlaybackWaiting && 'playback-waiting',
     depth > 0 && `depth-${Math.min(depth, 5)}`,
     className,
-  ].filter(Boolean).join(' ')
+  ].filter(Boolean).join(' '), [block.type, block.category, selected, hasError, collapsed, isDragging, isContainer, isPlaybackCurrent, isPlaybackWaiting, depth, className])
   
   return (
     <div
@@ -256,6 +261,9 @@ export const BaseBlock: React.FC<BaseBlockProps> = ({
       )}
     </div>
   )
-}
+})
+
+// Display name for debugging
+BaseBlock.displayName = 'BaseBlock'
 
 export default BaseBlock

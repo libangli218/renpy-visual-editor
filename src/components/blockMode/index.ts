@@ -61,7 +61,13 @@ export * from './Breadcrumb'
 // Validation Components
 export * from './ValidationOverlay'
 export * from './ErrorTooltip'
-export * from './ErrorSummary'
+export { 
+  ErrorSummary, 
+  ErrorBadge, 
+  useErrorSummary, 
+  useBlockErrorSummary 
+} from './ErrorSummary'
+export type { ErrorSummaryProps, ErrorBadgeProps } from './ErrorSummary'
 
 // Preview Panel
 export * from './PreviewPanel'
