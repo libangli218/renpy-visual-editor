@@ -131,24 +131,32 @@ export const LabelContainer: React.FC<LabelContainerProps> = memo(({
     }
 
     const blockElements = contentRef.current.querySelectorAll('[data-block-id]')
+    const containerRect = contentRef.current.getBoundingClientRect()
+    const scrollTop = contentRef.current.scrollTop
     
     if (blockElements.length === 0) {
+      // When empty, position at the top of the content area
       return 0
     }
 
     if (index === 0) {
       const firstBlock = blockElements[0]
-      return firstBlock.getBoundingClientRect().top - contentRef.current.getBoundingClientRect().top
+      const firstRect = firstBlock.getBoundingClientRect()
+      // Position above the first block, accounting for scroll
+      return firstRect.top - containerRect.top + scrollTop
     }
 
     if (index >= blockElements.length) {
       const lastBlock = blockElements[blockElements.length - 1]
       const lastRect = lastBlock.getBoundingClientRect()
-      return lastRect.bottom - contentRef.current.getBoundingClientRect().top
+      // Position below the last block, accounting for scroll
+      return lastRect.bottom - containerRect.top + scrollTop
     }
 
     const targetBlock = blockElements[index]
-    return targetBlock.getBoundingClientRect().top - contentRef.current.getBoundingClientRect().top
+    const targetRect = targetBlock.getBoundingClientRect()
+    // Position above the target block, accounting for scroll
+    return targetRect.top - containerRect.top + scrollTop
   }, [])
 
   /**
@@ -176,7 +184,11 @@ export const LabelContainer: React.FC<LabelContainerProps> = memo(({
     if (readOnly) return
 
     event.preventDefault()
-    event.dataTransfer.dropEffect = 'move'
+    event.stopPropagation()
+    
+    // Check what type of drag this is
+    const hasBlockType = event.dataTransfer.types.includes('application/x-block-type')
+    event.dataTransfer.dropEffect = hasBlockType ? 'copy' : 'move'
 
     const index = calculateDropIndex(event.clientY)
     const y = getDropIndicatorY(index)
@@ -191,6 +203,7 @@ export const LabelContainer: React.FC<LabelContainerProps> = memo(({
   const handleDragEnter = useCallback((event: React.DragEvent) => {
     if (readOnly) return
     event.preventDefault()
+    event.stopPropagation()
     setIsDragOver(true)
   }, [readOnly])
 
@@ -213,6 +226,7 @@ export const LabelContainer: React.FC<LabelContainerProps> = memo(({
     if (readOnly) return
 
     event.preventDefault()
+    event.stopPropagation()
     setIsDragOver(false)
     setDropPosition(null)
 
@@ -311,8 +325,8 @@ export const LabelContainer: React.FC<LabelContainerProps> = memo(({
         onDrop={handleDrop}
       >
         {isEmpty ? (
-          /* Empty State Placeholder */
-          <div className="label-container-empty">
+          /* Empty State Placeholder - pointer-events: none to allow drop on parent */
+          <div className="label-container-empty" style={{ pointerEvents: 'none' }}>
             <div className="empty-icon">📦</div>
             <p className="empty-text">拖拽积木到这里</p>
             <p className="empty-hint">从左侧面板选择积木开始编辑</p>

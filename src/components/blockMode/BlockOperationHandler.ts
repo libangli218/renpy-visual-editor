@@ -315,9 +315,16 @@ export class BlockOperationHandler {
       return { success: false, error: astUpdateResult.error }
     }
 
+    // Create a new blockTree reference to trigger React re-renders
+    // This is necessary because we modified the slot value in place
+    const newBlockTree: Block = {
+      ...blockTree,
+      children: blockTree.children ? [...blockTree.children] : undefined,
+    }
+
     return {
       success: true,
-      blockTree,
+      blockTree: newBlockTree,
       ast,
     }
   }

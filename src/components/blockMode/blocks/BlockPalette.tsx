@@ -169,7 +169,7 @@ export const BlockPalette: React.FC<BlockPaletteProps> = ({
     // Set drag data
     event.dataTransfer.setData('application/x-block-type', block.type)
     event.dataTransfer.setData('text/plain', block.type)
-    event.dataTransfer.effectAllowed = 'copy'
+    event.dataTransfer.effectAllowed = 'copyMove'
 
     // Create drag preview
     const dragPreview = document.createElement('div')

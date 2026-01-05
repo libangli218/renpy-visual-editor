@@ -27,6 +27,8 @@ export interface PreviewPanelProps {
   gameState?: GameState
   /** Whether to use calculated state from selected block */
   useCalculatedState?: boolean
+  /** Project path for resolving image URLs */
+  projectPath?: string | null
   /** Callback when panel is resized */
   onResize?: (width: number) => void
   /** Initial width of the panel */
@@ -65,6 +67,11 @@ const DEFAULT_GAME_STATE: GameState = {
 }
 
 /**
+ * Image extensions to try when loading images
+ */
+const IMAGE_EXTENSIONS = ['.jpg', '.png', '.jpeg', '.webp', '.gif']
+
+/**
  * PreviewPanel - Real-time preview panel component
  * 
  * Implements Requirements:
@@ -79,6 +86,7 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
   selectedBlockId,
   gameState: externalGameState,
   useCalculatedState = true,
+  projectPath,
   onResize,
   initialWidth = 300,
   minWidth = 200,
@@ -88,6 +96,7 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
   // State for panel width (resizable)
   const [panelWidth, setPanelWidth] = useState(initialWidth)
   const [isResizing, setIsResizing] = useState(false)
+  const [backgroundDataUrl, setBackgroundDataUrl] = useState<string | null>(null)
   const panelRef = useRef<HTMLDivElement>(null)
   const resizeStartX = useRef(0)
   const resizeStartWidth = useRef(0)
@@ -108,6 +117,44 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
 
   // Use external state if provided, otherwise use calculated state
   const gameState = externalGameState || calculatedState
+
+  // Load background image as base64 when background changes
+  useEffect(() => {
+    const loadBackgroundImage = async () => {
+      if (!gameState.background || !projectPath) {
+        setBackgroundDataUrl(null)
+        return
+      }
+
+      // Try to load the image with different extensions
+      const basePath = `${projectPath}/game/images/${gameState.background}`
+      
+      for (const ext of IMAGE_EXTENSIONS) {
+        const filePath = `${basePath}${ext}`
+        try {
+          // Check if we're in Electron environment
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const electronAPI = window.electronAPI as any
+          if (electronAPI?.readFileAsBase64) {
+            const dataUrl = await electronAPI.readFileAsBase64(filePath)
+            if (dataUrl) {
+              console.log('[PreviewPanel] Loaded background:', filePath)
+              setBackgroundDataUrl(dataUrl)
+              return
+            }
+          }
+        } catch (error) {
+          // Try next extension
+          continue
+        }
+      }
+      
+      console.log('[PreviewPanel] Failed to load background:', gameState.background)
+      setBackgroundDataUrl(null)
+    }
+
+    loadBackgroundImage()
+  }, [gameState.background, projectPath])
 
   // Handle resize start
   const handleResizeStart = useCallback((e: React.MouseEvent) => {
@@ -185,7 +232,7 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
   }, [gameState.dialogue])
 
   // Check if there's any content to display
-  const hasContent = gameState.background || 
+  const hasContent = backgroundDataUrl || 
                      gameState.characters.length > 0 || 
                      gameState.dialogue
 
@@ -221,12 +268,12 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
             <div 
               className="preview-background"
               style={{
-                backgroundImage: gameState.background 
-                  ? `url(${gameState.background})` 
+                backgroundImage: backgroundDataUrl 
+                  ? `url(${backgroundDataUrl})` 
                   : undefined,
               }}
             >
-              {!gameState.background && (
+              {!backgroundDataUrl && (
                 <div className="background-placeholder">
                   <span className="placeholder-icon">🎬</span>
                   <span className="placeholder-text">无背景</span>

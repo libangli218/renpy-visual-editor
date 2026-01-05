@@ -1,10 +1,11 @@
-import React, { useCallback, useMemo } from 'react'
+import React, { useCallback, useMemo, useEffect, useState } from 'react'
 import { useEditorStore } from '../../store/editorStore'
 import { PreviewPanel } from './PreviewPanel'
 import { NodeModeEditor } from '../nodeMode'
 import { StoryModeEditor } from '../storyMode'
 import { BlockModeEditor } from '../blockMode'
 import { LabelNode } from '../../types/ast'
+import { resourceManager } from '../../resource/ResourceManager'
 
 /**
  * EditorArea component - Main editing area with preview and editor
@@ -17,7 +18,42 @@ import { LabelNode } from '../../types/ast'
  * - 9.1-9.5: Mode switching between flow and block modes
  */
 export const EditorArea: React.FC = () => {
-  const { mode, ast, currentBlockLabel, exitBlockMode, setAst } = useEditorStore()
+  const { mode, ast, currentBlockLabel, exitBlockMode, setAst, projectPath } = useEditorStore()
+  
+  // State for available resources
+  const [availableImages, setAvailableImages] = useState<string[]>([])
+  const [availableAudio, setAvailableAudio] = useState<string[]>([])
+
+  // Scan resources when project path changes
+  useEffect(() => {
+    const scanResources = async () => {
+      if (!projectPath) {
+        setAvailableImages([])
+        setAvailableAudio([])
+        return
+      }
+
+      try {
+        await resourceManager.scanResources(projectPath)
+        
+        // Get images (backgrounds + general images)
+        const backgrounds = resourceManager.getResources('background')
+        const images = resourceManager.getResources('image')
+        const allImages = [...backgrounds, ...images].map(r => r.name)
+        setAvailableImages(allImages)
+        
+        // Get audio
+        const audio = resourceManager.getResources('audio')
+        setAvailableAudio(audio.map(r => r.name))
+      } catch (error) {
+        console.error('Failed to scan resources:', error)
+        setAvailableImages([])
+        setAvailableAudio([])
+      }
+    }
+
+    scanResources()
+  }, [projectPath])
 
   /**
    * Handle returning from block mode to flow mode
@@ -78,6 +114,9 @@ export const EditorArea: React.FC = () => {
           onAstChange={handleAstChange}
           availableLabels={availableLabels}
           availableCharacters={availableCharacters}
+          availableImages={availableImages}
+          availableAudio={availableAudio}
+          projectPath={projectPath}
         />
       </section>
     )

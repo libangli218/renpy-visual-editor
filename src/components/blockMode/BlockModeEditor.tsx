@@ -16,7 +16,7 @@
  */
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react'
-import { Block, BlockType, ValidationContext } from './types'
+import { Block, BlockType, ValidationContext, SlotOption } from './types'
 import { BlockPalette } from './blocks/BlockPalette'
 import { LabelContainer } from './LabelContainer'
 import { DragDropProvider } from './DragDropContext'
@@ -32,6 +32,11 @@ import { createBlockOperationHandler } from './BlockOperationHandler'
 import { createBlockTreeBuilder } from './BlockTreeBuilder'
 import { createBlockValidator } from './BlockValidator'
 import { BaseBlock } from './blocks/BaseBlock'
+import { DialogueBlock } from './blocks/DialogueBlock'
+import { SceneBlock } from './blocks/SceneBlock'
+import { MenuBlock } from './blocks/MenuBlock'
+import { FlowBlock } from './blocks/FlowBlock'
+import { AudioBlock } from './blocks/AudioBlock'
 import { RenpyScript, LabelNode } from '../../types/ast'
 import './BlockModeEditor.css'
 
@@ -55,6 +60,8 @@ export interface BlockModeEditorProps {
   availableImages?: string[]
   /** Available audio resources */
   availableAudio?: string[]
+  /** Project path for resolving resource URLs */
+  projectPath?: string | null
   /** Whether the editor is read-only */
   readOnly?: boolean
   /** Custom class name */
@@ -79,6 +86,7 @@ export const BlockModeEditor: React.FC<BlockModeEditorProps> = ({
   availableCharacters = [],
   availableImages = [],
   availableAudio = [],
+  projectPath = null,
   readOnly = false,
   className = '',
 }) => {
@@ -126,10 +134,16 @@ export const BlockModeEditor: React.FC<BlockModeEditorProps> = ({
     },
   })
 
+  // Get current label from store to check if we need to reinitialize
+  const currentLabel = useBlockEditorStore((state) => state.currentLabel)
+
   // Initialize editor when label changes
   useEffect(() => {
-    setCurrentLabel(labelName)
-    setReadOnly(readOnly)
+    // Guard: Only initialize if the label has actually changed
+    // This prevents infinite loops from store updates triggering re-renders
+    if (currentLabel === labelName && blockTree !== null) {
+      return
+    }
 
     // Find the label in AST and build block tree
     const labelNode = ast.statements.find(
@@ -139,12 +153,29 @@ export const BlockModeEditor: React.FC<BlockModeEditorProps> = ({
     if (labelNode) {
       const tree = blockTreeBuilder.buildFromLabel(labelNode)
       setBlockTree(tree)
+      setCurrentLabel(labelName)
+      setReadOnly(readOnly)
 
       // Validate the tree
       const errors = blockValidator.validateTree(tree, validationContext)
       setValidationErrors(errors)
+    } else {
+      console.warn('[BlockModeEditor] Label not found in AST:', labelName)
+      // Create an empty label container if label not found
+      const emptyTree: Block = {
+        id: `label_${labelName}`,
+        type: 'label',
+        category: 'flow',
+        astNodeId: '',
+        slots: [],
+        children: [],
+      }
+      setBlockTree(emptyTree)
+      setCurrentLabel(labelName)
+      setReadOnly(readOnly)
+      setValidationErrors([])
     }
-  }, [labelName, ast, readOnly, blockTreeBuilder, blockValidator, validationContext, setCurrentLabel, setBlockTree, setValidationErrors, setReadOnly])
+  }, [labelName, ast, readOnly, currentLabel, blockTree, blockTreeBuilder, blockValidator, validationContext, setCurrentLabel, setBlockTree, setValidationErrors, setReadOnly])
 
   // Handle block click
   const handleBlockClick = useCallback((blockId: string) => {
@@ -214,6 +245,62 @@ export const BlockModeEditor: React.FC<BlockModeEditorProps> = ({
     console.log('Invalid drop for block:', blockId)
   }, [])
 
+  // Handle slot value change
+  const handleSlotChange = useCallback((blockId: string, slotName: string, value: unknown) => {
+    if (readOnly || !blockTree) return
+
+    const result = blockOperationHandler.updateSlot(blockId, slotName, value, {
+      blockTree,
+      ast,
+      labelName,
+    })
+
+    if (result.success && result.blockTree) {
+      setBlockTree(result.blockTree)
+      
+      // Notify parent of AST change
+      if (result.ast && onAstChange) {
+        onAstChange(result.ast)
+      }
+
+      // Re-validate
+      const errors = blockValidator.validateTree(result.blockTree, validationContext)
+      setValidationErrors(errors)
+    }
+  }, [readOnly, blockTree, ast, labelName, blockOperationHandler, blockValidator, validationContext, setBlockTree, setValidationErrors, onAstChange])
+
+  // Build character options for dialogue blocks
+  const characterOptions: SlotOption[] = useMemo(() => {
+    return availableCharacters.map(char => ({
+      value: char,
+      label: char,
+    }))
+  }, [availableCharacters])
+
+  // Build image options for scene blocks
+  const imageOptions: SlotOption[] = useMemo(() => {
+    return availableImages.map(img => ({
+      value: img,
+      label: img.split('/').pop() || img,
+    }))
+  }, [availableImages])
+
+  // Build label options for flow blocks
+  const labelOptions: SlotOption[] = useMemo(() => {
+    return availableLabels.map(label => ({
+      value: label,
+      label: label,
+    }))
+  }, [availableLabels])
+
+  // Build audio options for audio blocks
+  const audioOptions: SlotOption[] = useMemo(() => {
+    return availableAudio.map(audio => ({
+      value: audio,
+      label: audio.split('/').pop() || audio,
+    }))
+  }, [availableAudio])
+
   // Handle back button click
   const handleBack = useCallback(() => {
     playback.stop()
@@ -250,6 +337,17 @@ export const BlockModeEditor: React.FC<BlockModeEditorProps> = ({
     playback.stepForward()
   }, [playback])
 
+  // Get slot errors for a block
+  const getSlotErrors = useCallback((blockId: string): Record<string, string> => {
+    const errors: Record<string, string> = {}
+    for (const error of validationErrors) {
+      if (error.blockId === blockId && error.slotName) {
+        errors[error.slotName] = error.message
+      }
+    }
+    return errors
+  }, [validationErrors])
+
   // Render a block with its children
   const renderBlock = useCallback((block: Block, _index: number): React.ReactNode => {
     const isSelected = block.id === selectedBlockId
@@ -258,27 +356,106 @@ export const BlockModeEditor: React.FC<BlockModeEditorProps> = ({
     const blockErrors = validationErrors.filter(e => e.blockId === block.id)
     const hasError = blockErrors.length > 0
     const errorMessage = blockErrors.map(e => e.message).join('; ')
+    const slotErrors = getSlotErrors(block.id)
 
-    return (
-      <BaseBlock
-        key={block.id}
-        block={block}
-        selected={isSelected}
-        hasError={hasError}
-        errorMessage={errorMessage}
-        isPlaybackCurrent={isPlaybackCurrent}
-        isPlaybackWaiting={isPlaybackWaiting}
-        onClick={() => handleBlockClick(block.id)}
-        onDoubleClick={() => handleBlockDoubleClick(block.id)}
-        draggable={!readOnly}
-      >
-        {/* Render children recursively */}
-        {block.children?.map((childBlock: Block, childIndex: number) => 
-          renderBlock(childBlock, childIndex)
-        )}
-      </BaseBlock>
+    // Common props for all block types (key is passed separately)
+    const commonProps = {
+      block,
+      selected: isSelected,
+      hasError,
+      errorMessage,
+      isPlaybackCurrent,
+      isPlaybackWaiting,
+      onClick: () => handleBlockClick(block.id),
+      onDoubleClick: () => handleBlockDoubleClick(block.id),
+      draggable: !readOnly,
+      slotErrors,
+      onSlotChange: handleSlotChange,
+    }
+
+    // Render children for container blocks (used by BaseBlock)
+    const renderChildren = () => (
+      block.children?.map((childBlock: Block, childIndex: number) => 
+        renderBlock(childBlock, childIndex)
+      )
     )
-  }, [selectedBlockId, playback.currentBlockId, playback.isWaitingForMenu, playback.currentMenuBlock, validationErrors, readOnly, handleBlockClick, handleBlockDoubleClick])
+
+    // Render child block function for nested containers (MenuBlock, FlowBlock)
+    const renderChildBlock = (childBlock: Block, depth: number) => 
+      renderBlock(childBlock, depth)
+
+    // Render based on block type
+    switch (block.type) {
+      case 'dialogue':
+        return (
+          <DialogueBlock
+            key={block.id}
+            {...commonProps}
+            availableCharacters={characterOptions}
+          />
+        )
+      
+      case 'scene':
+      case 'show':
+      case 'hide':
+      case 'with':
+        return (
+          <SceneBlock
+            key={block.id}
+            {...commonProps}
+            availableImages={imageOptions}
+            availableCharacters={characterOptions}
+          />
+        )
+      
+      case 'menu':
+      case 'choice':
+        return (
+          <MenuBlock
+            key={block.id}
+            {...commonProps}
+            renderChildBlock={renderChildBlock}
+          />
+        )
+      
+      case 'jump':
+      case 'call':
+      case 'return':
+      case 'if':
+      case 'elif':
+      case 'else':
+        return (
+          <FlowBlock
+            key={block.id}
+            {...commonProps}
+            availableLabels={labelOptions}
+            renderChildBlock={renderChildBlock}
+          />
+        )
+      
+      case 'play-music':
+      case 'stop-music':
+      case 'play-sound':
+        return (
+          <AudioBlock
+            key={block.id}
+            {...commonProps}
+            availableMusic={audioOptions}
+            availableSounds={audioOptions}
+          />
+        )
+      
+      default:
+        return (
+          <BaseBlock
+            key={block.id}
+            {...commonProps}
+          >
+            {renderChildren()}
+          </BaseBlock>
+        )
+    }
+  }, [selectedBlockId, playback.currentBlockId, playback.isWaitingForMenu, playback.currentMenuBlock, validationErrors, readOnly, handleBlockClick, handleBlockDoubleClick, getSlotErrors, handleSlotChange, characterOptions, imageOptions, labelOptions, audioOptions])
 
   // Error count for display
   const errorCount = validationErrors.length
@@ -309,6 +486,8 @@ export const BlockModeEditor: React.FC<BlockModeEditorProps> = ({
                 labelName={labelName}
                 onBlockClick={handleBlockClick}
                 onBlockDoubleClick={handleBlockDoubleClick}
+                onBlockDrop={(blockType, index) => handlePaletteDrop(blockType as BlockType, blockTree.id, index)}
+                onBlockMove={(blockId, index) => handleBlockMove(blockId, blockTree.id, index)}
                 renderBlock={renderBlock}
                 readOnly={readOnly}
                 selectedBlockId={selectedBlockId}
@@ -331,6 +510,7 @@ export const BlockModeEditor: React.FC<BlockModeEditorProps> = ({
               selectedBlockId={playback.currentBlockId || selectedBlockId}
               gameState={playback.isPlaying || playback.isPaused ? playback.gameState : undefined}
               useCalculatedState={!playback.isPlaying && !playback.isPaused}
+              projectPath={projectPath}
               onResize={setPreviewWidth}
               initialWidth={previewWidth}
               minWidth={200}

@@ -1,10 +1,25 @@
-import { app, BrowserWindow, ipcMain, dialog } from 'electron'
+import { app, BrowserWindow, ipcMain, dialog, protocol, net } from 'electron'
 import { join } from 'path'
+import { pathToFileURL } from 'url'
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (require('electron-squirrel-startup')) {
   app.quit()
 }
+
+// Register custom protocol as privileged BEFORE app is ready
+// This is required for the protocol to work with fetch and CSS background-image
+protocol.registerSchemesAsPrivileged([
+  {
+    scheme: 'local-file',
+    privileges: {
+      standard: true,
+      secure: true,
+      supportFetchAPI: true,
+      bypassCSP: true,
+    }
+  }
+])
 
 let mainWindow: BrowserWindow | null = null
 
@@ -43,6 +58,23 @@ const createWindow = () => {
 
 // This method will be called when Electron has finished initialization
 app.whenReady().then(() => {
+  // Register custom protocol to serve local files (for preview panel images)
+  protocol.handle('local-file', (request) => {
+    // Extract the file path from the URL
+    // URL format: local-file:///F:/path/to/file.jpg (three slashes + absolute path)
+    let filePath = decodeURIComponent(request.url.replace('local-file:///', ''))
+    
+    // On Windows, the path might start with a drive letter like F:/
+    // pathToFileURL expects backslashes on Windows, but forward slashes work too
+    console.log('[local-file protocol] Request URL:', request.url)
+    console.log('[local-file protocol] File path:', filePath)
+    
+    const fileUrl = pathToFileURL(filePath).toString()
+    console.log('[local-file protocol] File URL:', fileUrl)
+    
+    return net.fetch(fileUrl)
+  })
+
   createWindow()
 
   app.on('activate', () => {
@@ -64,6 +96,23 @@ app.on('window-all-closed', () => {
 ipcMain.handle('fs:readFile', async (_event, path: string) => {
   const fs = await import('fs/promises')
   return fs.readFile(path, 'utf-8')
+})
+
+// Read file as base64 for images
+ipcMain.handle('fs:readFileAsBase64', async (_event, filePath: string) => {
+  const fs = await import('fs/promises')
+  const path = await import('path')
+  
+  try {
+    const buffer = await fs.readFile(filePath)
+    const base64 = buffer.toString('base64')
+    const ext = path.extname(filePath).toLowerCase().slice(1)
+    const mimeType = ext === 'jpg' ? 'jpeg' : ext
+    return `data:image/${mimeType};base64,${base64}`
+  } catch (error) {
+    console.error('[fs:readFileAsBase64] Error reading file:', filePath, error)
+    return null
+  }
 })
 
 ipcMain.handle('fs:writeFile', async (_event, path: string, content: string) => {
