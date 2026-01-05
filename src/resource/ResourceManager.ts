@@ -244,7 +244,7 @@ export class ResourceManager {
       for (const entry of entries) {
         const fullPath = joinPath(dirPath, entry.name)
         
-        if (entry.isDirectory()) {
+        if (entry.isDirectory) {
           if (includeSubdirectories && !entry.name.startsWith('.')) {
             const subFiles = await this.scanDirectory(fullPath, extensions, true)
             files.push(...subFiles)

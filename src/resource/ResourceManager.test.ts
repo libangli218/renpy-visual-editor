@@ -33,12 +33,15 @@ function createMockFileSystem(files: Record<string, string | { isDir: true; entr
         const entry = files[fullPath]
         return {
           name,
-          isDirectory: () => typeof entry === 'object' && entry !== null && 'isDir' in entry && entry.isDir === true,
+          isDirectory: typeof entry === 'object' && entry !== null && 'isDir' in entry && entry.isDir === true,
         }
       })
     }),
     exists: vi.fn(async (path: string) => path in files),
     mkdir: vi.fn(async () => {}),
+    copyDir: vi.fn(async () => {}),
+    copyFile: vi.fn(async () => {}),
+    getAppPath: vi.fn(async () => '/app'),
   }
 }
 

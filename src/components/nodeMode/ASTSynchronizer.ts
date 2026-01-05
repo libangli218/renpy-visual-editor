@@ -1434,7 +1434,7 @@ export class ASTSynchronizer {
    */
   determineInsertPosition(
     sourceNodeId: string,
-    targetNodeId: string,
+    _targetNodeId: string,
     graph: FlowGraph
   ): InsertPosition | null {
     // Find the source node

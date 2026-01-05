@@ -87,7 +87,7 @@ function createMockFileSystem(
     }),
 
     readDir: vi.fn(async (path: string) => {
-      const entries: { name: string; isDirectory: () => boolean }[] = []
+      const entries: { name: string; isDirectory: boolean }[] = []
       const prefix = path.endsWith('/') ? path : path + '/'
       const seen = new Set<string>()
 
@@ -101,7 +101,7 @@ function createMockFileSystem(
             const isDir = rest.includes('/')
             entries.push({
               name: firstPart,
-              isDirectory: () => isDir,
+              isDirectory: isDir,
             })
           }
         }
@@ -116,7 +116,7 @@ function createMockFileSystem(
             seen.add(firstPart)
             entries.push({
               name: firstPart,
-              isDirectory: () => true,
+              isDirectory: true,
             })
           }
         }
@@ -141,6 +141,10 @@ function createMockFileSystem(
     mkdir: vi.fn(async (path: string) => {
       directories.add(path)
     }),
+
+    copyDir: vi.fn(async () => {}),
+    copyFile: vi.fn(async () => {}),
+    getAppPath: vi.fn(async () => '/app'),
   }
 }
 
