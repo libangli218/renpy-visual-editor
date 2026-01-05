@@ -1,0 +1,271 @@
+/**
+ * BlockFilter Component Styles
+ * 积木筛选组件样式
+ * 
+ * Requirements: 15.5
+ */
+
+/* ========================================
+ * Filter Container
+ * ======================================== */
+
+.block-filter {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 8px;
+  background-color: var(--bg-secondary, #f5f5f5);
+  border-radius: 8px;
+}
+
+/* ========================================
+ * Search Bar
+ * ======================================== */
+
+.filter-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background-color: var(--bg-primary, #fff);
+  border: 1px solid var(--border-color, #e0e0e0);
+  border-radius: 6px;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.filter-search:focus-within {
+  border-color: var(--accent-primary, #2196F3);
+  box-shadow: 0 0 0 2px rgba(33, 150, 243, 0.1);
+}
+
+.filter-search-icon {
+  font-size: 14px;
+  color: var(--text-tertiary, #999);
+  flex-shrink: 0;
+}
+
+.filter-search-input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  font-size: 13px;
+  color: var(--text-primary, #333);
+  outline: none;
+}
+
+.filter-search-input::placeholder {
+  color: var(--text-tertiary, #999);
+}
+
+.filter-search-clear {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: none;
+  background-color: var(--bg-tertiary, #eee);
+  color: var(--text-secondary, #666);
+  font-size: 14px;
+  cursor: pointer;
+  border-radius: 50%;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+}
+
+.filter-search-clear:hover {
+  background-color: var(--text-tertiary, #999);
+  color: #fff;
+}
+
+/* ========================================
+ * Filter Header
+ * ======================================== */
+
+.filter-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.filter-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border: 1px solid var(--border-color, #e0e0e0);
+  background-color: var(--bg-primary, #fff);
+  color: var(--text-secondary, #666);
+  font-size: 12px;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: all 0.15s ease;
+}
+
+.filter-toggle:hover {
+  border-color: var(--accent-primary, #2196F3);
+  color: var(--accent-primary, #2196F3);
+}
+
+.filter-toggle.expanded {
+  background-color: var(--accent-primary, #2196F3);
+  border-color: var(--accent-primary, #2196F3);
+  color: #fff;
+}
+
+.filter-toggle-icon {
+  font-size: 12px;
+}
+
+.filter-toggle-text {
+  font-weight: 500;
+}
+
+.filter-count {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  background-color: var(--accent-primary, #2196F3);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 600;
+  border-radius: 9px;
+}
+
+.filter-toggle.expanded .filter-count {
+  background-color: rgba(255, 255, 255, 0.3);
+}
+
+.filter-chevron {
+  font-size: 8px;
+  transition: transform 0.2s ease;
+}
+
+.filter-chevron.expanded {
+  transform: rotate(180deg);
+}
+
+.filter-clear {
+  padding: 4px 8px;
+  border: none;
+  background: transparent;
+  color: var(--text-tertiary, #999);
+  font-size: 11px;
+  cursor: pointer;
+  transition: color 0.15s ease;
+}
+
+.filter-clear:hover {
+  color: #dc3545;
+}
+
+/* ========================================
+ * Filter Options
+ * ======================================== */
+
+.filter-options {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 12px;
+  background-color: var(--bg-primary, #fff);
+  border: 1px solid var(--border-color, #e0e0e0);
+  border-radius: 6px;
+}
+
+.filter-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.filter-section-title {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-secondary, #666);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.filter-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+/* ========================================
+ * Filter Chips
+ * ======================================== */
+
+.filter-chip {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border: 1px solid var(--border-color, #e0e0e0);
+  background-color: var(--bg-primary, #fff);
+  color: var(--text-secondary, #666);
+  font-size: 12px;
+  cursor: pointer;
+  border-radius: 16px;
+  transition: all 0.15s ease;
+}
+
+.filter-chip:hover {
+  border-color: var(--chip-color, var(--accent-primary, #2196F3));
+  color: var(--chip-color, var(--accent-primary, #2196F3));
+}
+
+.filter-chip.active {
+  background-color: var(--chip-color, var(--accent-primary, #2196F3));
+  border-color: var(--chip-color, var(--accent-primary, #2196F3));
+  color: #fff;
+}
+
+.filter-chip-icon {
+  font-size: 12px;
+}
+
+.filter-chip-label {
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+/* ========================================
+ * Responsive Adjustments
+ * ======================================== */
+
+@media (max-width: 400px) {
+  .block-filter {
+    padding: 6px;
+  }
+  
+  .filter-search {
+    padding: 6px 10px;
+  }
+  
+  .filter-search-input {
+    font-size: 12px;
+  }
+  
+  .filter-options {
+    padding: 8px;
+  }
+  
+  .filter-chip {
+    padding: 3px 8px;
+    font-size: 11px;
+  }
+  
+  .filter-chip-icon {
+    font-size: 11px;
+  }
+  
+  .filter-chip-label {
+    font-size: 10px;
+  }
+}

@@ -1,0 +1,187 @@
+/**
+ * CommentBlock Component Styles
+ * 注释积木组件样式
+ * 
+ * Requirements: 15.4
+ */
+
+/* ========================================
+ * Comment Block Base
+ * ======================================== */
+
+.comment-block {
+  --block-color: #607D8B;
+  background-color: rgba(96, 125, 139, 0.05);
+  border-style: dashed;
+}
+
+.comment-block .block-header {
+  background-color: rgba(96, 125, 139, 0.1);
+}
+
+/* ========================================
+ * No Code Badge
+ * ======================================== */
+
+.comment-no-code-badge {
+  font-size: 10px;
+  padding: 2px 6px;
+  background-color: rgba(96, 125, 139, 0.2);
+  color: var(--text-secondary, #666);
+  border-radius: 10px;
+  margin-left: auto;
+  white-space: nowrap;
+}
+
+/* ========================================
+ * Comment Content
+ * ======================================== */
+
+.comment-content {
+  position: relative;
+  padding: 8px;
+}
+
+/* ========================================
+ * Comment Display (Read Mode)
+ * ======================================== */
+
+.comment-display {
+  min-height: 40px;
+  padding: 8px;
+  background-color: var(--bg-secondary, #f5f5f5);
+  border-radius: 4px;
+  cursor: text;
+  transition: background-color 0.15s ease;
+}
+
+.comment-display:hover {
+  background-color: var(--bg-tertiary, #eee);
+}
+
+.comment-display.empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.comment-placeholder {
+  color: var(--text-tertiary, #999);
+  font-style: italic;
+  font-size: 13px;
+}
+
+.comment-text {
+  margin: 0;
+  font-family: inherit;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text-secondary, #666);
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
+/* ========================================
+ * Comment Textarea (Edit Mode)
+ * ======================================== */
+
+.comment-textarea {
+  width: 100%;
+  min-height: 60px;
+  padding: 8px;
+  border: 1px solid var(--border-color, #e0e0e0);
+  border-radius: 4px;
+  background-color: var(--bg-primary, #fff);
+  color: var(--text-primary, #333);
+  font-family: inherit;
+  font-size: 13px;
+  line-height: 1.5;
+  resize: vertical;
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.comment-textarea:focus {
+  border-color: #607D8B;
+  box-shadow: 0 0 0 2px rgba(96, 125, 139, 0.2);
+}
+
+.comment-textarea::placeholder {
+  color: var(--text-tertiary, #999);
+  font-style: italic;
+}
+
+/* ========================================
+ * Comment Indicator
+ * ======================================== */
+
+.comment-indicator {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px dashed var(--border-color, #e0e0e0);
+  font-size: 11px;
+  color: var(--text-tertiary, #999);
+}
+
+.comment-icon {
+  font-size: 12px;
+}
+
+.comment-label {
+  font-style: italic;
+}
+
+/* ========================================
+ * Visual Distinction
+ * ======================================== */
+
+/* Make comment blocks visually distinct from code blocks */
+.comment-block::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: repeating-linear-gradient(
+    -45deg,
+    transparent,
+    transparent 10px,
+    rgba(96, 125, 139, 0.03) 10px,
+    rgba(96, 125, 139, 0.03) 20px
+  );
+  pointer-events: none;
+  border-radius: inherit;
+}
+
+/* ========================================
+ * Selection State
+ * ======================================== */
+
+.comment-block.selected {
+  border-color: #607D8B;
+  box-shadow: 0 0 0 3px rgba(96, 125, 139, 0.3);
+}
+
+/* ========================================
+ * Responsive Adjustments
+ * ======================================== */
+
+@media (max-width: 400px) {
+  .comment-no-code-badge {
+    display: none;
+  }
+  
+  .comment-content {
+    padding: 6px;
+  }
+  
+  .comment-display,
+  .comment-textarea {
+    padding: 6px;
+    font-size: 12px;
+  }
+}

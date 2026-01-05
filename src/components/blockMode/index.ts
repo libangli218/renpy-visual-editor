@@ -78,5 +78,8 @@ export {
 } from './TemplateManager'
 export * from './TemplatePanel'
 
+// Block Filter
+export * from './BlockFilter'
+
 // Main Editor Component
 export * from './BlockModeEditor'
