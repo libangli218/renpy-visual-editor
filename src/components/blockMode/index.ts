@@ -63,5 +63,8 @@ export * from './ValidationOverlay'
 export * from './ErrorTooltip'
 export * from './ErrorSummary'
 
+// Preview Panel
+export * from './PreviewPanel'
+
 // Main Editor Component
 export * from './BlockModeEditor'

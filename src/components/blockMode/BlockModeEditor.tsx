@@ -15,7 +15,7 @@
  * Requirements: 1.1, 2.1, 9.5
  */
 
-import React, { useCallback, useEffect, useMemo } from 'react'
+import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import { Block, BlockType, ValidationContext } from './types'
 import { BlockPalette } from './blocks/BlockPalette'
 import { LabelContainer } from './LabelContainer'
@@ -23,10 +23,11 @@ import { DragDropProvider } from './DragDropContext'
 import { SnapIndicator } from './SnapIndicator'
 import { DragPreview } from './DragPreview'
 import { Breadcrumb } from './Breadcrumb'
+import { PreviewPanel } from './PreviewPanel'
 import { useBlockEditorStore } from './stores/blockEditorStore'
-import { BlockOperationHandler as BlockOperationHandlerType, createBlockOperationHandler } from './BlockOperationHandler'
-import { BlockTreeBuilder as BlockTreeBuilderType, createBlockTreeBuilder } from './BlockTreeBuilder'
-import { BlockValidator as BlockValidatorType, createBlockValidator } from './BlockValidator'
+import { createBlockOperationHandler } from './BlockOperationHandler'
+import { createBlockTreeBuilder } from './BlockTreeBuilder'
+import { createBlockValidator } from './BlockValidator'
 import { BaseBlock } from './blocks/BaseBlock'
 import { RenpyScript, LabelNode } from '../../types/ast'
 import './BlockModeEditor.css'
@@ -94,6 +95,9 @@ export const BlockModeEditor: React.FC<BlockModeEditorProps> = ({
     stepPrevious,
     setReadOnly,
   } = useBlockEditorStore()
+
+  // State for preview panel width
+  const [previewWidth, setPreviewWidth] = useState(300)
 
   // Create handlers
   const blockTreeBuilder = useMemo(() => createBlockTreeBuilder(), [])
@@ -288,19 +292,18 @@ export const BlockModeEditor: React.FC<BlockModeEditorProps> = ({
             <SnapIndicator />
           </div>
 
-          {/* Right Panel: Preview (Placeholder) */}
-          <div className="block-mode-editor-preview">
-            <div className="preview-panel-placeholder">
-              <div className="preview-header">
-                <span className="preview-icon">👁️</span>
-                <span className="preview-title">预览</span>
-              </div>
-              <div className="preview-content">
-                <p className="preview-placeholder-text">
-                  选择一个积木查看预览效果
-                </p>
-              </div>
-            </div>
+          {/* Right Panel: Preview */}
+          <div className="block-mode-editor-preview" style={{ width: previewWidth }}>
+            <PreviewPanel
+              blockTree={blockTree}
+              selectedBlockId={selectedBlockId}
+              gameState={playback.isPlaying ? playback.gameState : undefined}
+              useCalculatedState={!playback.isPlaying}
+              onResize={setPreviewWidth}
+              initialWidth={previewWidth}
+              minWidth={200}
+              maxWidth={500}
+            />
           </div>
         </div>
 

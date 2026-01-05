@@ -1,0 +1,374 @@
+/**
+ * PreviewPanel Styles
+ * 实时预览面板样式
+ * 
+ * Provides styling for:
+ * - Panel layout and resizing
+ * - Background display
+ * - Character positioning
+ * - Dialogue box
+ * - State indicators
+ * 
+ * Requirements: 11.1, 11.2, 11.3, 11.4, 11.5
+ */
+
+/* Main Panel Container */
+.preview-panel {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background-color: var(--preview-bg, #252526);
+  border-left: 1px solid var(--border-color, #3c3c3c);
+  position: relative;
+  overflow: hidden;
+  transition: width 0.05s ease-out;
+}
+
+.preview-panel.resizing {
+  transition: none;
+  user-select: none;
+}
+
+/* Resize Handle */
+.preview-resize-handle {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  cursor: ew-resize;
+  background-color: transparent;
+  z-index: 10;
+  transition: background-color 0.15s ease;
+}
+
+.preview-resize-handle:hover,
+.preview-panel.resizing .preview-resize-handle {
+  background-color: var(--resize-handle-color, #007acc);
+}
+
+/* Header */
+.preview-panel-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  background-color: var(--header-bg, #2d2d2d);
+  border-bottom: 1px solid var(--border-color, #3c3c3c);
+  flex-shrink: 0;
+}
+
+.preview-panel-icon {
+  font-size: 16px;
+}
+
+.preview-panel-title {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-primary, #e0e0e0);
+  flex: 1;
+}
+
+.preview-music-indicator {
+  font-size: 14px;
+  animation: music-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes music-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+/* Content Area */
+.preview-panel-content {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px;
+  overflow: hidden;
+}
+
+/* Preview Stage - Game View Container */
+.preview-stage {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  max-height: 100%;
+  aspect-ratio: 16 / 9;
+  background-color: #000;
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+/* Background Layer */
+.preview-background {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.background-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-secondary, #808080);
+}
+
+.background-placeholder .placeholder-icon {
+  font-size: 32px;
+  opacity: 0.5;
+}
+
+.background-placeholder .placeholder-text {
+  font-size: 12px;
+  opacity: 0.7;
+}
+
+/* Characters Layer */
+.preview-characters {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 60px; /* Leave space for dialogue */
+  pointer-events: none;
+}
+
+.preview-character {
+  position: absolute;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  pointer-events: auto;
+}
+
+.character-sprite {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.character-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 8px 12px;
+  background-color: rgba(0, 0, 0, 0.6);
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.character-icon {
+  font-size: 40px;
+  margin-bottom: 4px;
+}
+
+.character-name {
+  font-size: 11px;
+  color: #fff;
+  font-weight: 500;
+  text-align: center;
+  max-width: 80px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.character-expression {
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.7);
+  margin-top: 2px;
+}
+
+/* Dialogue Layer */
+.preview-dialogue {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 8px;
+}
+
+.preview-dialogue-box {
+  background: linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0.85),
+    rgba(0, 0, 0, 0.95)
+  );
+  border-radius: 8px;
+  padding: 12px 16px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.3);
+}
+
+.dialogue-speaker {
+  margin-bottom: 6px;
+}
+
+.speaker-name {
+  font-size: 12px;
+  font-weight: 600;
+  color: #4fc3f7;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+.dialogue-text {
+  font-size: 13px;
+  line-height: 1.5;
+  color: #fff;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+/* Transition Indicator */
+.preview-transition-indicator {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  background-color: rgba(0, 0, 0, 0.7);
+  border-radius: 4px;
+  font-size: 11px;
+  color: #fff;
+}
+
+.transition-icon {
+  font-size: 12px;
+}
+
+.transition-name {
+  opacity: 0.9;
+}
+
+/* Empty State */
+.preview-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 24px;
+  text-align: center;
+}
+
+.preview-empty .empty-icon {
+  font-size: 48px;
+  opacity: 0.4;
+}
+
+.preview-empty .empty-text {
+  font-size: 13px;
+  color: var(--text-secondary, #808080);
+  max-width: 200px;
+  line-height: 1.4;
+}
+
+/* Footer */
+.preview-panel-footer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 16px;
+  background-color: var(--header-bg, #2d2d2d);
+  border-top: 1px solid var(--border-color, #3c3c3c);
+  flex-shrink: 0;
+}
+
+.preview-status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--text-primary, #e0e0e0);
+}
+
+.preview-status.inactive {
+  color: var(--text-secondary, #808080);
+}
+
+.preview-status .status-icon {
+  font-size: 12px;
+}
+
+.preview-status .status-text {
+  font-size: 11px;
+}
+
+/* Responsive Adjustments */
+@media (max-width: 1200px) {
+  .preview-stage {
+    aspect-ratio: 4 / 3;
+  }
+  
+  .character-icon {
+    font-size: 32px;
+  }
+  
+  .dialogue-text {
+    font-size: 12px;
+  }
+}
+
+@media (max-width: 900px) {
+  .preview-panel {
+    display: none;
+  }
+}
+
+/* Animation for state changes */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.preview-character {
+  animation: fade-in 0.3s ease-out;
+}
+
+.preview-dialogue-box {
+  animation: fade-in 0.2s ease-out;
+}
+
+/* Hover effects */
+.preview-character:hover .character-placeholder {
+  background-color: rgba(0, 0, 0, 0.8);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+/* CSS Variables for theming */
+:root {
+  --resize-handle-color: #007acc;
+}
+
+/* Light theme adjustments */
+.preview-panel.light-theme {
+  --preview-bg: #f5f5f5;
+  --header-bg: #e8e8e8;
+  --border-color: #d0d0d0;
+  --text-primary: #333333;
+  --text-secondary: #666666;
+}
+
+.preview-panel.light-theme .preview-stage {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
