@@ -12,7 +12,7 @@
  * - Playback controls
  * - Current label name display
  * 
- * Requirements: 1.1, 2.1, 9.5
+ * Requirements: 1.1, 2.1, 9.5, 12.1-12.6
  */
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react'
@@ -24,7 +24,10 @@ import { SnapIndicator } from './SnapIndicator'
 import { DragPreview } from './DragPreview'
 import { Breadcrumb } from './Breadcrumb'
 import { PreviewPanel } from './PreviewPanel'
+import { PlaybackControls } from './PlaybackControls'
+import { MenuChoiceOverlay } from './MenuChoiceOverlay'
 import { useBlockEditorStore } from './stores/blockEditorStore'
+import { usePlayback } from './hooks/usePlayback'
 import { createBlockOperationHandler } from './BlockOperationHandler'
 import { createBlockTreeBuilder } from './BlockTreeBuilder'
 import { createBlockValidator } from './BlockValidator'
@@ -65,6 +68,7 @@ export interface BlockModeEditorProps {
  * - 1.1: Display block palette with all available block types
  * - 2.1: Display Label container when editing a Label
  * - 9.5: Display current label name and breadcrumb navigation
+ * - 12.1-12.6: Playback controls and menu pause functionality
  */
 export const BlockModeEditor: React.FC<BlockModeEditorProps> = ({
   labelName,
@@ -83,17 +87,13 @@ export const BlockModeEditor: React.FC<BlockModeEditorProps> = ({
     blockTree,
     selectedBlockId,
     validationErrors,
-    playback,
     setCurrentLabel,
     setBlockTree,
     setSelectedBlockId,
     setValidationErrors,
-    startPlayback,
-    stopPlayback,
-    pausePlayback,
-    stepNext,
-    stepPrevious,
     setReadOnly,
+    updateGameState,
+    setPlaybackBlock,
   } = useBlockEditorStore()
 
   // State for preview panel width
@@ -111,6 +111,20 @@ export const BlockModeEditor: React.FC<BlockModeEditorProps> = ({
     availableImages,
     availableAudio,
   }), [availableLabels, availableCharacters, availableImages, availableAudio])
+
+  // Use playback hook for managing playback state
+  // Requirements: 12.2, 12.3, 12.5
+  const playback = usePlayback({
+    blockTree,
+    initialBlockId: selectedBlockId,
+    pauseOnMenu: true,
+    onBlockChange: (blockId) => {
+      setPlaybackBlock(blockId)
+    },
+    onGameStateChange: (state) => {
+      updateGameState(state)
+    },
+  })
 
   // Initialize editor when label changes
   useEffect(() => {
@@ -202,28 +216,45 @@ export const BlockModeEditor: React.FC<BlockModeEditorProps> = ({
 
   // Handle back button click
   const handleBack = useCallback(() => {
-    stopPlayback()
+    playback.stop()
     onBack?.()
-  }, [stopPlayback, onBack])
+  }, [playback, onBack])
 
-  // Handle play button click
-  const handlePlay = useCallback(() => {
-    if (playback.isPlaying) {
-      pausePlayback()
-    } else {
-      startPlayback()
-    }
-  }, [playback.isPlaying, startPlayback, pausePlayback])
+  // Handle play/pause button click
+  const handlePlayPause = useCallback(() => {
+    playback.togglePlayPause()
+  }, [playback])
 
   // Handle stop button click
   const handleStop = useCallback(() => {
-    stopPlayback()
-  }, [stopPlayback])
+    playback.stop()
+  }, [playback])
+
+  // Handle step forward
+  const handleStepForward = useCallback(() => {
+    playback.stepForward()
+  }, [playback])
+
+  // Handle step backward
+  const handleStepBackward = useCallback(() => {
+    playback.stepBackward()
+  }, [playback])
+
+  // Handle menu choice selection (Requirement 12.5)
+  const handleMenuChoiceSelect = useCallback((choiceIndex: number) => {
+    playback.selectMenuChoice(choiceIndex)
+  }, [playback])
+
+  // Handle menu dismiss (skip)
+  const handleMenuDismiss = useCallback(() => {
+    playback.stepForward()
+  }, [playback])
 
   // Render a block with its children
   const renderBlock = useCallback((block: Block, _index: number): React.ReactNode => {
     const isSelected = block.id === selectedBlockId
     const isPlaybackCurrent = block.id === playback.currentBlockId
+    const isPlaybackWaiting = playback.isWaitingForMenu && block.id === playback.currentMenuBlock?.id
     const blockErrors = validationErrors.filter(e => e.blockId === block.id)
     const hasError = blockErrors.length > 0
     const errorMessage = blockErrors.map(e => e.message).join('; ')
@@ -232,13 +263,14 @@ export const BlockModeEditor: React.FC<BlockModeEditorProps> = ({
       <BaseBlock
         key={block.id}
         block={block}
-        selected={isSelected || isPlaybackCurrent}
+        selected={isSelected}
         hasError={hasError}
         errorMessage={errorMessage}
+        isPlaybackCurrent={isPlaybackCurrent}
+        isPlaybackWaiting={isPlaybackWaiting}
         onClick={() => handleBlockClick(block.id)}
         onDoubleClick={() => handleBlockDoubleClick(block.id)}
         draggable={!readOnly}
-        className={isPlaybackCurrent ? 'playback-current' : ''}
       >
         {/* Render children recursively */}
         {block.children?.map((childBlock: Block, childIndex: number) => 
@@ -246,7 +278,7 @@ export const BlockModeEditor: React.FC<BlockModeEditorProps> = ({
         )}
       </BaseBlock>
     )
-  }, [selectedBlockId, playback.currentBlockId, validationErrors, readOnly, handleBlockClick, handleBlockDoubleClick])
+  }, [selectedBlockId, playback.currentBlockId, playback.isWaitingForMenu, playback.currentMenuBlock, validationErrors, readOnly, handleBlockClick, handleBlockDoubleClick])
 
   // Error count for display
   const errorCount = validationErrors.length
@@ -296,9 +328,9 @@ export const BlockModeEditor: React.FC<BlockModeEditorProps> = ({
           <div className="block-mode-editor-preview" style={{ width: previewWidth }}>
             <PreviewPanel
               blockTree={blockTree}
-              selectedBlockId={selectedBlockId}
-              gameState={playback.isPlaying ? playback.gameState : undefined}
-              useCalculatedState={!playback.isPlaying}
+              selectedBlockId={playback.currentBlockId || selectedBlockId}
+              gameState={playback.isPlaying || playback.isPaused ? playback.gameState : undefined}
+              useCalculatedState={!playback.isPlaying && !playback.isPaused}
               onResize={setPreviewWidth}
               initialWidth={previewWidth}
               minWidth={200}
@@ -323,40 +355,16 @@ export const BlockModeEditor: React.FC<BlockModeEditorProps> = ({
 
           {/* Center: Playback Controls */}
           <div className="toolbar-center">
-            <button
-              className="toolbar-button toolbar-step-button"
-              onClick={stepPrevious}
-              disabled={!playback.currentBlockId}
-              title="上一步"
-            >
-              <span className="button-icon">⏮</span>
-            </button>
-            
-            <button
-              className={`toolbar-button toolbar-play-button ${playback.isPlaying ? 'playing' : ''}`}
-              onClick={handlePlay}
-              title={playback.isPlaying ? '暂停' : '播放'}
-            >
-              <span className="button-icon">{playback.isPlaying ? '⏸' : '▶'}</span>
-            </button>
-            
-            <button
-              className="toolbar-button toolbar-stop-button"
-              onClick={handleStop}
-              disabled={!playback.isPlaying && !playback.currentBlockId}
-              title="停止"
-            >
-              <span className="button-icon">⏹</span>
-            </button>
-            
-            <button
-              className="toolbar-button toolbar-step-button"
-              onClick={stepNext}
-              disabled={!playback.currentBlockId}
-              title="下一步"
-            >
-              <span className="button-icon">⏭</span>
-            </button>
+            <PlaybackControls
+              isPlaying={playback.isPlaying}
+              currentBlockId={playback.currentBlockId}
+              blockTree={blockTree}
+              onPlayPause={handlePlayPause}
+              onStop={handleStop}
+              onStepForward={handleStepForward}
+              onStepBackward={handleStepBackward}
+              compact={true}
+            />
           </div>
 
           {/* Right: Breadcrumb & Error Count */}
@@ -377,6 +385,16 @@ export const BlockModeEditor: React.FC<BlockModeEditorProps> = ({
 
         {/* Drag Preview */}
         <DragPreview />
+
+        {/* Menu Choice Overlay - Requirement 12.5 */}
+        {playback.isWaitingForMenu && playback.currentMenuBlock && (
+          <MenuChoiceOverlay
+            menuBlock={playback.currentMenuBlock}
+            visible={true}
+            onSelectChoice={handleMenuChoiceSelect}
+            onDismiss={handleMenuDismiss}
+          />
+        )}
       </div>
     </DragDropProvider>
   )

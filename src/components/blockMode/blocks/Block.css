@@ -50,6 +50,42 @@
   background-color: var(--bg-secondary);
 }
 
+/* Playback current block highlighting - Requirement 12.3 */
+.base-block.playback-current {
+  border-color: var(--playback-highlight-color, #FFD700);
+  box-shadow: 0 0 0 3px rgba(255, 215, 0, 0.4), 0 0 12px rgba(255, 215, 0, 0.3);
+  animation: playback-pulse 1.5s ease-in-out infinite;
+}
+
+.base-block.playback-current .block-header {
+  background-color: rgba(255, 215, 0, 0.15);
+}
+
+@keyframes playback-pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 3px rgba(255, 215, 0, 0.4), 0 0 12px rgba(255, 215, 0, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 0 4px rgba(255, 215, 0, 0.5), 0 0 16px rgba(255, 215, 0, 0.4);
+  }
+}
+
+/* Playback waiting for menu selection */
+.base-block.playback-waiting {
+  border-color: var(--playback-waiting-color, #FF9800);
+  box-shadow: 0 0 0 3px rgba(255, 152, 0, 0.4);
+  animation: playback-waiting-pulse 1s ease-in-out infinite;
+}
+
+@keyframes playback-waiting-pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 3px rgba(255, 152, 0, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 0 5px rgba(255, 152, 0, 0.6);
+  }
+}
+
 /* Container block specific styles */
 .base-block.container-block {
   border-left-width: 4px;

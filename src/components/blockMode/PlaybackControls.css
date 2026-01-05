@@ -1,0 +1,193 @@
+/**
+ * PlaybackControls Styles
+ * 播放控制组件样式
+ * 
+ * Requirements: 12.1, 12.4, 12.6
+ */
+
+/* Main Container */
+.playback-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px;
+}
+
+.playback-controls.compact {
+  gap: 4px;
+  padding: 2px;
+}
+
+/* Base Button Styles */
+.playback-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 6px 12px;
+  border: none;
+  border-radius: 4px;
+  background-color: var(--playback-button-bg, #3c3c3c);
+  color: var(--playback-button-text, #e0e0e0);
+  font-size: 13px;
+  cursor: pointer;
+  transition: background-color 0.15s ease, opacity 0.15s ease, transform 0.1s ease;
+  user-select: none;
+}
+
+.playback-button:hover:not(:disabled) {
+  background-color: var(--playback-button-hover-bg, #4a4a4a);
+}
+
+.playback-button:active:not(:disabled) {
+  background-color: var(--playback-button-active-bg, #555555);
+  transform: scale(0.98);
+}
+
+.playback-button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.playback-button .button-icon {
+  font-size: 14px;
+  line-height: 1;
+}
+
+.playback-button .button-label {
+  font-size: 12px;
+  font-weight: 500;
+}
+
+/* Compact Mode Buttons */
+.playback-controls.compact .playback-button {
+  padding: 4px 8px;
+}
+
+.playback-controls.compact .playback-button .button-icon {
+  font-size: 12px;
+}
+
+/* Play/Pause Button */
+.play-pause-button {
+  min-width: 40px;
+  background-color: var(--play-button-bg, #4CAF50);
+}
+
+.play-pause-button:hover:not(:disabled) {
+  background-color: var(--play-button-hover-bg, #5CBF60);
+}
+
+.play-pause-button.playing {
+  background-color: var(--pause-button-bg, #FF9800);
+}
+
+.play-pause-button.playing:hover:not(:disabled) {
+  background-color: var(--pause-button-hover-bg, #FFa820);
+}
+
+/* Stop Button */
+.stop-button {
+  min-width: 32px;
+  background-color: var(--stop-button-bg, #f44336);
+}
+
+.stop-button:hover:not(:disabled) {
+  background-color: var(--stop-button-hover-bg, #e53935);
+}
+
+.stop-button:disabled {
+  background-color: var(--playback-button-bg, #3c3c3c);
+}
+
+/* Step Buttons */
+.step-button {
+  min-width: 32px;
+}
+
+.step-backward .button-icon {
+  margin-right: 2px;
+}
+
+.step-forward .button-icon {
+  margin-left: 2px;
+}
+
+/* Progress Indicator */
+.playback-progress {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: 8px;
+}
+
+.progress-bar {
+  width: 80px;
+  height: 4px;
+  background-color: var(--progress-bar-bg, #3c3c3c);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background-color: var(--progress-fill-bg, #4CAF50);
+  border-radius: 2px;
+  transition: width 0.2s ease;
+}
+
+.progress-text {
+  font-size: 11px;
+  color: var(--progress-text-color, #808080);
+  min-width: 50px;
+  text-align: center;
+}
+
+/* Compact Progress */
+.progress-compact {
+  font-size: 10px;
+  color: var(--progress-text-color, #808080);
+  padding: 2px 6px;
+  background-color: var(--progress-compact-bg, rgba(255, 255, 255, 0.05));
+  border-radius: 3px;
+}
+
+/* CSS Variables */
+:root {
+  --playback-button-bg: #3c3c3c;
+  --playback-button-hover-bg: #4a4a4a;
+  --playback-button-active-bg: #555555;
+  --playback-button-text: #e0e0e0;
+  --play-button-bg: #4CAF50;
+  --play-button-hover-bg: #5CBF60;
+  --pause-button-bg: #FF9800;
+  --pause-button-hover-bg: #FFa820;
+  --stop-button-bg: #f44336;
+  --stop-button-hover-bg: #e53935;
+  --progress-bar-bg: #3c3c3c;
+  --progress-fill-bg: #4CAF50;
+  --progress-text-color: #808080;
+  --progress-compact-bg: rgba(255, 255, 255, 0.05);
+}
+
+/* Light Theme */
+.light-theme .playback-controls {
+  --playback-button-bg: #e0e0e0;
+  --playback-button-hover-bg: #d0d0d0;
+  --playback-button-active-bg: #c0c0c0;
+  --playback-button-text: #333333;
+  --progress-bar-bg: #d0d0d0;
+  --progress-text-color: #666666;
+  --progress-compact-bg: rgba(0, 0, 0, 0.05);
+}
+
+/* Responsive */
+@media (max-width: 600px) {
+  .playback-button .button-label {
+    display: none;
+  }
+  
+  .playback-progress {
+    display: none;
+  }
+}

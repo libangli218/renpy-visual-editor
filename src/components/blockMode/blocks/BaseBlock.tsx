@@ -27,6 +27,10 @@ export interface BaseBlockProps {
   errorMessage?: string
   /** Whether the block is collapsed (for container types) */
   collapsed?: boolean
+  /** Whether this block is the current playback block */
+  isPlaybackCurrent?: boolean
+  /** Whether playback is waiting for user input on this block */
+  isPlaybackWaiting?: boolean
   /** Callback when block is clicked */
   onClick?: (blockId: string) => void
   /** Callback when collapse/expand is toggled */
@@ -90,6 +94,8 @@ export const BaseBlock: React.FC<BaseBlockProps> = ({
   hasError = false,
   errorMessage,
   collapsed = false,
+  isPlaybackCurrent = false,
+  isPlaybackWaiting = false,
   onClick,
   onToggleCollapse,
   onDoubleClick,
@@ -164,6 +170,8 @@ export const BaseBlock: React.FC<BaseBlockProps> = ({
     collapsed && 'collapsed',
     isDragging && 'dragging',
     isContainer && 'container-block',
+    isPlaybackCurrent && 'playback-current',
+    isPlaybackWaiting && 'playback-waiting',
     depth > 0 && `depth-${Math.min(depth, 5)}`,
     className,
   ].filter(Boolean).join(' ')

@@ -16,3 +16,10 @@ export type {
   UseBlockStackOptions,
   UseBlockStackReturn,
 } from './useBlockStack'
+
+export { usePlayback } from './usePlayback'
+export type {
+  PlaybackSpeed,
+  UsePlaybackOptions,
+  UsePlaybackReturn,
+} from './usePlayback'
