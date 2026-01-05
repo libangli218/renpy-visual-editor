@@ -66,5 +66,8 @@ export * from './ErrorSummary'
 // Preview Panel
 export * from './PreviewPanel'
 
+// Context View
+export * from './ContextView'
+
 // Main Editor Component
 export * from './BlockModeEditor'
