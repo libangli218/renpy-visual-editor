@@ -23,3 +23,6 @@ export * from './blocks'
 
 // Slot Components
 export * from './slots'
+
+// Container Components
+export * from './LabelContainer'

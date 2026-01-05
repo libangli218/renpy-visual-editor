@@ -1,0 +1,275 @@
+/**
+ * LabelContainer Component Styles
+ * Label 容器组件样式
+ * 
+ * Requirements: 2.1-2.5
+ */
+
+/* ========================================
+ * Container Base Styles
+ * ======================================== */
+
+.label-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background-color: var(--bg-primary, #ffffff);
+  border: 1px solid var(--border-color, #e0e0e0);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.label-container.read-only {
+  opacity: 0.9;
+}
+
+/* ========================================
+ * Header Styles
+ * ======================================== */
+
+.label-container-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  background-color: var(--bg-secondary, #f5f5f5);
+  border-bottom: 1px solid var(--border-color, #e0e0e0);
+  flex-shrink: 0;
+}
+
+.label-icon {
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+.label-name {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary, #333333);
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.label-block-count {
+  font-size: 12px;
+  color: var(--text-secondary, #666666);
+  background-color: var(--bg-tertiary, #e8e8e8);
+  padding: 2px 8px;
+  border-radius: 10px;
+  flex-shrink: 0;
+}
+
+/* ========================================
+ * Content Area Styles
+ * ======================================== */
+
+.label-container-content {
+  flex: 1;
+  padding: 12px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  position: relative;
+  min-height: 200px;
+}
+
+.label-container.drag-over .label-container-content {
+  background-color: rgba(33, 150, 243, 0.05);
+}
+
+/* ========================================
+ * Empty State Styles
+ * ======================================== */
+
+.label-container-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  min-height: 200px;
+  padding: 40px 20px;
+  text-align: center;
+}
+
+.label-container-empty .empty-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+  opacity: 0.5;
+}
+
+.label-container-empty .empty-text {
+  margin: 0 0 8px 0;
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--text-secondary, #666666);
+}
+
+.label-container-empty .empty-hint {
+  margin: 0;
+  font-size: 13px;
+  color: var(--text-tertiary, #999999);
+}
+
+/* Drag over empty state */
+.label-container.drag-over .label-container-empty {
+  border: 2px dashed var(--accent-primary, #2196F3);
+  border-radius: 8px;
+  background-color: rgba(33, 150, 243, 0.08);
+}
+
+.label-container.drag-over .label-container-empty .empty-icon {
+  opacity: 0.8;
+  transform: scale(1.1);
+  transition: transform 0.2s ease;
+}
+
+.label-container.drag-over .label-container-empty .empty-text {
+  color: var(--accent-primary, #2196F3);
+}
+
+/* ========================================
+ * Block Item Styles (Default)
+ * ======================================== */
+
+.label-container-block {
+  display: flex;
+  align-items: center;
+  padding: 10px 12px;
+  margin-bottom: 4px;
+  background-color: var(--bg-secondary, #f5f5f5);
+  border: 1px solid var(--border-color, #e0e0e0);
+  border-radius: 6px;
+  cursor: grab;
+  transition: all 0.15s ease;
+}
+
+.label-container-block:hover {
+  border-color: var(--accent-primary, #2196F3);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.label-container-block.selected {
+  border-color: var(--accent-primary, #2196F3);
+  background-color: rgba(33, 150, 243, 0.1);
+  box-shadow: 0 0 0 2px rgba(33, 150, 243, 0.2);
+}
+
+.label-container-block.dragging {
+  opacity: 0.5;
+  cursor: grabbing;
+}
+
+.label-container-block .block-type-badge {
+  font-size: 12px;
+  color: var(--text-secondary, #666666);
+  background-color: var(--bg-tertiary, #e8e8e8);
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+
+/* ========================================
+ * Drop Indicator Styles
+ * ======================================== */
+
+.drop-indicator {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  height: 3px;
+  background-color: var(--accent-primary, #2196F3);
+  border-radius: 2px;
+  pointer-events: none;
+  z-index: 10;
+  transform: translateY(-50%);
+}
+
+.drop-indicator::before,
+.drop-indicator::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  width: 8px;
+  height: 8px;
+  background-color: var(--accent-primary, #2196F3);
+  border-radius: 50%;
+  transform: translateY(-50%);
+}
+
+.drop-indicator::before {
+  left: -4px;
+}
+
+.drop-indicator::after {
+  right: -4px;
+}
+
+/* ========================================
+ * Scrollbar Styles
+ * ======================================== */
+
+.label-container-content::-webkit-scrollbar {
+  width: 8px;
+}
+
+.label-container-content::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.label-container-content::-webkit-scrollbar-thumb {
+  background-color: var(--border-color, #e0e0e0);
+  border-radius: 4px;
+}
+
+.label-container-content::-webkit-scrollbar-thumb:hover {
+  background-color: var(--text-tertiary, #999999);
+}
+
+/* ========================================
+ * Responsive Adjustments
+ * ======================================== */
+
+@media (max-width: 600px) {
+  .label-container-header {
+    padding: 10px 12px;
+  }
+
+  .label-name {
+    font-size: 14px;
+  }
+
+  .label-container-content {
+    padding: 8px;
+  }
+
+  .label-container-empty {
+    padding: 30px 16px;
+  }
+
+  .label-container-empty .empty-icon {
+    font-size: 36px;
+  }
+
+  .label-container-empty .empty-text {
+    font-size: 14px;
+  }
+}
+
+/* ========================================
+ * Animation
+ * ======================================== */
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.6;
+  }
+}
+
+.label-container.drag-over .drop-indicator {
+  animation: pulse 1s ease-in-out infinite;
+}
