@@ -20,3 +20,6 @@ export * from './useBlockOperations'
 
 // Block Components
 export * from './blocks'
+
+// Slot Components
+export * from './slots'

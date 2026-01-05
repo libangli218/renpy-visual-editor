@@ -1,0 +1,446 @@
+/**
+ * Slot Component Styles
+ * 属性槽组件样式
+ * 
+ * Common styles for all slot input components
+ */
+
+/* ========================================
+ * Base Slot Styles
+ * ======================================== */
+
+.slot {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
+}
+
+.slot.disabled {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+/* ========================================
+ * Slot Label
+ * ======================================== */
+
+.slot-label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.slot-label.required::after {
+  content: '*';
+  color: #f44336;
+  font-weight: bold;
+}
+
+/* ========================================
+ * Slot Input Base
+ * ======================================== */
+
+.slot-input {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  font-size: 13px;
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.slot-input:focus {
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 0 2px rgba(33, 150, 243, 0.2);
+}
+
+.slot-input::placeholder {
+  color: var(--text-tertiary);
+}
+
+.slot-input.has-error {
+  border-color: #f44336;
+}
+
+.slot-input.has-error:focus {
+  box-shadow: 0 0 0 2px rgba(244, 67, 54, 0.2);
+}
+
+.slot-input:disabled {
+  background-color: var(--bg-secondary);
+  cursor: not-allowed;
+}
+
+/* ========================================
+ * Text Slot Specific
+ * ======================================== */
+
+.slot-text-input {
+  height: 36px;
+}
+
+.slot-textarea {
+  min-height: 60px;
+  resize: vertical;
+  line-height: 1.5;
+}
+
+.text-slot.multiline .slot-textarea {
+  min-height: 80px;
+}
+
+/* ========================================
+ * Select Slot Specific
+ * ======================================== */
+
+.slot-select {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23666' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  padding-right: 30px;
+  cursor: pointer;
+  height: 36px;
+}
+
+.slot-select:disabled {
+  cursor: not-allowed;
+}
+
+/* Custom option support */
+.select-slot-wrapper {
+  position: relative;
+}
+
+.select-slot-custom-input {
+  margin-top: 8px;
+}
+
+/* ========================================
+ * Character Slot Specific
+ * ======================================== */
+
+.character-slot-wrapper {
+  position: relative;
+}
+
+.character-slot-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.character-slot-input {
+  padding-right: 30px;
+}
+
+.character-slot-clear-btn {
+  position: absolute;
+  right: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--text-tertiary);
+  cursor: pointer;
+  border-radius: 50%;
+  transition: all 0.15s ease;
+}
+
+.character-slot-clear-btn:hover {
+  background-color: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+
+/* Autocomplete dropdown */
+.character-autocomplete {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  max-height: 200px;
+  overflow-y: auto;
+  margin-top: 4px;
+  background-color: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.character-autocomplete-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  cursor: pointer;
+  transition: background-color 0.1s ease;
+}
+
+.character-autocomplete-item:hover,
+.character-autocomplete-item.highlighted {
+  background-color: var(--bg-secondary);
+}
+
+.character-autocomplete-item.selected {
+  background-color: rgba(33, 150, 243, 0.1);
+}
+
+.character-autocomplete-icon {
+  font-size: 16px;
+}
+
+.character-autocomplete-name {
+  font-size: 13px;
+  color: var(--text-primary);
+}
+
+.character-autocomplete-narrator {
+  font-style: italic;
+  color: var(--text-secondary);
+}
+
+.character-narrator-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  margin-left: 8px;
+  font-size: 11px;
+  background-color: var(--bg-tertiary);
+  border-radius: 10px;
+  color: var(--text-secondary);
+}
+
+/* ========================================
+ * Resource Slot Specific
+ * ======================================== */
+
+.resource-slot-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.resource-slot-input-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.resource-slot-select {
+  flex: 1;
+}
+
+.resource-slot-browse-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.resource-slot-browse-btn:hover {
+  border-color: var(--accent-primary);
+  color: var(--accent-primary);
+}
+
+/* Image preview */
+.resource-image-preview {
+  position: relative;
+  width: 100%;
+  max-height: 120px;
+  border-radius: 4px;
+  overflow: hidden;
+  background-color: var(--bg-tertiary);
+}
+
+.resource-image-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.resource-image-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 80px;
+  border: 2px dashed var(--border-color);
+  border-radius: 4px;
+  color: var(--text-tertiary);
+  font-size: 13px;
+}
+
+/* Audio preview */
+.resource-audio-preview {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px;
+  background-color: var(--bg-secondary);
+  border-radius: 4px;
+}
+
+.resource-audio-play-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background-color: var(--accent-primary);
+  color: white;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.resource-audio-play-btn:hover {
+  transform: scale(1.05);
+}
+
+.resource-audio-play-btn.playing {
+  background-color: #f44336;
+}
+
+.resource-audio-name {
+  flex: 1;
+  font-size: 13px;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.resource-audio-duration {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+/* Missing resource warning */
+.resource-missing-warning {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  background-color: rgba(255, 152, 0, 0.1);
+  border: 1px solid rgba(255, 152, 0, 0.3);
+  border-radius: 4px;
+  font-size: 12px;
+  color: #ff9800;
+}
+
+.resource-missing-warning-icon {
+  font-size: 14px;
+}
+
+/* ========================================
+ * Label Slot Specific
+ * ======================================== */
+
+.label-slot-wrapper {
+  position: relative;
+}
+
+.label-slot-select {
+  width: 100%;
+}
+
+.label-slot-warning {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 4px;
+  padding: 4px 8px;
+  background-color: rgba(255, 152, 0, 0.1);
+  border-radius: 4px;
+  font-size: 11px;
+  color: #ff9800;
+}
+
+.label-slot-warning-icon {
+  font-size: 12px;
+}
+
+/* ========================================
+ * Error and Helper Text
+ * ======================================== */
+
+.slot-error {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  color: #f44336;
+}
+
+.slot-error::before {
+  content: '⚠';
+}
+
+.slot-helper {
+  font-size: 11px;
+  color: var(--text-tertiary);
+}
+
+.slot-char-count {
+  align-self: flex-end;
+  font-size: 11px;
+  color: var(--text-tertiary);
+}
+
+/* ========================================
+ * Focus States for Accessibility
+ * ======================================== */
+
+.slot-input:focus-visible {
+  outline: 2px solid var(--accent-primary);
+  outline-offset: 2px;
+}
+
+/* ========================================
+ * Responsive Adjustments
+ * ======================================== */
+
+@media (max-width: 400px) {
+  .slot-label {
+    font-size: 11px;
+  }
+  
+  .slot-input {
+    font-size: 14px; /* Prevent zoom on iOS */
+    padding: 10px;
+  }
+  
+  .resource-slot-input-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .resource-slot-browse-btn {
+    width: 100%;
+    height: 40px;
+  }
+}
