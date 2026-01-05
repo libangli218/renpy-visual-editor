@@ -28,6 +28,12 @@ export {
 // Validators
 export * from './BlockValidator'
 
+// Preview State Calculator
+export { 
+  PreviewStateCalculator, 
+  createPreviewStateCalculator 
+} from './PreviewStateCalculator'
+
 // Hooks
 export * from './useBlockOperations'
 export * from './hooks'

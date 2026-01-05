@@ -24,9 +24,9 @@ import { SnapIndicator } from './SnapIndicator'
 import { DragPreview } from './DragPreview'
 import { Breadcrumb } from './Breadcrumb'
 import { useBlockEditorStore } from './stores/blockEditorStore'
-import { BlockOperationHandler, createBlockOperationHandler } from './BlockOperationHandler'
-import { BlockTreeBuilder, createBlockTreeBuilder } from './BlockTreeBuilder'
-import { BlockValidator, createBlockValidator } from './BlockValidator'
+import { BlockOperationHandler as BlockOperationHandlerType, createBlockOperationHandler } from './BlockOperationHandler'
+import { BlockTreeBuilder as BlockTreeBuilderType, createBlockTreeBuilder } from './BlockTreeBuilder'
+import { BlockValidator as BlockValidatorType, createBlockValidator } from './BlockValidator'
 import { BaseBlock } from './blocks/BaseBlock'
 import { RenpyScript, LabelNode } from '../../types/ast'
 import './BlockModeEditor.css'
@@ -217,23 +217,30 @@ export const BlockModeEditor: React.FC<BlockModeEditorProps> = ({
   }, [stopPlayback])
 
   // Render a block with its children
-  const renderBlock = useCallback((block: Block, index: number): React.ReactNode => {
+  const renderBlock = useCallback((block: Block, _index: number): React.ReactNode => {
     const isSelected = block.id === selectedBlockId
     const isPlaybackCurrent = block.id === playback.currentBlockId
     const blockErrors = validationErrors.filter(e => e.blockId === block.id)
+    const hasError = blockErrors.length > 0
+    const errorMessage = blockErrors.map(e => e.message).join('; ')
 
     return (
       <BaseBlock
         key={block.id}
         block={block}
-        selected={isSelected}
-        highlighted={isPlaybackCurrent}
-        errors={blockErrors}
+        selected={isSelected || isPlaybackCurrent}
+        hasError={hasError}
+        errorMessage={errorMessage}
         onClick={() => handleBlockClick(block.id)}
         onDoubleClick={() => handleBlockDoubleClick(block.id)}
-        readOnly={readOnly}
-        renderChildren={(childBlock, childIndex) => renderBlock(childBlock, childIndex)}
-      />
+        draggable={!readOnly}
+        className={isPlaybackCurrent ? 'playback-current' : ''}
+      >
+        {/* Render children recursively */}
+        {block.children?.map((childBlock: Block, childIndex: number) => 
+          renderBlock(childBlock, childIndex)
+        )}
+      </BaseBlock>
     )
   }, [selectedBlockId, playback.currentBlockId, validationErrors, readOnly, handleBlockClick, handleBlockDoubleClick])
 
