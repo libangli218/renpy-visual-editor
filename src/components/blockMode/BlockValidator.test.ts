@@ -244,14 +244,17 @@ describe('BlockValidator', () => {
       expect(result.errors.some(e => e.type === 'missing-resource')).toBe(true)
     })
 
-    it('should detect missing character in show block', () => {
+    it('should not validate character in show block (uses image tags)', () => {
+      // Show blocks use image tags (e.g., "sylvie") not script-defined characters (e.g., "s")
+      // So character validation is skipped for show/hide blocks
       const block = createTestBlock('show', [
         { name: 'character', type: 'character', value: 'unknown_char', required: true },
       ])
 
       const result = validator.validateBlock(block, context)
 
-      expect(result.errors.some(e => e.type === 'missing-resource')).toBe(true)
+      // Should NOT have missing-resource error because show blocks skip character validation
+      expect(result.errors.some(e => e.type === 'missing-resource')).toBe(false)
     })
 
     it('should accept valid image resource', () => {

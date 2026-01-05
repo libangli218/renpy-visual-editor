@@ -8,10 +8,11 @@
  * Requirements: 4.1-4.6
  */
 
-import React, { useCallback } from 'react'
+import React, { useCallback, useMemo } from 'react'
 import { Block, SlotOption } from '../types'
 import { TRANSITION_OPTIONS, POSITION_OPTIONS } from '../constants'
 import { BaseBlock, BaseBlockProps } from './BaseBlock'
+import { ImageTag } from '../../../resource/ResourceManager'
 import './Block.css'
 
 /**
@@ -20,8 +21,10 @@ import './Block.css'
 export interface SceneBlockProps extends Omit<BaseBlockProps, 'children'> {
   /** Available background images */
   availableImages?: SlotOption[]
-  /** Available characters */
+  /** Available characters (image tags for Show/Hide) */
   availableCharacters?: SlotOption[]
+  /** Image tags with attributes (for Show block expression selection) */
+  imageTags?: ImageTag[]
   /** Available expressions for characters */
   availableExpressions?: Record<string, SlotOption[]>
   /** Callback when a slot value changes */
@@ -61,6 +64,7 @@ export const SceneBlock: React.FC<SceneBlockProps> = ({
   block,
   availableImages = [],
   availableCharacters = [],
+  imageTags = [],
   availableExpressions = {},
   onSlotChange,
   slotErrors = {},
@@ -76,6 +80,23 @@ export const SceneBlock: React.FC<SceneBlockProps> = ({
   // Check for errors
   const hasSlotErrors = Object.keys(slotErrors).length > 0
   const hasError = baseProps.hasError || hasSlotErrors
+  
+  // Build expression options based on selected character (image tag)
+  const expressionOptions = useMemo(() => {
+    const character = getSlotValue(block, 'character') as string
+    if (!character) return []
+    
+    // Find the image tag for this character
+    const tag = imageTags.find(t => t.tag === character)
+    if (!tag) return []
+    
+    // Convert attributes to options
+    const options = tag.attributes.map(attrs => ({
+      value: attrs.join(' '),
+      label: attrs.join(' '),
+    }))
+    return options
+  }, [block, imageTags])
   
   // Render different content based on block type
   const renderContent = () => {
@@ -171,13 +192,10 @@ export const SceneBlock: React.FC<SceneBlockProps> = ({
     const position = getSlotValue(block, 'position') as string
     const expression = getSlotValue(block, 'expression') as string | null
     
-    // Get expressions for selected character
-    const characterExpressions = character ? (availableExpressions[character] || []) : []
-    
     return (
       <div className="block-slots">
         <div className="scene-row">
-          {/* Character Selection */}
+          {/* Character (Image Tag) Selection */}
           <div className="block-slot">
             <label className={`block-slot-label ${isSlotRequired(block, 'character') ? 'required' : ''}`}>
               角色
@@ -217,11 +235,11 @@ export const SceneBlock: React.FC<SceneBlockProps> = ({
           </div>
         </div>
         
-        {/* Expression Selection (only if character has expressions) */}
-        {characterExpressions.length > 0 && (
+        {/* Expression/Attribute Selection (from image tag attributes) */}
+        {expressionOptions.length > 0 && (
           <div className="block-slot">
             <label className="block-slot-label">
-              表情
+              表情/服装
             </label>
             <select
               className={`block-slot-input block-slot-select ${slotErrors['expression'] ? 'has-error' : ''}`}
@@ -229,8 +247,8 @@ export const SceneBlock: React.FC<SceneBlockProps> = ({
               onChange={(e) => handleSlotChange('expression', e.target.value || null)}
               title={slotErrors['expression']}
             >
-              <option value="">默认表情</option>
-              {characterExpressions.map(option => (
+              <option value="">选择表情...</option>
+              {expressionOptions.map(option => (
                 <option key={option.value} value={option.value}>
                   {option.label}
                 </option>

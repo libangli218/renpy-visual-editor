@@ -370,16 +370,21 @@
 }
 
 /* Character position indicator */
-.character-position-indicator {
+.scene-block .character-position-indicator {
   display: flex;
-  justify-content: space-between;
+  justify-content: center;
+  gap: 16px;
   padding: 8px;
   background-color: var(--bg-tertiary);
   border-radius: 4px;
   margin-top: 8px;
+  position: relative;
+  bottom: auto;
+  left: auto;
+  transform: none;
 }
 
-.position-marker {
+.scene-block .position-marker {
   width: 24px;
   height: 24px;
   border-radius: 50%;
@@ -389,12 +394,12 @@
   transition: all 0.15s ease;
 }
 
-.position-marker.active {
+.scene-block .position-marker.active {
   background-color: var(--block-color, #4CAF50);
   border-color: var(--block-color, #4CAF50);
 }
 
-.position-marker:hover:not(.active) {
+.scene-block .position-marker:hover:not(.active) {
   border-color: var(--block-color, #4CAF50);
 }
 

@@ -19,6 +19,19 @@ import { FileSystem, electronFileSystem } from '../project/ProjectManager'
 export type ResourceType = 'image' | 'background' | 'audio' | 'character'
 
 /**
+ * Image tag with attributes (Ren'Py naming convention)
+ * e.g., "sylvie blue normal.png" → tag: "sylvie", attributes: ["blue", "normal"]
+ */
+export interface ImageTag {
+  /** The image tag (first word of filename) */
+  tag: string
+  /** Available attributes for this tag */
+  attributes: string[][]
+  /** Whether this is a background image (tag starts with "bg") */
+  isBackground: boolean
+}
+
+/**
  * Resource scan options
  */
 export interface ScanOptions {
@@ -134,12 +147,25 @@ function detectVariants(baseName: string, allBaseNames: string[]): string[] {
 }
 
 /**
+ * Parse Ren'Py image name to extract tag and attributes
+ * Ren'Py uses space-separated naming: "sylvie blue normal.png" → tag: "sylvie", attrs: ["blue", "normal"]
+ */
+function parseRenpyImageName(baseName: string): { tag: string; attributes: string[] } {
+  // Split by spaces (Ren'Py convention)
+  const parts = baseName.split(' ')
+  const tag = parts[0]
+  const attributes = parts.slice(1)
+  return { tag, attributes }
+}
+
+/**
  * Resource Manager class
  */
 export class ResourceManager {
   private fs: FileSystem
   private resourceIndex: ResourceIndex | null = null
   private projectPath: string | null = null
+  private imageTags: Map<string, ImageTag> = new Map()
 
   constructor(fileSystem: FileSystem = electronFileSystem) {
     this.fs = fileSystem
@@ -153,6 +179,28 @@ export class ResourceManager {
   }
 
   /**
+   * Get all image tags (for Show block)
+   * Returns character image tags (non-background)
+   */
+  getImageTags(): ImageTag[] {
+    return Array.from(this.imageTags.values()).filter(t => !t.isBackground)
+  }
+
+  /**
+   * Get background image tags (for Scene block)
+   */
+  getBackgroundTags(): ImageTag[] {
+    return Array.from(this.imageTags.values()).filter(t => t.isBackground)
+  }
+
+  /**
+   * Get attributes for a specific image tag
+   */
+  getTagAttributes(tag: string): string[][] {
+    return this.imageTags.get(tag)?.attributes || []
+  }
+
+  /**
    * Scan project resources from game/images/ and game/audio/ directories
    * Implements Requirement 9.1
    */
@@ -160,6 +208,7 @@ export class ResourceManager {
     const { includeSubdirectories = true, detectVariants: shouldDetectVariants = true } = options
     
     this.projectPath = projectPath
+    this.imageTags.clear()
     
     const images: Resource[] = []
     const backgrounds: Resource[] = []
@@ -173,6 +222,32 @@ export class ResourceManager {
       
       // Collect all base names for variant detection
       const allBaseNames = imageFiles.map(f => getBaseName(f))
+      
+      // Build image tags index (Ren'Py naming convention)
+      for (const filePath of imageFiles) {
+        const baseName = getBaseName(filePath)
+        const { tag, attributes } = parseRenpyImageName(baseName)
+        
+        // Add to image tags map
+        if (!this.imageTags.has(tag)) {
+          this.imageTags.set(tag, {
+            tag,
+            attributes: [],
+            isBackground: tag.toLowerCase() === 'bg',
+          })
+        }
+        
+        // Add attributes if any
+        if (attributes.length > 0) {
+          const imageTag = this.imageTags.get(tag)!
+          // Check if this attribute combination already exists
+          const attrKey = attributes.join(' ')
+          const exists = imageTag.attributes.some(a => a.join(' ') === attrKey)
+          if (!exists) {
+            imageTag.attributes.push(attributes)
+          }
+        }
+      }
       
       for (const filePath of imageFiles) {
         const baseName = getBaseName(filePath)
@@ -411,6 +486,7 @@ export class ResourceManager {
   clear(): void {
     this.resourceIndex = null
     this.projectPath = null
+    this.imageTags.clear()
   }
 }
 

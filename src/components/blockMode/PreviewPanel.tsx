@@ -16,6 +16,11 @@ import { createPreviewStateCalculator } from './PreviewStateCalculator'
 import './PreviewPanel.css'
 
 /**
+ * Character image cache to avoid reloading
+ */
+const characterImageCache = new Map<string, string | null>()
+
+/**
  * Props for PreviewPanel component
  */
 export interface PreviewPanelProps {
@@ -97,6 +102,7 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
   const [panelWidth, setPanelWidth] = useState(initialWidth)
   const [isResizing, setIsResizing] = useState(false)
   const [backgroundDataUrl, setBackgroundDataUrl] = useState<string | null>(null)
+  const [characterImages, setCharacterImages] = useState<Map<string, string | null>>(new Map())
   const panelRef = useRef<HTMLDivElement>(null)
   const resizeStartX = useRef(0)
   const resizeStartWidth = useRef(0)
@@ -138,7 +144,6 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
           if (electronAPI?.readFileAsBase64) {
             const dataUrl = await electronAPI.readFileAsBase64(filePath)
             if (dataUrl) {
-              console.log('[PreviewPanel] Loaded background:', filePath)
               setBackgroundDataUrl(dataUrl)
               return
             }
@@ -149,12 +154,77 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
         }
       }
       
-      console.log('[PreviewPanel] Failed to load background:', gameState.background)
       setBackgroundDataUrl(null)
     }
 
     loadBackgroundImage()
   }, [gameState.background, projectPath])
+
+  // Load character images when characters change
+  useEffect(() => {
+    const loadCharacterImages = async () => {
+      if (!projectPath || gameState.characters.length === 0) {
+        setCharacterImages(new Map())
+        return
+      }
+
+      const newImages = new Map<string, string | null>()
+      
+      for (const character of gameState.characters) {
+        // Build the image name: tag + expression (e.g., "sylvie blue normal")
+        // In Ren'Py, show sylvie blue normal -> looks for "sylvie blue normal.png"
+        const imageName = character.expression 
+          ? `${character.name} ${character.expression}`
+          : character.name
+        
+        // Use imageName as key (not character.name) to handle expression changes
+        const cacheKey = imageName
+        
+        // Check cache first
+        if (characterImageCache.has(cacheKey)) {
+          const cachedImage = characterImageCache.get(cacheKey)
+          if (cachedImage) {
+            newImages.set(imageName, cachedImage)
+            continue
+          }
+          // If cached as null, still try to load (might have been a timing issue)
+        }
+        
+        // Try to load the image with different extensions
+        const basePath = `${projectPath}/game/images/${imageName}`
+        let loaded = false
+        
+        for (const ext of IMAGE_EXTENSIONS) {
+          const filePath = `${basePath}${ext}`
+          try {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const electronAPI = window.electronAPI as any
+            if (electronAPI?.readFileAsBase64) {
+              const dataUrl = await electronAPI.readFileAsBase64(filePath)
+              if (dataUrl) {
+                newImages.set(imageName, dataUrl)
+                characterImageCache.set(cacheKey, dataUrl)
+                loaded = true
+                break
+              }
+            }
+          } catch (error) {
+            // Try next extension
+            continue
+          }
+        }
+        
+        if (!loaded) {
+          newImages.set(imageName, null)
+          // Don't cache failures - allow retry
+        }
+      }
+      
+      setCharacterImages(newImages)
+    }
+
+    loadCharacterImages()
+  }, [gameState.characters, projectPath])
 
   // Handle resize start
   const handleResizeStart = useCallback((e: React.MouseEvent) => {
@@ -191,6 +261,11 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
   // Render character
   const renderCharacter = useCallback((character: CharacterState, index: number) => {
     const positionStyle = POSITION_STYLES[character.position] || POSITION_STYLES.center
+    // Build the same imageName key used in loading
+    const imageName = character.expression 
+      ? `${character.name} ${character.expression}`
+      : character.name
+    const characterImage = characterImages.get(imageName)
 
     return (
       <div
@@ -200,18 +275,25 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
         title={`${character.name}${character.expression ? ` (${character.expression})` : ''}`}
       >
         <div className="character-sprite">
-          {/* Character image placeholder - in real implementation, load actual image */}
-          <div className="character-placeholder">
-            <span className="character-icon">👤</span>
-            <span className="character-name">{character.name}</span>
-            {character.expression && (
-              <span className="character-expression">{character.expression}</span>
-            )}
-          </div>
+          {characterImage ? (
+            <img 
+              src={characterImage} 
+              alt={character.name}
+              className="character-image"
+            />
+          ) : (
+            <div className="character-placeholder">
+              <span className="character-icon">👤</span>
+              <span className="character-name">{character.name}</span>
+              {character.expression && (
+                <span className="character-expression">{character.expression}</span>
+              )}
+            </div>
+          )}
         </div>
       </div>
     )
-  }, [])
+  }, [characterImages])
 
   // Render dialogue box
   const renderDialogue = useCallback(() => {
@@ -309,20 +391,20 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
             </span>
           </div>
         )}
-      </div>
 
-      {/* Footer with state info */}
-      <div className="preview-panel-footer">
-        {selectedBlockId ? (
-          <span className="preview-status">
-            <span className="status-icon">📍</span>
-            <span className="status-text">已选中积木</span>
-          </span>
-        ) : (
-          <span className="preview-status inactive">
-            <span className="status-text">未选中</span>
-          </span>
-        )}
+        {/* Footer with state info - inside content area */}
+        <div className="preview-panel-footer">
+          {selectedBlockId ? (
+            <span className="preview-status">
+              <span className="status-icon">📍</span>
+              <span className="status-text">已选中积木</span>
+            </span>
+          ) : (
+            <span className="preview-status inactive">
+              <span className="status-text">未选中</span>
+            </span>
+          )}
+        </div>
       </div>
     </div>
   )

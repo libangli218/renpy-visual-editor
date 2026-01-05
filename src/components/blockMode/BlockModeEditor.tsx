@@ -38,6 +38,7 @@ import { MenuBlock } from './blocks/MenuBlock'
 import { FlowBlock } from './blocks/FlowBlock'
 import { AudioBlock } from './blocks/AudioBlock'
 import { RenpyScript, LabelNode } from '../../types/ast'
+import { ImageTag } from '../../resource/ResourceManager'
 import './BlockModeEditor.css'
 
 /**
@@ -60,6 +61,10 @@ export interface BlockModeEditorProps {
   availableImages?: string[]
   /** Available audio resources */
   availableAudio?: string[]
+  /** Image tags for Show block (character images) */
+  imageTags?: ImageTag[]
+  /** Background tags for Scene block */
+  backgroundTags?: ImageTag[]
   /** Project path for resolving resource URLs */
   projectPath?: string | null
   /** Whether the editor is read-only */
@@ -86,6 +91,8 @@ export const BlockModeEditor: React.FC<BlockModeEditorProps> = ({
   availableCharacters = [],
   availableImages = [],
   availableAudio = [],
+  imageTags = [],
+  backgroundTags = [],
   projectPath = null,
   readOnly = false,
   className = '',
@@ -270,6 +277,7 @@ export const BlockModeEditor: React.FC<BlockModeEditorProps> = ({
   }, [readOnly, blockTree, ast, labelName, blockOperationHandler, blockValidator, validationContext, setBlockTree, setValidationErrors, onAstChange])
 
   // Build character options for dialogue blocks
+  // Build character options for dialogue blocks (from script definitions)
   const characterOptions: SlotOption[] = useMemo(() => {
     return availableCharacters.map(char => ({
       value: char,
@@ -277,13 +285,46 @@ export const BlockModeEditor: React.FC<BlockModeEditorProps> = ({
     }))
   }, [availableCharacters])
 
-  // Build image options for scene blocks
+  // Build image tag options for Show blocks (character images from files)
+  const imageTagOptions: SlotOption[] = useMemo(() => {
+    return imageTags.map(tag => ({
+      value: tag.tag,
+      label: tag.tag,
+      // Include attributes info for display
+      description: tag.attributes.length > 0 
+        ? `${tag.attributes.length} 个变体` 
+        : undefined,
+    }))
+  }, [imageTags])
+
+  // Build image options for scene blocks (backgrounds)
   const imageOptions: SlotOption[] = useMemo(() => {
+    // Use background tags if available, otherwise fall back to availableImages
+    if (backgroundTags.length > 0) {
+      const options: SlotOption[] = []
+      for (const tag of backgroundTags) {
+        for (const attrs of tag.attributes) {
+          const fullName = `${tag.tag} ${attrs.join(' ')}`
+          options.push({
+            value: fullName,
+            label: fullName,
+          })
+        }
+        // If no attributes, just use the tag
+        if (tag.attributes.length === 0) {
+          options.push({
+            value: tag.tag,
+            label: tag.tag,
+          })
+        }
+      }
+      return options
+    }
     return availableImages.map(img => ({
       value: img,
       label: img.split('/').pop() || img,
     }))
-  }, [availableImages])
+  }, [backgroundTags, availableImages])
 
   // Build label options for flow blocks
   const labelOptions: SlotOption[] = useMemo(() => {
@@ -396,8 +437,27 @@ export const BlockModeEditor: React.FC<BlockModeEditorProps> = ({
         )
       
       case 'scene':
+        return (
+          <SceneBlock
+            key={block.id}
+            {...commonProps}
+            availableImages={imageOptions}
+            availableCharacters={characterOptions}
+          />
+        )
+      
       case 'show':
       case 'hide':
+        return (
+          <SceneBlock
+            key={block.id}
+            {...commonProps}
+            availableImages={imageTagOptions}
+            availableCharacters={imageTagOptions}
+            imageTags={imageTags}
+          />
+        )
+      
       case 'with':
         return (
           <SceneBlock

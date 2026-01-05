@@ -5,7 +5,7 @@ import { NodeModeEditor } from '../nodeMode'
 import { StoryModeEditor } from '../storyMode'
 import { BlockModeEditor } from '../blockMode'
 import { LabelNode } from '../../types/ast'
-import { resourceManager } from '../../resource/ResourceManager'
+import { resourceManager, ImageTag } from '../../resource/ResourceManager'
 
 /**
  * EditorArea component - Main editing area with preview and editor
@@ -23,6 +23,8 @@ export const EditorArea: React.FC = () => {
   // State for available resources
   const [availableImages, setAvailableImages] = useState<string[]>([])
   const [availableAudio, setAvailableAudio] = useState<string[]>([])
+  const [imageTags, setImageTags] = useState<ImageTag[]>([])
+  const [backgroundTags, setBackgroundTags] = useState<ImageTag[]>([])
 
   // Scan resources when project path changes
   useEffect(() => {
@@ -30,6 +32,8 @@ export const EditorArea: React.FC = () => {
       if (!projectPath) {
         setAvailableImages([])
         setAvailableAudio([])
+        setImageTags([])
+        setBackgroundTags([])
         return
       }
 
@@ -45,10 +49,18 @@ export const EditorArea: React.FC = () => {
         // Get audio
         const audio = resourceManager.getResources('audio')
         setAvailableAudio(audio.map(r => r.name))
+        
+        // Get image tags for Show block
+        const tags = resourceManager.getImageTags()
+        const bgTags = resourceManager.getBackgroundTags()
+        setImageTags(tags)
+        setBackgroundTags(bgTags)
       } catch (error) {
         console.error('Failed to scan resources:', error)
         setAvailableImages([])
         setAvailableAudio([])
+        setImageTags([])
+        setBackgroundTags([])
       }
     }
 
@@ -116,6 +128,8 @@ export const EditorArea: React.FC = () => {
           availableCharacters={availableCharacters}
           availableImages={availableImages}
           availableAudio={availableAudio}
+          imageTags={imageTags}
+          backgroundTags={backgroundTags}
           projectPath={projectPath}
         />
       </section>

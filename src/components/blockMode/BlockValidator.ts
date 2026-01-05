@@ -214,14 +214,18 @@ export class BlockValidator {
 
       // Validate character references
       if (slot.type === 'character' && block.type !== 'dialogue') {
-        // For non-dialogue blocks, character must exist
-        if (!context.availableCharacters.includes(value)) {
-          errors.push({
-            blockId: block.id,
-            slotName: slot.name,
-            type: 'missing-resource',
-            message: `角色 "${value}" 未定义`,
-          })
+        // For show/hide blocks, character is an image tag, not a script-defined character
+        // Skip validation for show/hide blocks - they use image tags
+        if (block.type !== 'show' && block.type !== 'hide') {
+          // For other non-dialogue blocks, character must exist
+          if (!context.availableCharacters.includes(value)) {
+            errors.push({
+              blockId: block.id,
+              slotName: slot.name,
+              type: 'missing-resource',
+              message: `角色 "${value}" 未定义`,
+            })
+          }
         }
       }
     }
