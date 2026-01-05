@@ -1348,12 +1348,26 @@ export class ASTSynchronizer {
         // Node not found in direct body, try to find in nested structures
         const inserted = this.insertAfterNodeInBody(label.body, afterNodeId, dialogueNode)
         if (!inserted) {
-          // Fallback: insert at the end
-          label.body.push(dialogueNode)
+          // Fallback: insert before any terminal statement (return, jump) or at the end
+          const terminalIndex = label.body.findIndex(
+            node => node.type === 'return' || node.type === 'jump'
+          )
+          if (terminalIndex !== -1) {
+            label.body.splice(terminalIndex, 0, dialogueNode)
+          } else {
+            label.body.push(dialogueNode)
+          }
         }
       } else {
-        // Insert after the found node
-        label.body.splice(insertIndex + 1, 0, dialogueNode)
+        // Check if the afterNode is a terminal statement (return, jump)
+        // If so, insert before it instead of after
+        const afterNode = label.body[insertIndex]
+        if (afterNode && (afterNode.type === 'return' || afterNode.type === 'jump')) {
+          label.body.splice(insertIndex, 0, dialogueNode)
+        } else {
+          // Insert after the found node
+          label.body.splice(insertIndex + 1, 0, dialogueNode)
+        }
       }
     }
 
@@ -1406,12 +1420,26 @@ export class ASTSynchronizer {
         // Node not found in direct body, try to find in nested structures
         const inserted = this.insertAfterNodeInBody(label.body, afterNodeId, menuNode)
         if (!inserted) {
-          // Fallback: insert at the end
-          label.body.push(menuNode)
+          // Fallback: insert before any terminal statement (return, jump) or at the end
+          const terminalIndex = label.body.findIndex(
+            node => node.type === 'return' || node.type === 'jump'
+          )
+          if (terminalIndex !== -1) {
+            label.body.splice(terminalIndex, 0, menuNode)
+          } else {
+            label.body.push(menuNode)
+          }
         }
       } else {
-        // Insert after the found node
-        label.body.splice(insertIndex + 1, 0, menuNode)
+        // Check if the afterNode is a terminal statement (return, jump)
+        // If so, insert before it instead of after
+        const afterNode = label.body[insertIndex]
+        if (afterNode && (afterNode.type === 'return' || afterNode.type === 'jump')) {
+          label.body.splice(insertIndex, 0, menuNode)
+        } else {
+          // Insert after the found node
+          label.body.splice(insertIndex + 1, 0, menuNode)
+        }
       }
     }
 

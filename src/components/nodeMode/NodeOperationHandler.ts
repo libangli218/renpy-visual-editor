@@ -286,24 +286,44 @@ export class NodeOperationHandler {
       return { success: false, error: 'Could not determine insert position' }
     }
 
+    // Convert Flow node ID to AST node ID for insertion position
+    // The afterNodeId from determineInsertPosition is a Flow node ID,
+    // but insertDialogue needs an AST node ID
+    let astAfterNodeId: string | null = insertPosition.afterNodeId
+    if (astAfterNodeId) {
+      const sourceFlowNode = graph.nodes.find(n => n.id === astAfterNodeId)
+      if (sourceFlowNode?.data?.astNodes && sourceFlowNode.data.astNodes.length > 0) {
+        // Use the last AST node ID from the source node
+        // This ensures we insert after all content in the source node
+        const astNodes = sourceFlowNode.data.astNodes
+        astAfterNodeId = astNodes[astNodes.length - 1].id
+      }
+    }
+
+    // Create a modified insert position with AST node ID
+    const astInsertPosition: InsertPosition = {
+      ...insertPosition,
+      afterNodeId: astAfterNodeId,
+    }
+
     // Sync based on node type
     let astNodeId: string | null = null
 
     switch (pendingNode.type) {
       case 'dialogue-block':
-        astNodeId = this.syncDialogueBlock(pendingNode, insertPosition, ast)
+        astNodeId = this.syncDialogueBlock(pendingNode, astInsertPosition, ast)
         break
       case 'menu':
-        astNodeId = this.syncMenu(pendingNode, insertPosition, ast)
+        astNodeId = this.syncMenu(pendingNode, astInsertPosition, ast)
         break
       case 'scene':
         astNodeId = this.syncScene(pendingNode, ast)
         break
       case 'jump':
-        astNodeId = this.syncJump(pendingNode, insertPosition, ast)
+        astNodeId = this.syncJump(pendingNode, astInsertPosition, ast)
         break
       case 'call':
-        astNodeId = this.syncCall(pendingNode, insertPosition, ast)
+        astNodeId = this.syncCall(pendingNode, astInsertPosition, ast)
         break
       default:
         return { success: false, error: `Unsupported node type: ${pendingNode.type}` }
@@ -314,7 +334,7 @@ export class NodeOperationHandler {
     }
 
     // Mark the pending node as synced
-    this.pendingNodePool.markSynced(pendingNode.id, astNodeId, insertPosition.labelName)
+    this.pendingNodePool.markSynced(pendingNode.id, astNodeId, astInsertPosition.labelName)
 
     return { success: true, astNodeId }
   }

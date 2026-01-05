@@ -825,10 +825,18 @@ const NodeModeEditorInner: React.FC = () => {
     [contextMenu.flowPosition, setNodes, closeContextMenu, setSelectedNodeId]
   )
 
-  // Handle node deletion - also remove connected edges
+  // Handle node deletion - also remove connected edges and pending nodes
   const onNodesDelete = useCallback(
     (deletedNodes: Node[]) => {
       const deletedIds = deletedNodes.map((n) => n.id)
+      
+      // Remove from PendingNodePool if they are pending nodes
+      for (const nodeId of deletedIds) {
+        if (pendingNodePoolRef.current.isPending(nodeId)) {
+          pendingNodePoolRef.current.remove(nodeId)
+        }
+      }
+      
       setEdges((eds) => handleNodeDeletion(deletedIds, eds))
       setNodes((nds) => nds.filter((n) => !deletedIds.includes(n.id)))
     },
