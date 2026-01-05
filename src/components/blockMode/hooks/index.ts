@@ -23,3 +23,11 @@ export type {
   UsePlaybackOptions,
   UsePlaybackReturn,
 } from './usePlayback'
+
+export { useKeyboardShortcuts, DEFAULT_SHORTCUTS } from './useKeyboardShortcuts'
+export type {
+  ShortcutAction,
+  ShortcutDefinition,
+  UseKeyboardShortcutsProps,
+  UseKeyboardShortcutsReturn,
+} from './useKeyboardShortcuts'

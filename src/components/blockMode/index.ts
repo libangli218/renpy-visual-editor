@@ -69,5 +69,14 @@ export * from './PreviewPanel'
 // Context View
 export * from './ContextView'
 
+// Template System
+export { 
+  TemplateManager, 
+  getTemplateManager, 
+  createTemplateManager, 
+  resetTemplateManager 
+} from './TemplateManager'
+export * from './TemplatePanel'
+
 // Main Editor Component
 export * from './BlockModeEditor'
