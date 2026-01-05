@@ -4,3 +4,9 @@
  */
 
 export * from './BlockPalette'
+export * from './BaseBlock'
+export * from './DialogueBlock'
+export * from './SceneBlock'
+export * from './MenuBlock'
+export * from './FlowBlock'
+export * from './AudioBlock'
