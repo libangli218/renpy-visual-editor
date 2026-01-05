@@ -1,0 +1,358 @@
+/**
+ * BlockModeEditor Styles
+ * 积木模式编辑器样式
+ * 
+ * Three-column layout with bottom toolbar:
+ * - Left: Block Palette (240px)
+ * - Center: Label Container (flexible)
+ * - Right: Preview Panel (300px)
+ * - Bottom: Toolbar (48px)
+ */
+
+/* Main Container */
+.block-mode-editor {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+  background-color: var(--editor-bg, #1e1e1e);
+  color: var(--editor-text, #e0e0e0);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+  overflow: hidden;
+}
+
+/* Content Area - Three Column Layout */
+.block-mode-editor-content {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+/* Left Panel: Block Palette */
+.block-mode-editor-palette {
+  width: 240px;
+  min-width: 200px;
+  max-width: 320px;
+  background-color: var(--palette-bg, #252526);
+  border-right: 1px solid var(--border-color, #3c3c3c);
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+/* Center Panel: Canvas/Label Container */
+.block-mode-editor-canvas {
+  flex: 1;
+  position: relative;
+  overflow: auto;
+  background-color: var(--canvas-bg, #1e1e1e);
+  background-image: 
+    linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+  background-size: 20px 20px;
+  padding: 16px;
+}
+
+/* Right Panel: Preview */
+.block-mode-editor-preview {
+  width: 300px;
+  min-width: 250px;
+  max-width: 400px;
+  background-color: var(--preview-bg, #252526);
+  border-left: 1px solid var(--border-color, #3c3c3c);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Preview Panel Placeholder */
+.preview-panel-placeholder {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.preview-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  background-color: var(--header-bg, #2d2d2d);
+  border-bottom: 1px solid var(--border-color, #3c3c3c);
+}
+
+.preview-icon {
+  font-size: 16px;
+}
+
+.preview-title {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-primary, #e0e0e0);
+}
+
+.preview-content {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.preview-placeholder-text {
+  color: var(--text-secondary, #808080);
+  font-size: 13px;
+  text-align: center;
+}
+
+/* Loading State */
+.block-mode-editor-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  gap: 12px;
+}
+
+.loading-icon {
+  font-size: 32px;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+.loading-text {
+  color: var(--text-secondary, #808080);
+  font-size: 14px;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+/* Bottom Toolbar */
+.block-mode-editor-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 48px;
+  padding: 0 16px;
+  background-color: var(--toolbar-bg, #2d2d2d);
+  border-top: 1px solid var(--border-color, #3c3c3c);
+}
+
+.toolbar-left,
+.toolbar-center,
+.toolbar-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.toolbar-left {
+  flex: 1;
+  justify-content: flex-start;
+}
+
+.toolbar-center {
+  flex: 0 0 auto;
+  justify-content: center;
+}
+
+.toolbar-right {
+  flex: 1;
+  justify-content: flex-end;
+}
+
+/* Toolbar Buttons */
+.toolbar-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border: none;
+  border-radius: 4px;
+  background-color: var(--button-bg, #3c3c3c);
+  color: var(--button-text, #e0e0e0);
+  font-size: 13px;
+  cursor: pointer;
+  transition: background-color 0.15s ease, opacity 0.15s ease;
+}
+
+.toolbar-button:hover:not(:disabled) {
+  background-color: var(--button-hover-bg, #4a4a4a);
+}
+
+.toolbar-button:active:not(:disabled) {
+  background-color: var(--button-active-bg, #555555);
+}
+
+.toolbar-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.toolbar-button .button-icon {
+  font-size: 14px;
+}
+
+.toolbar-button .button-text {
+  font-size: 13px;
+}
+
+/* Back Button */
+.toolbar-back-button {
+  background-color: var(--back-button-bg, #3c3c3c);
+}
+
+.toolbar-back-button:hover:not(:disabled) {
+  background-color: var(--back-button-hover-bg, #4a4a4a);
+}
+
+/* Play Button */
+.toolbar-play-button {
+  width: 40px;
+  height: 32px;
+  padding: 0;
+  background-color: var(--play-button-bg, #4CAF50);
+}
+
+.toolbar-play-button:hover:not(:disabled) {
+  background-color: var(--play-button-hover-bg, #5CBF60);
+}
+
+.toolbar-play-button.playing {
+  background-color: var(--pause-button-bg, #FF9800);
+}
+
+.toolbar-play-button.playing:hover:not(:disabled) {
+  background-color: var(--pause-button-hover-bg, #FFa820);
+}
+
+/* Stop Button */
+.toolbar-stop-button {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+}
+
+/* Step Buttons */
+.toolbar-step-button {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+}
+
+/* Error Badge */
+.toolbar-error-badge {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  background-color: var(--error-badge-bg, rgba(244, 67, 54, 0.2));
+  border-radius: 4px;
+  color: var(--error-badge-text, #f44336);
+  font-size: 12px;
+}
+
+.error-icon {
+  font-size: 14px;
+}
+
+.error-count {
+  font-weight: 500;
+}
+
+/* Breadcrumb */
+.toolbar-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  background-color: var(--breadcrumb-bg, rgba(255, 255, 255, 0.05));
+  border-radius: 4px;
+  font-size: 13px;
+}
+
+.breadcrumb-icon {
+  font-size: 14px;
+}
+
+.breadcrumb-label {
+  color: var(--text-primary, #e0e0e0);
+  font-weight: 500;
+}
+
+/* Responsive Adjustments */
+@media (max-width: 1200px) {
+  .block-mode-editor-palette {
+    width: 200px;
+  }
+  
+  .block-mode-editor-preview {
+    width: 250px;
+  }
+}
+
+@media (max-width: 900px) {
+  .block-mode-editor-preview {
+    display: none;
+  }
+}
+
+@media (max-width: 600px) {
+  .block-mode-editor-palette {
+    width: 180px;
+    min-width: 160px;
+  }
+  
+  .toolbar-button .button-text {
+    display: none;
+  }
+}
+
+/* CSS Variables for Theming */
+:root {
+  --editor-bg: #1e1e1e;
+  --editor-text: #e0e0e0;
+  --palette-bg: #252526;
+  --canvas-bg: #1e1e1e;
+  --preview-bg: #252526;
+  --toolbar-bg: #2d2d2d;
+  --header-bg: #2d2d2d;
+  --border-color: #3c3c3c;
+  --text-primary: #e0e0e0;
+  --text-secondary: #808080;
+  --button-bg: #3c3c3c;
+  --button-hover-bg: #4a4a4a;
+  --button-active-bg: #555555;
+  --button-text: #e0e0e0;
+  --back-button-bg: #3c3c3c;
+  --back-button-hover-bg: #4a4a4a;
+  --play-button-bg: #4CAF50;
+  --play-button-hover-bg: #5CBF60;
+  --pause-button-bg: #FF9800;
+  --pause-button-hover-bg: #FFa820;
+  --error-badge-bg: rgba(244, 67, 54, 0.2);
+  --error-badge-text: #f44336;
+  --breadcrumb-bg: rgba(255, 255, 255, 0.05);
+}
+
+/* Light Theme Override */
+.block-mode-editor.light-theme {
+  --editor-bg: #ffffff;
+  --editor-text: #333333;
+  --palette-bg: #f5f5f5;
+  --canvas-bg: #fafafa;
+  --preview-bg: #f5f5f5;
+  --toolbar-bg: #e8e8e8;
+  --header-bg: #e8e8e8;
+  --border-color: #d0d0d0;
+  --text-primary: #333333;
+  --text-secondary: #666666;
+  --button-bg: #e0e0e0;
+  --button-hover-bg: #d0d0d0;
+  --button-active-bg: #c0c0c0;
+  --button-text: #333333;
+  --breadcrumb-bg: rgba(0, 0, 0, 0.05);
+}

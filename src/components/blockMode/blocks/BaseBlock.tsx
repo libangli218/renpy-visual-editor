@@ -9,7 +9,7 @@
  */
 
 import React, { useCallback, useState } from 'react'
-import { Block, BlockType } from '../types'
+import { Block } from '../types'
 import { getBlockDefinition, isContainerBlockType } from '../constants'
 import './Block.css'
 

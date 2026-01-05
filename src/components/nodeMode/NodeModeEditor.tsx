@@ -742,6 +742,28 @@ const NodeModeEditorInner: React.FC = () => {
     [setSelectedNodeId]
   )
 
+  /**
+   * Handle double-click on a node
+   * Implements Requirement 9.2: Double-click on scene node to enter block mode
+   */
+  const onNodeDoubleClick = useCallback(
+    (_event: React.MouseEvent, node: Node) => {
+      // Only handle scene nodes (which represent labels)
+      if (node.type === 'scene') {
+        const nodeData = node.data as unknown as FlowNodeData
+        const labelName = nodeData.label
+        
+        if (labelName) {
+          // Enter block mode for this label
+          // Use the enterBlockMode action from editorStore
+          const { enterBlockMode } = useEditorStore.getState()
+          enterBlockMode(labelName)
+        }
+      }
+    },
+    []
+  )
+
   // Handle canvas click (deselect)
   const onPaneClick = useCallback(() => {
     setSelectedNodeId(null)
@@ -1028,6 +1050,7 @@ const NodeModeEditorInner: React.FC = () => {
         onConnectStart={onConnectStart}
         onConnectEnd={onConnectEnd}
         onNodeClick={onNodeClick}
+        onNodeDoubleClick={onNodeDoubleClick}
         onPaneClick={onPaneClick}
         onDoubleClick={onPaneDoubleClick}
         onNodesDelete={onNodesDelete}

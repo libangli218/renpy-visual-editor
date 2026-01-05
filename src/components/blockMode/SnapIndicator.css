@@ -1,0 +1,197 @@
+/**
+ * SnapIndicator Styles
+ * 吸附指示器样式
+ * 
+ * Styles for the snap indicator and drop zone highlight components.
+ * Requirements: 7.1
+ */
+
+/* ========================================
+   Snap Indicator
+   ======================================== */
+
+.snap-indicator {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: var(--indicator-y, 0);
+  height: 0;
+  pointer-events: none;
+  z-index: 1000;
+  transform: translateY(-50%);
+}
+
+/* Main indicator line */
+.snap-indicator-line {
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  height: 3px;
+  background-color: var(--indicator-color, #2196F3);
+  border-radius: 2px;
+  box-shadow: 0 0 4px var(--indicator-color, #2196F3);
+  transition: background-color 0.15s ease;
+}
+
+/* Indicator dots at ends */
+.snap-indicator-dot {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  background-color: var(--indicator-color, #2196F3);
+  border-radius: 50%;
+  top: 50%;
+  transform: translateY(-50%);
+  box-shadow: 0 0 6px var(--indicator-color, #2196F3);
+  transition: background-color 0.15s ease;
+}
+
+.snap-indicator-dot-left {
+  left: 4px;
+}
+
+.snap-indicator-dot-right {
+  right: 4px;
+}
+
+/* Glow effect for valid positions */
+.snap-indicator-glow {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: -10px;
+  height: 20px;
+  background: linear-gradient(
+    to bottom,
+    transparent,
+    rgba(33, 150, 243, 0.1),
+    transparent
+  );
+  pointer-events: none;
+}
+
+/* Invalid state */
+.snap-indicator.invalid .snap-indicator-line,
+.snap-indicator.invalid .snap-indicator-dot {
+  background-color: #f44336;
+  box-shadow: 0 0 4px #f44336;
+}
+
+/* Animation for the indicator */
+@keyframes snap-indicator-pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+.snap-indicator.valid .snap-indicator-line,
+.snap-indicator.valid .snap-indicator-dot {
+  animation: snap-indicator-pulse 1s ease-in-out infinite;
+}
+
+/* ========================================
+   Drop Zone Highlight
+   ======================================== */
+
+.drop-zone-highlight {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 999;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+}
+
+.drop-zone-highlight.valid {
+  background-color: rgba(33, 150, 243, 0.05);
+  border: 2px dashed rgba(33, 150, 243, 0.4);
+}
+
+.drop-zone-highlight.invalid {
+  background-color: rgba(244, 67, 54, 0.05);
+  border: 2px dashed rgba(244, 67, 54, 0.4);
+}
+
+/* Animation for drop zone */
+@keyframes drop-zone-pulse {
+  0%, 100% {
+    border-color: rgba(33, 150, 243, 0.4);
+  }
+  50% {
+    border-color: rgba(33, 150, 243, 0.7);
+  }
+}
+
+.drop-zone-highlight.valid {
+  animation: drop-zone-pulse 1.5s ease-in-out infinite;
+}
+
+/* ========================================
+   Drag Preview Styles
+   ======================================== */
+
+/* These styles are applied to the drag preview element */
+.block-drag-preview {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  color: white;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  white-space: nowrap;
+}
+
+.block-drag-preview .drag-icon {
+  font-size: 16px;
+}
+
+.block-drag-preview .drag-label {
+  font-size: 13px;
+}
+
+/* ========================================
+   Container Drag States
+   ======================================== */
+
+/* Applied to containers when dragging over them */
+.label-container.drag-over {
+  background-color: rgba(33, 150, 243, 0.02);
+}
+
+.label-container.drag-over .label-container-content {
+  min-height: 100px;
+}
+
+/* Empty container drop zone */
+.label-container.empty.drag-over .label-container-empty {
+  background-color: rgba(33, 150, 243, 0.1);
+  border-color: rgba(33, 150, 243, 0.5);
+}
+
+/* ========================================
+   Block Drag States
+   ======================================== */
+
+/* Block being dragged */
+.base-block.dragging {
+  opacity: 0.5;
+  transform: scale(0.98);
+  box-shadow: none;
+}
+
+/* Block that can receive drops */
+.base-block.drop-target {
+  outline: 2px dashed rgba(33, 150, 243, 0.5);
+  outline-offset: 2px;
+}
+
+/* Invalid drop target */
+.base-block.drop-target.invalid {
+  outline-color: rgba(244, 67, 54, 0.5);
+}

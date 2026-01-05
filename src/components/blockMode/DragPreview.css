@@ -1,0 +1,228 @@
+/**
+ * DragPreview Styles
+ * 拖拽预览样式
+ * 
+ * Styles for the drag preview and invalid drop overlay components.
+ * Requirements: 7.5, 7.6
+ */
+
+/* ========================================
+   Drag Preview
+   ======================================== */
+
+.drag-preview {
+  position: fixed;
+  z-index: 10000;
+  pointer-events: none;
+  transform: translate(0, 0);
+  transition: opacity 0.1s ease;
+}
+
+.drag-preview-content {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  background-color: var(--preview-color, #607D8B);
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+  opacity: 0.85;
+  color: white;
+  font-size: 14px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.drag-preview-icon {
+  font-size: 18px;
+}
+
+.drag-preview-label {
+  font-size: 13px;
+}
+
+/* Valid position state */
+.drag-preview.valid .drag-preview-content {
+  opacity: 0.9;
+  box-shadow: 0 4px 20px rgba(33, 150, 243, 0.4);
+}
+
+/* Invalid position state */
+.drag-preview.invalid .drag-preview-content {
+  opacity: 0.6;
+  filter: grayscale(30%);
+}
+
+/* Invalid badge */
+.drag-preview-invalid-badge {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  width: 20px;
+  height: 20px;
+  background-color: #f44336;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 6px rgba(244, 67, 54, 0.4);
+}
+
+.drag-preview-invalid-badge .invalid-icon {
+  color: white;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+/* Stack badge */
+.drag-preview-stack-badge {
+  position: absolute;
+  bottom: -6px;
+  right: -6px;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 6px;
+  background-color: #FF9800;
+  border-radius: 11px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 11px;
+  font-weight: bold;
+  box-shadow: 0 2px 6px rgba(255, 152, 0, 0.4);
+}
+
+/* ========================================
+   Invalid Drop Overlay
+   ======================================== */
+
+.invalid-drop-overlay {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 10001;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.invalid-drop-overlay.animating {
+  opacity: 1;
+  animation: invalid-drop-shake 0.4s ease;
+}
+
+.invalid-drop-message {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 20px;
+  background-color: rgba(244, 67, 54, 0.95);
+  border-radius: 10px;
+  box-shadow: 0 4px 20px rgba(244, 67, 54, 0.4);
+  color: white;
+}
+
+.invalid-drop-icon {
+  font-size: 20px;
+}
+
+.invalid-drop-text {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+/* Shake animation for invalid drop */
+@keyframes invalid-drop-shake {
+  0%, 100% {
+    transform: translate(-50%, -50%) translateX(0);
+  }
+  10%, 30%, 50%, 70%, 90% {
+    transform: translate(-50%, -50%) translateX(-5px);
+  }
+  20%, 40%, 60%, 80% {
+    transform: translate(-50%, -50%) translateX(5px);
+  }
+}
+
+/* ========================================
+   Block Dragging States
+   ======================================== */
+
+/* Block being dragged - ghost effect */
+[data-block-id].dragging {
+  opacity: 0.4;
+  transform: scale(0.98);
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+/* Block in a dragged stack */
+[data-block-id].in-dragged-stack {
+  opacity: 0.4;
+  transform: scale(0.98);
+}
+
+/* Block returning to original position */
+[data-block-id].returning {
+  animation: block-return 0.3s ease;
+}
+
+@keyframes block-return {
+  0% {
+    opacity: 0.4;
+    transform: scale(0.95);
+  }
+  50% {
+    transform: scale(1.02);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* ========================================
+   Drop Target Feedback
+   ======================================== */
+
+/* Container receiving a drop */
+.label-container.receiving-drop {
+  background-color: rgba(33, 150, 243, 0.05);
+  transition: background-color 0.2s ease;
+}
+
+/* Container with invalid drop */
+.label-container.invalid-drop {
+  background-color: rgba(244, 67, 54, 0.05);
+}
+
+/* Empty container ready for drop */
+.label-container.empty.drag-over .label-container-empty {
+  border-style: solid;
+  border-color: rgba(33, 150, 243, 0.6);
+  background-color: rgba(33, 150, 243, 0.08);
+}
+
+/* ========================================
+   Cursor Styles During Drag
+   ======================================== */
+
+/* Applied to body during drag */
+body.dragging-block {
+  cursor: grabbing !important;
+}
+
+body.dragging-block * {
+  cursor: grabbing !important;
+}
+
+/* Valid drop target cursor */
+body.dragging-block .drop-target-valid {
+  cursor: copy !important;
+}
+
+/* Invalid drop target cursor */
+body.dragging-block .drop-target-invalid {
+  cursor: not-allowed !important;
+}

@@ -9,14 +9,28 @@ export * from './types'
 // Constants
 export * from './constants'
 
+// Stores
+export * from './stores'
+
 // Builders
-export * from './BlockTreeBuilder'
+export { 
+  BlockTreeBuilder, 
+  createBlockTreeBuilder, 
+  resetBlockIdCounter 
+} from './BlockTreeBuilder'
 
 // Operation Handlers
-export * from './BlockOperationHandler'
+export { 
+  BlockOperationHandler, 
+  createBlockOperationHandler 
+} from './BlockOperationHandler'
+
+// Validators
+export * from './BlockValidator'
 
 // Hooks
 export * from './useBlockOperations'
+export * from './hooks'
 
 // Block Components
 export * from './blocks'
@@ -26,3 +40,17 @@ export * from './slots'
 
 // Container Components
 export * from './LabelContainer'
+
+// Drag-Drop System
+export * from './DragDropContext'
+export * from './SnapIndicator'
+export * from './DragPreview'
+
+// Mode Switching
+export * from './EditorModeSwitch'
+
+// Breadcrumb Navigation
+export * from './Breadcrumb'
+
+// Main Editor Component
+export * from './BlockModeEditor'

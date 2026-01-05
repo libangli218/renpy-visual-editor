@@ -1,0 +1,93 @@
+/**
+ * Breadcrumb Styles
+ * 面包屑导航组件样式
+ */
+
+.breadcrumb {
+  display: flex;
+  align-items: center;
+}
+
+.breadcrumb-list {
+  display: flex;
+  align-items: center;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  gap: 4px;
+}
+
+.breadcrumb-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.breadcrumb-separator {
+  color: var(--text-tertiary, #6c7086);
+  font-size: 12px;
+  margin: 0 4px;
+}
+
+.breadcrumb-link {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--text-secondary, #a6adc8);
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.breadcrumb-link:hover {
+  background: var(--bg-hover, #313244);
+  color: var(--text-primary, #cdd6f4);
+}
+
+.breadcrumb-link:focus {
+  outline: 2px solid var(--accent-primary, #89b4fa);
+  outline-offset: 2px;
+}
+
+.breadcrumb-current {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  font-size: 13px;
+  color: var(--text-secondary, #a6adc8);
+}
+
+.breadcrumb-current.active {
+  color: var(--text-primary, #cdd6f4);
+  font-weight: 500;
+}
+
+.breadcrumb-icon {
+  font-size: 14px;
+  line-height: 1;
+}
+
+.breadcrumb-label {
+  font-size: 13px;
+}
+
+/* Compact variant for toolbar */
+.breadcrumb.compact .breadcrumb-link,
+.breadcrumb.compact .breadcrumb-current {
+  padding: 2px 6px;
+  font-size: 12px;
+}
+
+.breadcrumb.compact .breadcrumb-icon {
+  font-size: 12px;
+}
+
+.breadcrumb.compact .breadcrumb-separator {
+  font-size: 10px;
+  margin: 0 2px;
+}

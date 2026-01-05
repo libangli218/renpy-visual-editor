@@ -1,7 +1,10 @@
 import { RenpyScript } from './ast'
 
 // Editor mode types
-export type EditorMode = 'story' | 'node'
+// 'story' - Story mode for linear script editing
+// 'node' - Node mode for flow chart editing
+// 'block' - Block mode for Scratch-like block editing within a label
+export type EditorMode = 'story' | 'node' | 'block'
 export type ComplexityLevel = 'simple' | 'preview' | 'advanced'
 
 // Editor state interface (for history snapshots)
@@ -15,6 +18,8 @@ export interface EditorState {
   selectedBlockId: string | null
   // AST data - shared between modes
   ast: RenpyScript | null
+  // Block mode specific - the label being edited in block mode
+  currentBlockLabel: string | null
 }
 
 // Preview state

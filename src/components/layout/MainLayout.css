@@ -550,3 +550,18 @@
   color: white;
   border: 1px solid #ef4444;
 }
+
+
+/* Block Mode Editor Area Styles */
+.editor-area-block-mode {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background-color: var(--bg-primary);
+}
+
+.editor-area-block-mode .block-mode-editor {
+  flex: 1;
+  height: 100%;
+}

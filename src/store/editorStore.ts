@@ -49,6 +49,9 @@ export interface EditorStore {
   selectedNodeId: string | null
   selectedBlockId: string | null
   
+  // Block mode state - the label being edited in block mode
+  currentBlockLabel: string | null
+  
   // History state (read-only from store perspective)
   canUndo: boolean
   canRedo: boolean
@@ -62,6 +65,11 @@ export interface EditorStore {
   setSelectedNodeId: (id: string | null) => void
   setSelectedBlockId: (id: string | null) => void
   setAst: (ast: RenpyScript | null) => void
+  
+  // Block mode actions
+  setCurrentBlockLabel: (label: string | null) => void
+  enterBlockMode: (labelName: string) => void
+  exitBlockMode: () => void
   
   // History actions
   undo: () => void
@@ -83,6 +91,7 @@ function createStateSnapshot(state: Partial<EditorStore>): EditorState {
     selectedNodeId: state.selectedNodeId ?? null,
     selectedBlockId: state.selectedBlockId ?? null,
     ast: state.ast ?? null,
+    currentBlockLabel: state.currentBlockLabel ?? null,
   }
 }
 
@@ -97,6 +106,7 @@ export const useEditorStore = create<EditorStore>((set, get) => {
     selectedNodeId: null,
     selectedBlockId: null,
     ast: null,
+    currentBlockLabel: null,
   }
   historyManager.initialize(initialState)
 
@@ -110,6 +120,7 @@ export const useEditorStore = create<EditorStore>((set, get) => {
     selectedNodeId: null,
     selectedBlockId: null,
     ast: null,
+    currentBlockLabel: null,
     canUndo: false,
     canRedo: false,
     
@@ -174,6 +185,47 @@ export const useEditorStore = create<EditorStore>((set, get) => {
       set({
         ast,
         modified: true,
+        canUndo: historyManager.canUndo(),
+        canRedo: historyManager.canRedo(),
+      })
+    },
+    
+    // Block mode actions
+    setCurrentBlockLabel: (currentBlockLabel) => {
+      set({ currentBlockLabel })
+    },
+    
+    /**
+     * Enter block mode for editing a specific label
+     * Implements Requirement 9.2: Double-click label to enter block mode
+     * Preserves AST data during mode switch (Property 6: Mode Switching State Preservation)
+     */
+    enterBlockMode: (labelName) => {
+      const state = get()
+      // Push current state to history before change
+      historyManager.push(createStateSnapshot(state))
+      set({
+        mode: 'block',
+        currentBlockLabel: labelName,
+        // AST is preserved - block mode shares the same data
+        canUndo: historyManager.canUndo(),
+        canRedo: historyManager.canRedo(),
+      })
+    },
+    
+    /**
+     * Exit block mode and return to the previous mode (node mode)
+     * Implements Requirement 9.3: Click back to return to flow mode
+     * Preserves unsaved changes (Requirement 9.4)
+     */
+    exitBlockMode: () => {
+      const state = get()
+      // Push current state to history before change
+      historyManager.push(createStateSnapshot(state))
+      set({
+        mode: 'node',
+        currentBlockLabel: null,
+        // AST is preserved - unsaved changes are kept
         canUndo: historyManager.canUndo(),
         canRedo: historyManager.canRedo(),
       })

@@ -9,7 +9,7 @@
  */
 
 import React, { useCallback, useMemo } from 'react'
-import { Block, BlockSlot, SlotOption } from '../types'
+import { Block, SlotOption } from '../types'
 import { BaseBlock, BaseBlockProps } from './BaseBlock'
 import './Block.css'
 
