@@ -17,3 +17,6 @@ export * from './BlockOperationHandler'
 
 // Hooks
 export * from './useBlockOperations'
+
+// Block Components
+export * from './blocks'
