@@ -11,3 +11,9 @@ export * from './constants'
 
 // Builders
 export * from './BlockTreeBuilder'
+
+// Operation Handlers
+export * from './BlockOperationHandler'
+
+// Hooks
+export * from './useBlockOperations'
