@@ -659,6 +659,117 @@ export class NodeOperationHandler {
   }
 
   /**
+   * Get all nodes with invalid targets
+   * 
+   * Implements Requirement 4.3: Jump/Call 节点的目标 label 不存在时显示无效目标警告
+   * 
+   * Returns all jump and call nodes whose target label does not exist.
+   * This includes both existing nodes in the flow graph and pending nodes.
+   * 
+   * @param graph - The current flow graph
+   * @returns Array of node IDs with invalid targets
+   */
+  getNodesWithInvalidTargets(graph: FlowGraph): string[] {
+    const invalidNodeIds: string[] = []
+
+    // Get invalid targets from existing nodes
+    const invalidFlowNodes = this.connectionResolver.getNodesWithInvalidTargets(graph.nodes)
+    invalidNodeIds.push(...invalidFlowNodes.map(n => n.id))
+
+    // Also check pending nodes
+    const pendingNodes = this.pendingNodePool.getAll()
+    const validLabels = new Set<string>()
+    
+    // Collect valid labels from flow graph
+    for (const node of graph.nodes) {
+      if (node.type === 'scene' && node.data.label) {
+        validLabels.add(node.data.label)
+      }
+    }
+    
+    // Also collect labels from pending scene nodes
+    for (const pendingNode of pendingNodes) {
+      if (pendingNode.type === 'scene' && pendingNode.data.label) {
+        validLabels.add(pendingNode.data.label)
+      }
+    }
+
+    // Check pending jump/call nodes
+    for (const pendingNode of pendingNodes) {
+      if (pendingNode.type === 'jump' || pendingNode.type === 'call') {
+        const target = pendingNode.data.target
+        if (!target || !validLabels.has(target)) {
+          invalidNodeIds.push(pendingNode.id)
+        }
+      }
+    }
+
+    return invalidNodeIds
+  }
+
+  /**
+   * Validate a specific node's target
+   * 
+   * Implements Requirement 4.3: Jump/Call 节点的目标 label 不存在时显示无效目标警告
+   * 
+   * @param nodeId - The node ID to validate
+   * @param graph - The current flow graph
+   * @returns Validation result with isValid flag and optional error message
+   */
+  validateNodeTarget(
+    nodeId: string,
+    graph: FlowGraph
+  ): { isValid: boolean; error?: string } {
+    // Check if it's a pending node
+    const pendingNode = this.pendingNodePool.get(nodeId)
+    
+    if (pendingNode) {
+      // Validate pending node
+      if (pendingNode.type !== 'jump' && pendingNode.type !== 'call') {
+        return { isValid: true }
+      }
+
+      const target = pendingNode.data.target
+      if (!target || target.trim() === '') {
+        return {
+          isValid: false,
+          error: `${pendingNode.type === 'jump' ? 'Jump' : 'Call'} node has no target specified`,
+        }
+      }
+
+      // Collect valid labels
+      const validLabels = new Set<string>()
+      for (const node of graph.nodes) {
+        if (node.type === 'scene' && node.data.label) {
+          validLabels.add(node.data.label)
+        }
+      }
+      for (const pn of this.pendingNodePool.getAll()) {
+        if (pn.type === 'scene' && pn.data.label) {
+          validLabels.add(pn.data.label)
+        }
+      }
+
+      if (!validLabels.has(target)) {
+        return {
+          isValid: false,
+          error: `Target label "${target}" does not exist`,
+        }
+      }
+
+      return { isValid: true }
+    }
+
+    // Check existing node in flow graph
+    const flowNode = graph.nodes.find(n => n.id === nodeId)
+    if (!flowNode) {
+      return { isValid: true } // Node not found, assume valid
+    }
+
+    return this.connectionResolver.validateNodeTarget(flowNode, graph.nodes)
+  }
+
+  /**
    * Remove a connection between two nodes and sync to AST
    * 
    * Implements Requirement 5.3: 删除连接时移除对应的 jump/call 语句

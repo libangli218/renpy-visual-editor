@@ -473,8 +473,53 @@ const NodeModeEditorInner: React.FC = () => {
     return orphanIds
   }, [edges])
 
-  // Add disconnected/orphan/pending class to nodes
+  // Detect nodes with invalid targets - Implements Requirement 4.3
+  // Jump/Call 节点的目标 label 不存在时显示无效目标警告
+  const invalidTargetNodeIds = useMemo(() => {
+    const invalidIds = new Set<string>()
+    
+    // Collect all valid label names from scene nodes
+    const validLabels = new Set<string>()
+    for (const node of nodes) {
+      if (node.type === 'scene' && node.data?.label) {
+        validLabels.add(node.data.label as string)
+      }
+    }
+    
+    // Also collect labels from pending scene nodes
+    const pendingNodes = pendingNodePoolRef.current.getAll()
+    for (const pendingNode of pendingNodes) {
+      if (pendingNode.type === 'scene' && pendingNode.data.label) {
+        validLabels.add(pendingNode.data.label)
+      }
+    }
+    
+    // Check jump and call nodes for invalid targets
+    for (const node of nodes) {
+      if (node.type === 'jump' || node.type === 'call') {
+        const target = node.data?.target as string | undefined
+        if (!target || !validLabels.has(target)) {
+          invalidIds.add(node.id)
+        }
+      }
+    }
+    
+    // Also check pending jump/call nodes
+    for (const pendingNode of pendingNodes) {
+      if (pendingNode.type === 'jump' || pendingNode.type === 'call') {
+        const target = pendingNode.data.target
+        if (!target || !validLabels.has(target)) {
+          invalidIds.add(pendingNode.id)
+        }
+      }
+    }
+    
+    return invalidIds
+  }, [nodes])
+
+  // Add disconnected/orphan/pending/invalid-target class to nodes
   // Implements Requirements 1.5, 6.1: 孤立节点视觉标记
+  // Implements Requirement 4.3: 无效目标节点标记
   const nodesWithStatusClass = useMemo(() => {
     return nodes.map(node => {
       const classes: string[] = []
@@ -494,10 +539,15 @@ const NodeModeEditorInner: React.FC = () => {
         classes.push('disconnected')
       }
       
+      // Check if node has invalid target - Implements Requirement 4.3
+      if (invalidTargetNodeIds.has(node.id)) {
+        classes.push('invalid-target')
+      }
+      
       // Preserve existing className if any
       if (node.className) {
         const existingClasses = node.className.split(' ').filter(c => 
-          c && !['orphan-node', 'pending-node', 'disconnected'].includes(c)
+          c && !['orphan-node', 'pending-node', 'disconnected', 'invalid-target'].includes(c)
         )
         classes.push(...existingClasses)
       }
@@ -507,7 +557,7 @@ const NodeModeEditorInner: React.FC = () => {
         className: classes.join(' ') || undefined,
       }
     })
-  }, [nodes, disconnectedNodeIds, orphanNodeIds])
+  }, [nodes, disconnectedNodeIds, orphanNodeIds, invalidTargetNodeIds])
 
   // Validate connections before allowing them
   // Implements Requirements 6.1, 6.2: Connection validation

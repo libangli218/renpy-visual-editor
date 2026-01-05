@@ -448,6 +448,100 @@ export class NodeConnectionResolver {
 
     return null
   }
+
+  /**
+   * Validate if a target label exists in the AST
+   * 
+   * Implements Requirement 4.3: Jump/Call 节点的目标 label 不存在时显示无效目标警告
+   * 
+   * @param targetLabel The target label name to validate
+   * @param nodes All nodes in the flow graph
+   * @returns true if the target label exists, false otherwise
+   */
+  isValidTarget(targetLabel: string, nodes: FlowNode[]): boolean {
+    if (!targetLabel || targetLabel.trim() === '') {
+      return false
+    }
+
+    // Check if any scene node has this label
+    return nodes.some(
+      node => node.type === 'scene' && node.data.label === targetLabel
+    )
+  }
+
+  /**
+   * Get all nodes with invalid targets
+   * 
+   * Implements Requirement 4.3: Jump/Call 节点的目标 label 不存在时显示无效目标警告
+   * 
+   * Returns all jump and call nodes whose target label does not exist
+   * in the current flow graph.
+   * 
+   * @param nodes All nodes in the flow graph
+   * @returns Array of nodes with invalid targets
+   */
+  getNodesWithInvalidTargets(nodes: FlowNode[]): FlowNode[] {
+    const invalidNodes: FlowNode[] = []
+
+    // Collect all valid label names from scene nodes
+    const validLabels = new Set<string>()
+    for (const node of nodes) {
+      if (node.type === 'scene' && node.data.label) {
+        validLabels.add(node.data.label)
+      }
+    }
+
+    // Check jump and call nodes for invalid targets
+    for (const node of nodes) {
+      if (node.type === 'jump' || node.type === 'call') {
+        const target = node.data.target
+        if (!target || !validLabels.has(target)) {
+          invalidNodes.push(node)
+        }
+      }
+    }
+
+    return invalidNodes
+  }
+
+  /**
+   * Validate a node's target and return validation result
+   * 
+   * Implements Requirement 4.3: Jump/Call 节点的目标 label 不存在时显示无效目标警告
+   * 
+   * @param node The node to validate
+   * @param nodes All nodes in the flow graph
+   * @returns Validation result with isValid flag and optional error message
+   */
+  validateNodeTarget(
+    node: FlowNode,
+    nodes: FlowNode[]
+  ): { isValid: boolean; error?: string } {
+    // Only validate jump and call nodes
+    if (node.type !== 'jump' && node.type !== 'call') {
+      return { isValid: true }
+    }
+
+    const target = node.data.target
+
+    // Check if target is empty
+    if (!target || target.trim() === '') {
+      return {
+        isValid: false,
+        error: `${node.type === 'jump' ? 'Jump' : 'Call'} node has no target specified`,
+      }
+    }
+
+    // Check if target label exists
+    if (!this.isValidTarget(target, nodes)) {
+      return {
+        isValid: false,
+        error: `Target label "${target}" does not exist`,
+      }
+    }
+
+    return { isValid: true }
+  }
 }
 
 // Export singleton instance
