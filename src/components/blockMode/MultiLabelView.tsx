@@ -440,11 +440,14 @@ export const MultiLabelView: React.FC<MultiLabelViewProps> = ({
   // Handle double-click on canvas to create new label
   // Requirements: 1.5
   // Don Norman principle: Reduce Gulf of Execution - instant creation, inline editing
+  // Direct manipulation: Label appears exactly where user clicked
   const handleDoubleClickCanvas = useCallback((position: Point) => {
     if (readOnly || !ast) return
     
-    // Find non-overlapping position
-    const finalPosition = findNonOverlappingPosition(position, labelPositions)
+    // Don Norman: Direct manipulation - use the exact click position
+    // Don't use findNonOverlappingPosition here, as user expects label at click location
+    // User can manually drag to adjust if needed
+    const finalPosition = position
     
     // Generate auto name (Don Norman: reduce cognitive load)
     const autoName = generateAutoLabelName()
