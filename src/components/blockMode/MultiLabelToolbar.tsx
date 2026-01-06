@@ -183,56 +183,57 @@ export const MultiLabelToolbar: React.FC<MultiLabelToolbarProps> = memo(({
             </button>
           )}
         </div>
-        
-        {/* Label Count */}
-        <span className="toolbar-count">
-          {isFiltered 
-            ? `${displayCount} / ${labelCount} 个 Label`
-            : `${labelCount} 个 Label`
-          }
-        </span>
       </div>
 
-      {/* Center Section: Actions */}
+      {/* Center Section: Main Actions */}
       <div className="toolbar-section toolbar-center">
-        {/* New Label Button */}
+        {/* New Label Button - Primary Action */}
         {!readOnly && (
           <button
             className="toolbar-button toolbar-new-label"
             onClick={handleNewLabelClick}
-            title="新建 Label"
+            title="新建 Label (双击画布也可创建)"
           >
-            <span className="button-icon">➕</span>
-            <span className="button-text">新建 Label</span>
+            <span className="button-icon">＋</span>
+            <span className="button-text">新建</span>
           </button>
         )}
 
-        {/* Collapse/Expand All */}
-        {onCollapseAll && (
-          <button
-            className="toolbar-button toolbar-collapse-all"
-            onClick={onCollapseAll}
-            title="折叠全部"
-          >
-            <span className="button-icon">📁</span>
-            <span className="button-text">折叠全部</span>
-          </button>
-        )}
-        {onExpandAll && (
-          <button
-            className="toolbar-button toolbar-expand-all"
-            onClick={onExpandAll}
-            title="展开全部"
-          >
-            <span className="button-icon">📂</span>
-            <span className="button-text">展开全部</span>
-          </button>
-        )}
+        {/* Collapse/Expand Group */}
+        <div className="toolbar-button-group">
+          {onCollapseAll && (
+            <button
+              className="toolbar-button toolbar-collapse-all"
+              onClick={onCollapseAll}
+              title="折叠全部"
+            >
+              <span className="button-icon">⊟</span>
+              <span className="button-text">折叠</span>
+            </button>
+          )}
+          {onExpandAll && (
+            <button
+              className="toolbar-button toolbar-expand-all"
+              onClick={onExpandAll}
+              title="展开全部"
+            >
+              <span className="button-icon">⊞</span>
+              <span className="button-text">展开</span>
+            </button>
+          )}
+        </div>
+
+        {/* Label Count Badge */}
+        <span className="toolbar-count">
+          {isFiltered 
+            ? `${displayCount}/${labelCount}`
+            : `${labelCount} Labels`
+          }
+        </span>
       </div>
 
-      {/* Right Section: Canvas Controls and Layout Toggle */}
+      {/* Right Section: Canvas Controls */}
       <div className="toolbar-section toolbar-right">
-        {/* Canvas Zoom Controls */}
         <div className="canvas-controls" role="group" aria-label="画布控制">
           {/* Fit All Button */}
           {onFitAll && (
@@ -241,8 +242,8 @@ export const MultiLabelToolbar: React.FC<MultiLabelToolbarProps> = memo(({
               onClick={onFitAll}
               title="适应全部 (F)"
             >
-              <span className="button-icon">⊞</span>
-              <span className="button-text">适应全部</span>
+              <span className="button-icon">⊡</span>
+              <span className="button-text">适应</span>
             </button>
           )}
           

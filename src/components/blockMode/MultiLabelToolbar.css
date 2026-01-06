@@ -2,8 +2,33 @@
  * MultiLabelToolbar Component Styles
  * 多 Label 视图工具栏样式
  * 
+ * Design inspired by Rasmus Andersson (Figma)
+ * - Clear visual hierarchy
+ * - Functional grouping with separators
+ * - Icon-first approach
+ * - Compact but not cramped
+ * 
  * Requirements: 4.3, 5.1, 5.2, 6.1
  */
+
+/* ========================================
+ * CSS Variables for Toolbar
+ * ======================================== */
+
+.multi-label-toolbar {
+  --toolbar-height: 48px;
+  --toolbar-bg: #2c2c2c;
+  --toolbar-border: #3d3d3d;
+  --toolbar-separator: #404040;
+  --toolbar-text: #e0e0e0;
+  --toolbar-text-muted: #888888;
+  --toolbar-hover: #3d3d3d;
+  --toolbar-active: #4a4a4a;
+  --toolbar-accent: #7c5cff;
+  --toolbar-accent-hover: #9b7fff;
+  --toolbar-radius: 6px;
+  --toolbar-gap: 8px;
+}
 
 /* ========================================
  * Toolbar Base Styles
@@ -12,57 +37,81 @@
 .multi-label-toolbar {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 12px 16px;
-  background-color: var(--bg-secondary, #f5f5f5);
-  border-bottom: 1px solid var(--border-color, #e0e0e0);
+  height: var(--toolbar-height);
+  padding: 0 12px;
+  background-color: var(--toolbar-bg);
+  border-bottom: 1px solid var(--toolbar-border);
+  gap: var(--toolbar-gap);
   flex-shrink: 0;
+  user-select: none;
 }
 
+/* Toolbar Sections */
 .toolbar-section {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: var(--toolbar-gap);
+  height: 100%;
 }
 
 .toolbar-left {
-  flex: 1;
-  min-width: 0;
+  flex: 0 0 auto;
 }
 
 .toolbar-center {
-  flex-shrink: 0;
+  flex: 1;
+  justify-content: center;
 }
 
 .toolbar-right {
-  flex-shrink: 0;
+  flex: 0 0 auto;
+}
+
+/* Section Separator */
+.toolbar-section::after {
+  content: '';
+  display: none;
+}
+
+.toolbar-left::after,
+.toolbar-center::after {
+  content: '';
+  display: block;
+  width: 1px;
+  height: 24px;
+  background-color: var(--toolbar-separator);
+  margin-left: var(--toolbar-gap);
 }
 
 /* ========================================
- * Search Box Styles
+ * Search Box - Figma Style
  * ======================================== */
 
 .toolbar-search {
   display: flex;
   align-items: center;
-  gap: 8px;
-  background-color: var(--bg-primary, #ffffff);
-  border: 1px solid var(--border-color, #e0e0e0);
-  border-radius: 6px;
-  padding: 6px 12px;
-  max-width: 300px;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  gap: 6px;
+  background-color: var(--toolbar-hover);
+  border: 1px solid transparent;
+  border-radius: var(--toolbar-radius);
+  padding: 6px 10px;
+  width: 200px;
+  transition: all 0.15s ease;
+}
+
+.toolbar-search:hover {
+  background-color: var(--toolbar-active);
 }
 
 .toolbar-search:focus-within {
-  border-color: var(--accent-primary, #2196F3);
-  box-shadow: 0 0 0 2px rgba(33, 150, 243, 0.1);
+  background-color: var(--toolbar-active);
+  border-color: var(--toolbar-accent);
+  box-shadow: 0 0 0 1px var(--toolbar-accent);
 }
 
 .toolbar-search .search-icon {
-  font-size: 14px;
-  opacity: 0.6;
+  font-size: 12px;
+  color: var(--toolbar-text-muted);
   flex-shrink: 0;
 }
 
@@ -70,130 +119,204 @@
   flex: 1;
   border: none;
   background: transparent;
-  font-size: 14px;
-  color: var(--text-primary, #333333);
+  font-size: 13px;
+  color: var(--toolbar-text);
   outline: none;
-  min-width: 120px;
+  min-width: 80px;
 }
 
 .toolbar-search .search-input::placeholder {
-  color: var(--text-tertiary, #999999);
+  color: var(--toolbar-text-muted);
 }
 
 .toolbar-search .search-clear {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 18px;
-  height: 18px;
+  width: 16px;
+  height: 16px;
   padding: 0;
   border: none;
-  background: var(--bg-tertiary, #e8e8e8);
+  background: var(--toolbar-text-muted);
   border-radius: 50%;
-  font-size: 10px;
-  color: var(--text-secondary, #666666);
+  font-size: 8px;
+  color: var(--toolbar-bg);
   cursor: pointer;
   flex-shrink: 0;
-  transition: background-color 0.15s ease;
+  opacity: 0.6;
+  transition: opacity 0.15s ease;
 }
 
 .toolbar-search .search-clear:hover {
-  background-color: var(--border-color, #e0e0e0);
+  opacity: 1;
 }
 
-/* Label Count */
+/* Label Count - Subtle Badge */
 .toolbar-count {
-  font-size: 12px;
-  color: var(--text-secondary, #666666);
+  font-size: 11px;
+  color: var(--toolbar-text-muted);
+  background-color: var(--toolbar-hover);
+  padding: 3px 8px;
+  border-radius: 10px;
   white-space: nowrap;
 }
 
 /* ========================================
- * Button Styles
+ * Button Group - Figma Style
+ * ======================================== */
+
+.toolbar-button-group {
+  display: flex;
+  align-items: center;
+  background-color: var(--toolbar-hover);
+  border-radius: var(--toolbar-radius);
+  overflow: hidden;
+}
+
+.toolbar-button-group .toolbar-button {
+  border-radius: 0;
+  border: none;
+}
+
+.toolbar-button-group .toolbar-button:not(:last-child) {
+  border-right: 1px solid var(--toolbar-separator);
+}
+
+/* ========================================
+ * Button Styles - Icon First
  * ======================================== */
 
 .toolbar-button {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 6px;
-  padding: 8px 14px;
-  border: 1px solid var(--border-color, #e0e0e0);
-  background-color: var(--bg-primary, #ffffff);
-  border-radius: 6px;
+  height: 32px;
+  padding: 0 12px;
+  border: none;
+  background-color: transparent;
+  border-radius: var(--toolbar-radius);
   font-size: 13px;
-  color: var(--text-primary, #333333);
+  color: var(--toolbar-text);
   cursor: pointer;
-  transition: background-color 0.15s ease, border-color 0.15s ease;
+  transition: all 0.12s ease;
+  white-space: nowrap;
 }
 
 .toolbar-button:hover {
-  background-color: var(--bg-secondary, #f5f5f5);
-  border-color: var(--text-tertiary, #999999);
+  background-color: var(--toolbar-hover);
+}
+
+.toolbar-button:active {
+  background-color: var(--toolbar-active);
 }
 
 .toolbar-button .button-icon {
   font-size: 14px;
+  line-height: 1;
 }
 
 .toolbar-button .button-text {
-  white-space: nowrap;
+  font-size: 12px;
+  font-weight: 500;
 }
 
-/* New Label Button - Primary Style */
+/* Icon-only button */
+.toolbar-button.icon-only {
+  width: 32px;
+  padding: 0;
+}
+
+.toolbar-button.icon-only .button-text {
+  display: none;
+}
+
+/* Primary Button - New Label */
 .toolbar-new-label {
-  background-color: var(--accent-primary, #2196F3);
-  border-color: var(--accent-primary, #2196F3);
+  background-color: var(--toolbar-accent);
   color: white;
+  font-weight: 500;
 }
 
 .toolbar-new-label:hover {
-  background-color: #1976D2;
-  border-color: #1976D2;
+  background-color: var(--toolbar-accent-hover);
+}
+
+.toolbar-new-label:active {
+  background-color: var(--toolbar-accent);
+  transform: scale(0.98);
+}
+
+/* Secondary Buttons */
+.toolbar-collapse-all,
+.toolbar-expand-all,
+.toolbar-fit-all {
+  background-color: var(--toolbar-hover);
+}
+
+.toolbar-collapse-all:hover,
+.toolbar-expand-all:hover,
+.toolbar-fit-all:hover {
+  background-color: var(--toolbar-active);
 }
 
 /* ========================================
- * Layout Toggle Styles
+ * Zoom Control - Figma Style
+ * ======================================== */
+
+.canvas-controls {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.zoom-control {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  background-color: var(--toolbar-hover);
+  border-radius: var(--toolbar-radius);
+  padding: 0 4px;
+  height: 32px;
+}
+
+.zoom-level {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--toolbar-text);
+  min-width: 44px;
+  text-align: center;
+  font-family: 'SF Mono', 'Monaco', 'Inconsolata', monospace;
+  padding: 0 6px;
+}
+
+.zoom-reset-btn {
+  height: 24px;
+  padding: 0 8px;
+  border: none;
+  background-color: transparent;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--toolbar-accent);
+  cursor: pointer;
+  transition: all 0.12s ease;
+}
+
+.zoom-reset-btn:hover {
+  background-color: var(--toolbar-active);
+}
+
+/* ========================================
+ * Layout Toggle - Hidden but kept for compatibility
  * ======================================== */
 
 .layout-toggle {
-  display: flex;
-  border: 1px solid var(--border-color, #e0e0e0);
-  border-radius: 6px;
-  overflow: hidden;
-}
-
-.layout-toggle-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 36px;
-  height: 32px;
-  padding: 0;
-  border: none;
-  background-color: var(--bg-primary, #ffffff);
-  cursor: pointer;
-  transition: background-color 0.15s ease;
-}
-
-.layout-toggle-btn:not(:last-child) {
-  border-right: 1px solid var(--border-color, #e0e0e0);
-}
-
-.layout-toggle-btn:hover {
-  background-color: var(--bg-secondary, #f5f5f5);
-}
-
-.layout-toggle-btn.active {
-  background-color: var(--accent-primary, #2196F3);
-  color: white;
-}
-
-.layout-toggle-btn .layout-icon {
-  font-size: 16px;
+  display: none;
 }
 
 /* ========================================
- * New Label Dialog Styles
+ * Dialog Styles - Figma Style
  * ======================================== */
 
 .new-label-dialog-overlay {
@@ -202,123 +325,131 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
+  background-color: rgba(0, 0, 0, 0.6);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 1000;
+  backdrop-filter: blur(2px);
 }
 
 .new-label-dialog {
-  background-color: var(--bg-primary, #ffffff);
+  background-color: #2c2c2c;
+  border: 1px solid #404040;
   border-radius: 12px;
   padding: 24px;
-  max-width: 420px;
+  max-width: 380px;
   width: 90%;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.4);
 }
 
 .dialog-header {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   margin-bottom: 20px;
 }
 
 .dialog-header .dialog-icon {
-  font-size: 24px;
+  font-size: 20px;
 }
 
 .dialog-header h4 {
   margin: 0;
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 600;
-  color: var(--text-primary, #333333);
+  color: #ffffff;
 }
 
 .dialog-content {
-  margin-bottom: 20px;
+  margin-bottom: 24px;
 }
 
 .dialog-label {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 500;
-  color: var(--text-primary, #333333);
+  color: #e0e0e0;
 }
 
 .dialog-input {
   padding: 10px 12px;
-  border: 1px solid var(--border-color, #e0e0e0);
+  border: 1px solid #404040;
   border-radius: 6px;
   font-size: 14px;
-  color: var(--text-primary, #333333);
+  color: #ffffff;
+  background-color: #1a1a1a;
   outline: none;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  transition: all 0.15s ease;
 }
 
 .dialog-input:focus {
-  border-color: var(--accent-primary, #2196F3);
-  box-shadow: 0 0 0 2px rgba(33, 150, 243, 0.1);
+  border-color: var(--toolbar-accent);
+  box-shadow: 0 0 0 1px var(--toolbar-accent);
 }
 
 .dialog-input.error {
-  border-color: var(--error-color, #f44336);
+  border-color: #ff5555;
 }
 
 .dialog-input.error:focus {
-  box-shadow: 0 0 0 2px rgba(244, 67, 54, 0.1);
+  box-shadow: 0 0 0 1px #ff5555;
+}
+
+.dialog-input::placeholder {
+  color: #666666;
 }
 
 .dialog-error {
   font-size: 12px;
-  color: var(--error-color, #f44336);
-  margin-top: 4px;
+  color: #ff5555;
+  margin-top: 6px;
 }
 
 .dialog-hint {
   margin: 12px 0 0 0;
   font-size: 12px;
-  color: var(--text-tertiary, #999999);
-  line-height: 1.4;
+  color: #888888;
+  line-height: 1.5;
 }
 
 .dialog-actions {
   display: flex;
   justify-content: flex-end;
-  gap: 12px;
+  gap: 8px;
 }
 
 .dialog-cancel,
 .dialog-confirm {
-  padding: 8px 20px;
+  height: 36px;
+  padding: 0 16px;
   border-radius: 6px;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 500;
   cursor: pointer;
-  transition: background-color 0.15s ease;
+  transition: all 0.12s ease;
 }
 
 .dialog-cancel {
-  background-color: var(--bg-secondary, #f5f5f5);
-  border: 1px solid var(--border-color, #e0e0e0);
-  color: var(--text-primary, #333333);
+  background-color: #3d3d3d;
+  border: none;
+  color: #e0e0e0;
 }
 
 .dialog-cancel:hover {
-  background-color: var(--bg-tertiary, #e8e8e8);
+  background-color: #4a4a4a;
 }
 
 .dialog-confirm {
-  background-color: var(--accent-primary, #2196F3);
+  background-color: var(--toolbar-accent);
   border: none;
   color: white;
 }
 
 .dialog-confirm:hover {
-  background-color: #1976D2;
+  background-color: var(--toolbar-accent-hover);
 }
 
 /* ========================================
@@ -327,26 +458,12 @@
 
 @media (max-width: 768px) {
   .multi-label-toolbar {
-    flex-wrap: wrap;
-    gap: 12px;
-  }
-
-  .toolbar-left {
-    order: 1;
-    flex-basis: 100%;
-  }
-
-  .toolbar-center {
-    order: 2;
-    flex: 1;
-  }
-
-  .toolbar-right {
-    order: 3;
+    padding: 0 8px;
+    gap: 6px;
   }
 
   .toolbar-search {
-    max-width: none;
+    width: 160px;
   }
 
   .toolbar-button .button-text {
@@ -354,105 +471,45 @@
   }
 
   .toolbar-button {
-    padding: 8px 10px;
+    width: 32px;
+    padding: 0;
   }
-}
 
-@media (max-width: 480px) {
+  .toolbar-new-label {
+    width: auto;
+    padding: 0 12px;
+  }
+
+  .toolbar-new-label .button-text {
+    display: block;
+  }
+
   .toolbar-count {
     display: none;
   }
-}
 
-
-/* ========================================
- * Canvas Controls Styles
- * Requirements: 3.4, 5.3
- * ======================================== */
-
-.canvas-controls {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-/* Fit All Button */
-.toolbar-fit-all {
-  background-color: var(--bg-primary, #ffffff);
-  border-color: var(--border-color, #e0e0e0);
-}
-
-.toolbar-fit-all:hover {
-  background-color: var(--bg-secondary, #f5f5f5);
-  border-color: var(--accent-primary, #2196F3);
-}
-
-/* Zoom Control */
-.zoom-control {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 10px;
-  background-color: var(--bg-primary, #ffffff);
-  border: 1px solid var(--border-color, #e0e0e0);
-  border-radius: 6px;
-}
-
-.zoom-level {
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--text-primary, #333333);
-  min-width: 40px;
-  text-align: center;
-  font-family: monospace;
-}
-
-.zoom-reset-btn {
-  padding: 2px 8px;
-  border: none;
-  background-color: var(--bg-tertiary, #e8e8e8);
-  border-radius: 4px;
-  font-size: 11px;
-  color: var(--text-secondary, #666666);
-  cursor: pointer;
-  transition: background-color 0.15s ease;
-}
-
-.zoom-reset-btn:hover {
-  background-color: var(--accent-primary, #2196F3);
-  color: white;
-}
-
-/* ========================================
- * Responsive Adjustments for Canvas Controls
- * ======================================== */
-
-@media (max-width: 768px) {
-  .canvas-controls {
-    order: 2;
-  }
-
-  .toolbar-fit-all .button-text {
+  .toolbar-left::after,
+  .toolbar-center::after {
     display: none;
-  }
-
-  .toolbar-fit-all {
-    padding: 8px 10px;
   }
 }
 
 @media (max-width: 480px) {
-  .zoom-control {
-    padding: 4px 8px;
+  .toolbar-search {
+    width: 120px;
   }
 
   .zoom-level {
-    font-size: 12px;
-    min-width: 35px;
+    min-width: 36px;
+    font-size: 11px;
   }
 
-  .zoom-reset-btn {
-    font-size: 10px;
-    padding: 2px 6px;
+  .toolbar-new-label .button-text {
+    display: none;
+  }
+
+  .toolbar-new-label {
+    width: 32px;
+    padding: 0;
   }
 }
