@@ -1,0 +1,54 @@
+/**
+ * SelectionBox Component Styles
+ * 框选矩形组件样式
+ * 
+ * Requirements: 8.1, 8.2
+ */
+
+/* ========================================
+ * Selection Box Base Styles
+ * ======================================== */
+
+.selection-box {
+  position: absolute;
+  border: 2px dashed var(--accent-primary, #2196F3);
+  background-color: rgba(33, 150, 243, 0.1);
+  pointer-events: none;
+  z-index: 50;
+  /* Smooth appearance */
+  animation: selectionBoxAppear 0.1s ease-out;
+}
+
+/* ========================================
+ * Animation
+ * ======================================== */
+
+@keyframes selectionBoxAppear {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* ========================================
+ * Dark Mode Support
+ * ======================================== */
+
+@media (prefers-color-scheme: dark) {
+  .selection-box {
+    border-color: var(--accent-primary, #64B5F6);
+    background-color: rgba(100, 181, 246, 0.15);
+  }
+}
+
+/* ========================================
+ * Reduced Motion
+ * ======================================== */
+
+@media (prefers-reduced-motion: reduce) {
+  .selection-box {
+    animation: none;
+  }
+}

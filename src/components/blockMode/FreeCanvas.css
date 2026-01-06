@@ -23,6 +23,10 @@
   cursor: grabbing !important;
 }
 
+.free-canvas.selecting {
+  cursor: crosshair !important;
+}
+
 /* ========================================
  * Viewport (Transform Container)
  * ======================================== */

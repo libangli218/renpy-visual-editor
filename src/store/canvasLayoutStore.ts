@@ -95,6 +95,7 @@ export interface CanvasLayoutActions {
   // Label position actions
   setLabelPosition: (labelName: string, position: Point) => void
   setLabelPositions: (positions: Map<string, Point>) => void
+  moveSelectedLabels: (deltaX: number, deltaY: number) => void
   
   // Selection actions
   selectLabel: (labelName: string, additive: boolean) => void
@@ -298,6 +299,27 @@ export const useCanvasLayoutStore = create<CanvasLayoutStore>((set, get) => ({
    */
   setLabelPositions: (positions) => {
     set({ labelPositions: new Map(positions) })
+  },
+  
+  /**
+   * Move all selected labels by delta amounts
+   * Requirements: 8.4
+   */
+  moveSelectedLabels: (deltaX, deltaY) => {
+    const { selectedLabels, labelPositions } = get()
+    if (selectedLabels.size === 0) return
+    
+    const newPositions = new Map(labelPositions)
+    for (const labelName of selectedLabels) {
+      const currentPos = labelPositions.get(labelName)
+      if (currentPos) {
+        newPositions.set(labelName, {
+          x: currentPos.x + deltaX,
+          y: currentPos.y + deltaY,
+        })
+      }
+    }
+    set({ labelPositions: newPositions })
   },
   
   /**

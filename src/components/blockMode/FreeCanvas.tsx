@@ -5,13 +5,14 @@
  * Core canvas component that handles pan, zoom, and event distribution.
  * Uses CSS transform for performance (no reflow, only repaint).
  * 
- * Requirements: 1.1, 1.4, 2.1, 2.2, 2.3, 2.4, 3.1, 3.2, 3.3, 3.4, 3.5, 5.4, 7.1, 7.4
+ * Requirements: 1.1, 1.4, 2.1, 2.2, 2.3, 2.4, 3.1, 3.2, 3.3, 3.4, 3.5, 5.4, 7.1, 7.4, 8.1, 8.2, 8.5
  */
 
-import React, { useCallback, useRef, useEffect, useMemo } from 'react'
+import React, { useCallback, useRef, useEffect, useMemo, useState } from 'react'
 import { 
   CanvasTransform, 
   Point,
+  Rect,
   LabelBounds,
   SnapGuides as SnapGuidesType,
   MIN_SCALE, 
@@ -19,7 +20,9 @@ import {
   useCanvasLayoutStore 
 } from '../../store/canvasLayoutStore'
 import { screenToCanvas, zoomAtPoint, getBoundingBox, calculateFitTransform } from '../../store/canvasUtils'
+import { getLabelsInSelection, screenSelectionToCanvas } from '../../store/selectionUtils'
 import { SnapGuides } from './SnapGuides'
+import { SelectionBox } from './SelectionBox'
 import './FreeCanvas.css'
 
 /**
@@ -41,11 +44,11 @@ export interface FreeCanvasProps {
   isPanning: boolean
   /** Set panning state */
   setIsPanning: (panning: boolean) => void
-  /** Selection box callback */
-  onSelectionBox?: (rect: { x: number; y: number; width: number; height: number }) => void
+  /** Selection box callback - called when box selection completes */
+  onSelectionBox?: (rect: Rect, labelNames: string[]) => void
   /** Double click on canvas callback */
   onDoubleClickCanvas?: (position: Point) => void
-  /** Label bounds for fit-all calculation */
+  /** Label bounds for fit-all calculation and selection */
   labelBounds?: LabelBounds[]
   /** Custom class name */
   className?: string
@@ -55,6 +58,8 @@ export interface FreeCanvasProps {
   snapDisabled?: boolean
   /** Callback when snap disabled state changes (Alt key) */
   onSnapDisabledChange?: (disabled: boolean) => void
+  /** Callback when selection should be cleared */
+  onClearSelection?: () => void
 }
 
 /**
@@ -75,6 +80,9 @@ export interface FreeCanvasProps {
  * - 5.4: F key fits all labels in view
  * - 7.1: Display snap guide alignment lines
  * - 7.4: Alt key disables snapping
+ * - 8.1: Display selection rectangle when dragging on canvas blank area
+ * - 8.2: Select labels within selection box
+ * - 8.5: Escape key clears selection
  */
 export const FreeCanvas: React.FC<FreeCanvasProps> = ({
   children,
@@ -89,6 +97,7 @@ export const FreeCanvas: React.FC<FreeCanvasProps> = ({
   snapGuides = { horizontal: [], vertical: [] },
   snapDisabled = false,
   onSnapDisabledChange,
+  onClearSelection,
 }) => {
   // Refs
   const containerRef = useRef<HTMLDivElement>(null)
@@ -96,8 +105,13 @@ export const FreeCanvas: React.FC<FreeCanvasProps> = ({
   const isSpacePressedRef = useRef(false)
   const isMiddleMouseRef = useRef(false)
 
+  // Selection box state
+  const [isSelecting, setIsSelecting] = useState(false)
+  const [selectionStart, setSelectionStart] = useState<Point | null>(null)
+  const [selectionCurrent, setSelectionCurrent] = useState<Point | null>(null)
+
   // Store actions
-  const { setIsSpacePressed } = useCanvasLayoutStore()
+  const { setIsSpacePressed, clearSelection } = useCanvasLayoutStore()
 
   /**
    * Handle mouse wheel for zooming
@@ -123,7 +137,7 @@ export const FreeCanvas: React.FC<FreeCanvasProps> = ({
   }, [transform, onTransformChange])
 
   /**
-   * Handle mouse down for panning
+   * Handle mouse down for panning or box selection
    */
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
     // Middle mouse button (button 1) or Space + Left click (button 0)
@@ -134,29 +148,60 @@ export const FreeCanvas: React.FC<FreeCanvasProps> = ({
         isMiddleMouseRef.current = true
       }
       lastMousePosRef.current = { x: e.clientX, y: e.clientY }
+      return
+    }
+
+    // Left click on canvas blank area - start box selection
+    // Only start if clicking directly on canvas or viewport, not on children
+    if (e.button === 0) {
+      const target = e.target as HTMLElement
+      const isCanvasOrViewport = 
+        target === containerRef.current || 
+        target.classList.contains('free-canvas-viewport') ||
+        target.classList.contains('free-canvas-grid')
+      
+      if (isCanvasOrViewport) {
+        e.preventDefault()
+        const rect = containerRef.current?.getBoundingClientRect()
+        if (rect) {
+          setIsSelecting(true)
+          setSelectionStart({ x: e.clientX - rect.left, y: e.clientY - rect.top })
+          setSelectionCurrent({ x: e.clientX - rect.left, y: e.clientY - rect.top })
+        }
+      }
     }
   }, [setIsPanning])
 
   /**
-   * Handle mouse move for panning
+   * Handle mouse move for panning or box selection
    */
   const handleMouseMove = useCallback((e: React.MouseEvent) => {
-    if (!isPanning) return
+    // Handle panning
+    if (isPanning) {
+      const deltaX = e.clientX - lastMousePosRef.current.x
+      const deltaY = e.clientY - lastMousePosRef.current.y
 
-    const deltaX = e.clientX - lastMousePosRef.current.x
-    const deltaY = e.clientY - lastMousePosRef.current.y
+      onTransformChange({
+        ...transform,
+        offsetX: transform.offsetX + deltaX,
+        offsetY: transform.offsetY + deltaY,
+      })
 
-    onTransformChange({
-      ...transform,
-      offsetX: transform.offsetX + deltaX,
-      offsetY: transform.offsetY + deltaY,
-    })
+      lastMousePosRef.current = { x: e.clientX, y: e.clientY }
+      return
+    }
 
-    lastMousePosRef.current = { x: e.clientX, y: e.clientY }
-  }, [isPanning, transform, onTransformChange])
+    // Handle box selection
+    if (isSelecting) {
+      const rect = containerRef.current?.getBoundingClientRect()
+      if (rect) {
+        setSelectionCurrent({ x: e.clientX - rect.left, y: e.clientY - rect.top })
+      }
+    }
+  }, [isPanning, isSelecting, transform, onTransformChange])
 
   /**
-   * Handle mouse up to stop panning
+   * Handle mouse up to stop panning or complete box selection
    */
   const handleMouseUp = useCallback((e: React.MouseEvent) => {
     if (e.button === 1) {
@@ -165,17 +210,48 @@ export const FreeCanvas: React.FC<FreeCanvasProps> = ({
     if (isPanning) {
       setIsPanning(false)
     }
-  }, [isPanning, setIsPanning])
+
+    // Complete box selection
+    if (isSelecting && selectionStart && selectionCurrent) {
+      const rect = containerRef.current?.getBoundingClientRect()
+      if (rect && onSelectionBox) {
+        // Convert screen selection to canvas coordinates
+        const canvasRect = screenSelectionToCanvas(
+          { x: selectionStart.x + rect.left, y: selectionStart.y + rect.top },
+          { x: selectionCurrent.x + rect.left, y: selectionCurrent.y + rect.top },
+          transform,
+          rect
+        )
+        
+        // Find labels in selection
+        const selectedLabels = getLabelsInSelection(canvasRect, labelBounds)
+        
+        // Notify parent
+        onSelectionBox(canvasRect, selectedLabels)
+      }
+      
+      // Reset selection state
+      setIsSelecting(false)
+      setSelectionStart(null)
+      setSelectionCurrent(null)
+    }
+  }, [isPanning, setIsPanning, isSelecting, selectionStart, selectionCurrent, transform, labelBounds, onSelectionBox])
 
   /**
-   * Handle mouse leave to stop panning
+   * Handle mouse leave to stop panning and cancel box selection
    */
   const handleMouseLeave = useCallback(() => {
     if (isPanning) {
       setIsPanning(false)
       isMiddleMouseRef.current = false
     }
-  }, [isPanning, setIsPanning])
+    // Cancel box selection if mouse leaves canvas
+    if (isSelecting) {
+      setIsSelecting(false)
+      setSelectionStart(null)
+      setSelectionCurrent(null)
+    }
+  }, [isPanning, setIsPanning, isSelecting])
 
   /**
    * Handle double click on canvas
@@ -201,7 +277,7 @@ export const FreeCanvas: React.FC<FreeCanvasProps> = ({
 
   /**
    * Handle keyboard events
-   * Includes Alt key for disabling snap
+   * Includes Alt key for disabling snap and Escape for clearing selection
    */
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -214,6 +290,20 @@ export const FreeCanvas: React.FC<FreeCanvasProps> = ({
       // Alt key - disable snapping
       if (e.code === 'AltLeft' || e.code === 'AltRight') {
         onSnapDisabledChange?.(true)
+      }
+
+      // Escape key - clear selection (Requirements: 8.5)
+      if (e.code === 'Escape') {
+        e.preventDefault()
+        // Cancel any ongoing box selection
+        if (isSelecting) {
+          setIsSelecting(false)
+          setSelectionStart(null)
+          setSelectionCurrent(null)
+        }
+        // Clear label selection
+        clearSelection()
+        onClearSelection?.()
       }
 
       // Home key - return to origin
@@ -273,7 +363,7 @@ export const FreeCanvas: React.FC<FreeCanvasProps> = ({
       window.removeEventListener('keydown', handleKeyDown)
       window.removeEventListener('keyup', handleKeyUp)
     }
-  }, [transform, onTransformChange, isPanning, setIsPanning, setIsSpacePressed, labelBounds, onSnapDisabledChange])
+  }, [transform, onTransformChange, isPanning, setIsPanning, setIsSpacePressed, labelBounds, onSnapDisabledChange, isSelecting, clearSelection, onClearSelection])
 
   /**
    * Fit all labels in view
@@ -311,15 +401,17 @@ export const FreeCanvas: React.FC<FreeCanvasProps> = ({
   const cursorStyle = useMemo(() => {
     if (isPanning) return 'grabbing'
     if (isSpacePressedRef.current) return 'grab'
+    if (isSelecting) return 'crosshair'
     return 'default'
-  }, [isPanning])
+  }, [isPanning, isSelecting])
 
   // Build class names
   const containerClasses = useMemo(() => [
     'free-canvas',
     isPanning && 'panning',
+    isSelecting && 'selecting',
     className,
-  ].filter(Boolean).join(' '), [isPanning, className])
+  ].filter(Boolean).join(' '), [isPanning, isSelecting, className])
 
   return (
     <div
@@ -347,6 +439,13 @@ export const FreeCanvas: React.FC<FreeCanvasProps> = ({
         verticalLines={snapGuides.vertical}
         transform={transform}
         visible={!snapDisabled}
+      />
+
+      {/* Selection box for multi-select */}
+      <SelectionBox
+        startPoint={selectionStart}
+        currentPoint={selectionCurrent}
+        isSelecting={isSelecting}
       />
 
       {/* Grid background (optional visual aid) */}

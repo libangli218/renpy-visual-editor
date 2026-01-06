@@ -5,7 +5,7 @@
  * Extends LabelCard with absolute positioning and drag functionality.
  * Used in FreeCanvas for free-form layout of labels.
  * 
- * Requirements: 1.1, 1.2, 7.1, 7.2, 7.3, 7.4
+ * Requirements: 1.1, 1.2, 7.1, 7.2, 7.3, 7.4, 8.3, 8.4
  */
 
 import React, { useCallback, useRef, useState, useMemo, useEffect } from 'react'
@@ -44,6 +44,10 @@ export interface DraggableLabelCardProps extends Omit<LabelCardProps, 'className
   onSnapGuidesChange?: (guides: SnapGuides) => void
   /** Whether snapping is disabled (Alt key) */
   snapDisabled?: boolean
+  /** Multi-drag callback - called when dragging selected labels together */
+  onMultiDrag?: (deltaX: number, deltaY: number) => void
+  /** Whether this card is part of a multi-selection being dragged */
+  isMultiDragging?: boolean
 }
 
 /**
@@ -56,6 +60,8 @@ export interface DraggableLabelCardProps extends Omit<LabelCardProps, 'className
  * - 7.2: Auto-snap to alignment position within threshold
  * - 7.3: Support horizontal and vertical alignment
  * - 7.4: Alt key disables snapping
+ * - 8.3: Ctrl+click toggles selection
+ * - 8.4: Drag selected labels together maintaining relative positions
  */
 export const DraggableLabelCard: React.FC<DraggableLabelCardProps> = ({
   position,
@@ -71,6 +77,8 @@ export const DraggableLabelCard: React.FC<DraggableLabelCardProps> = ({
   otherLabelRects = [],
   onSnapGuidesChange,
   snapDisabled = false,
+  onMultiDrag,
+  isMultiDragging = false,
   ...labelCardProps
 }) => {
   // Drag state
@@ -118,7 +126,8 @@ export const DraggableLabelCard: React.FC<DraggableLabelCardProps> = ({
 
   /**
    * Handle mouse move during drag
-   * Includes snap alignment calculation
+   * Includes snap alignment calculation and multi-drag support
+   * Requirements: 8.4
    */
   const handleMouseMove = useCallback((e: MouseEvent) => {
     if (!isDragging || !dragStartRef.current || !initialPositionRef.current) return
@@ -131,7 +140,14 @@ export const DraggableLabelCard: React.FC<DraggableLabelCardProps> = ({
     const canvasDeltaX = deltaX / canvasScale
     const canvasDeltaY = deltaY / canvasScale
 
-    // Calculate raw new position
+    // If this card is selected and there are multiple selections, use multi-drag
+    if (isSelected && onMultiDrag) {
+      // Notify parent to move all selected labels
+      onMultiDrag(canvasDeltaX, canvasDeltaY)
+      return
+    }
+
+    // Calculate raw new position for single drag
     const rawPosition: Point = {
       x: initialPositionRef.current.x + canvasDeltaX,
       y: initialPositionRef.current.y + canvasDeltaY,
@@ -157,7 +173,7 @@ export const DraggableLabelCard: React.FC<DraggableLabelCardProps> = ({
 
     // Use snapped position
     onPositionChange(snapResult.position)
-  }, [isDragging, canvasScale, onPositionChange, cardWidth, cardHeight, labelCardProps.collapsed, otherLabelRects, snapDisabled, onSnapGuidesChange])
+  }, [isDragging, canvasScale, onPositionChange, cardWidth, cardHeight, labelCardProps.collapsed, otherLabelRects, snapDisabled, onSnapGuidesChange, isSelected, onMultiDrag])
 
   /**
    * Handle mouse up to end dragging
@@ -223,8 +239,9 @@ export const DraggableLabelCard: React.FC<DraggableLabelCardProps> = ({
     'draggable-label-card',
     isDragging && 'dragging',
     isSelected && 'selected',
+    isMultiDragging && 'multi-dragging',
     className,
-  ].filter(Boolean).join(' '), [isDragging, isSelected, className])
+  ].filter(Boolean).join(' '), [isDragging, isSelected, isMultiDragging, className])
 
   return (
     <div

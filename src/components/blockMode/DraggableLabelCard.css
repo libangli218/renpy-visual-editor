@@ -40,7 +40,26 @@
 }
 
 /* ========================================
+ * Multi-Dragging State Styles
+ * ======================================== */
+
+.draggable-label-card.multi-dragging {
+  /* Elevated shadow during multi-drag */
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+  /* Higher z-index to appear above other cards */
+  z-index: 99;
+  /* Disable transitions during drag for responsiveness */
+  transition: none;
+}
+
+.draggable-label-card.multi-dragging .label-card {
+  /* Slight opacity reduction during multi-drag */
+  opacity: 0.9;
+}
+
+/* ========================================
  * Selected State Styles
+ * Requirements: 8.5
  * ======================================== */
 
 .draggable-label-card.selected {
@@ -49,7 +68,23 @@
 }
 
 .draggable-label-card.selected .label-card {
-  /* Selection border is handled by LabelCard.css */
+  /* Enhanced selection border - handled by LabelCard.css but we add extra emphasis */
+  border-color: var(--accent-primary, #2196F3);
+  box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.3);
+}
+
+/* Selection indicator badge */
+.draggable-label-card.selected::before {
+  content: '';
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  width: 12px;
+  height: 12px;
+  background-color: var(--accent-primary, #2196F3);
+  border-radius: 50%;
+  z-index: 101;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 /* ========================================
