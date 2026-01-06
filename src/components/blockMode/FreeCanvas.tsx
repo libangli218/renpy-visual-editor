@@ -5,7 +5,7 @@
  * Core canvas component that handles pan, zoom, and event distribution.
  * Uses CSS transform for performance (no reflow, only repaint).
  * 
- * Requirements: 1.1, 1.4, 2.1, 2.2, 2.3, 2.4, 3.1, 3.2, 3.3, 3.4, 3.5, 5.4
+ * Requirements: 1.1, 1.4, 2.1, 2.2, 2.3, 2.4, 3.1, 3.2, 3.3, 3.4, 3.5, 5.4, 7.1, 7.4
  */
 
 import React, { useCallback, useRef, useEffect, useMemo } from 'react'
@@ -13,11 +13,13 @@ import {
   CanvasTransform, 
   Point,
   LabelBounds,
+  SnapGuides as SnapGuidesType,
   MIN_SCALE, 
   MAX_SCALE,
   useCanvasLayoutStore 
 } from '../../store/canvasLayoutStore'
 import { screenToCanvas, zoomAtPoint, getBoundingBox, calculateFitTransform } from '../../store/canvasUtils'
+import { SnapGuides } from './SnapGuides'
 import './FreeCanvas.css'
 
 /**
@@ -47,6 +49,12 @@ export interface FreeCanvasProps {
   labelBounds?: LabelBounds[]
   /** Custom class name */
   className?: string
+  /** Current snap guides to display */
+  snapGuides?: SnapGuidesType
+  /** Whether snapping is disabled */
+  snapDisabled?: boolean
+  /** Callback when snap disabled state changes (Alt key) */
+  onSnapDisabledChange?: (disabled: boolean) => void
 }
 
 /**
@@ -65,6 +73,8 @@ export interface FreeCanvasProps {
  * - 3.4: Reset zoom button (handled externally)
  * - 3.5: Ctrl+0 resets zoom to 100%
  * - 5.4: F key fits all labels in view
+ * - 7.1: Display snap guide alignment lines
+ * - 7.4: Alt key disables snapping
  */
 export const FreeCanvas: React.FC<FreeCanvasProps> = ({
   children,
@@ -76,6 +86,9 @@ export const FreeCanvas: React.FC<FreeCanvasProps> = ({
   onDoubleClickCanvas,
   labelBounds = [],
   className = '',
+  snapGuides = { horizontal: [], vertical: [] },
+  snapDisabled = false,
+  onSnapDisabledChange,
 }) => {
   // Refs
   const containerRef = useRef<HTMLDivElement>(null)
@@ -188,6 +201,7 @@ export const FreeCanvas: React.FC<FreeCanvasProps> = ({
 
   /**
    * Handle keyboard events
+   * Includes Alt key for disabling snap
    */
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -195,6 +209,11 @@ export const FreeCanvas: React.FC<FreeCanvasProps> = ({
       if (e.code === 'Space' && !e.repeat) {
         isSpacePressedRef.current = true
         setIsSpacePressed(true)
+      }
+
+      // Alt key - disable snapping
+      if (e.code === 'AltLeft' || e.code === 'AltRight') {
+        onSnapDisabledChange?.(true)
       }
 
       // Home key - return to origin
@@ -240,6 +259,11 @@ export const FreeCanvas: React.FC<FreeCanvasProps> = ({
           setIsPanning(false)
         }
       }
+
+      // Alt key released - re-enable snapping
+      if (e.code === 'AltLeft' || e.code === 'AltRight') {
+        onSnapDisabledChange?.(false)
+      }
     }
 
     window.addEventListener('keydown', handleKeyDown)
@@ -249,7 +273,7 @@ export const FreeCanvas: React.FC<FreeCanvasProps> = ({
       window.removeEventListener('keydown', handleKeyDown)
       window.removeEventListener('keyup', handleKeyUp)
     }
-  }, [transform, onTransformChange, isPanning, setIsPanning, setIsSpacePressed, labelBounds])
+  }, [transform, onTransformChange, isPanning, setIsPanning, setIsSpacePressed, labelBounds, onSnapDisabledChange])
 
   /**
    * Fit all labels in view
@@ -316,6 +340,14 @@ export const FreeCanvas: React.FC<FreeCanvasProps> = ({
       >
         {children}
       </div>
+
+      {/* Snap alignment guides */}
+      <SnapGuides
+        horizontalLines={snapGuides.horizontal}
+        verticalLines={snapGuides.vertical}
+        transform={transform}
+        visible={!snapDisabled}
+      />
 
       {/* Grid background (optional visual aid) */}
       <div className="free-canvas-grid" />
