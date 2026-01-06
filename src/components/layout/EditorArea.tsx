@@ -1,9 +1,8 @@
 import React, { useCallback, useMemo, useEffect, useState } from 'react'
 import { useEditorStore } from '../../store/editorStore'
 import { PreviewPanel } from './PreviewPanel'
-import { NodeModeEditor } from '../nodeMode'
 import { StoryModeEditor } from '../storyMode'
-import { BlockModeEditor } from '../blockMode'
+import { MultiLabelView } from '../blockMode'
 import { LabelNode } from '../../types/ast'
 import { resourceManager, ImageTag } from '../../resource/ResourceManager'
 
@@ -11,14 +10,15 @@ import { resourceManager, ImageTag } from '../../resource/ResourceManager'
  * EditorArea component - Main editing area with preview and editor
  * 
  * Structure:
- * - Top: Preview panel (scene preview) - hidden in block mode
- * - Bottom: Edit panel (Story Mode, Node Mode, or Block Mode editor)
+ * - Top: Preview panel (scene preview) - hidden in multi-label mode
+ * - Bottom: Edit panel (Story Mode or Multi-Label View)
  * 
  * Implements Requirements:
- * - 9.1-9.5: Mode switching between flow and block modes
+ * - 7.1: Default to Multi-Label View when opening project
+ * - 7.3: Remove BlockModeEditor independent entry
  */
 export const EditorArea: React.FC = () => {
-  const { mode, ast, currentBlockLabel, exitBlockMode, setAst, projectPath } = useEditorStore()
+  const { mode, ast, setAst, projectPath } = useEditorStore()
   
   // State for available resources
   const [availableImages, setAvailableImages] = useState<string[]>([])
@@ -68,17 +68,7 @@ export const EditorArea: React.FC = () => {
   }, [projectPath])
 
   /**
-   * Handle returning from block mode to flow mode
-   * Implements Requirement 9.3: Click back to return to flow mode
-   * Implements Requirement 9.4: Preserve unsaved changes
-   */
-  const handleBlockModeBack = useCallback(() => {
-    exitBlockMode()
-  }, [exitBlockMode])
-
-  /**
-   * Handle AST changes from block mode
-   * Implements Requirement 9.4: Preserve unsaved changes
+   * Handle AST changes from Multi-Label View
    */
   const handleAstChange = useCallback((newAst: typeof ast) => {
     if (newAst) {
@@ -115,14 +105,13 @@ export const EditorArea: React.FC = () => {
     return Array.from(characters)
   }, [ast])
 
-  // Render block mode editor when in block mode
-  if (mode === 'block' && currentBlockLabel && ast) {
+  // Render Multi-Label View when in multi-label mode (default)
+  // Implements Requirement 7.1: Default to Multi-Label View
+  if (mode === 'multi-label' && ast) {
     return (
-      <section className="editor-area editor-area-block-mode" aria-label="Block editor area">
-        <BlockModeEditor
-          labelName={currentBlockLabel}
+      <section className="editor-area editor-area-multi-label-mode" aria-label="Multi-label editor area">
+        <MultiLabelView
           ast={ast}
-          onBack={handleBlockModeBack}
           onAstChange={handleAstChange}
           availableLabels={availableLabels}
           availableCharacters={availableCharacters}
@@ -136,16 +125,12 @@ export const EditorArea: React.FC = () => {
     )
   }
 
-  // Render normal editor area for story/node modes
+  // Render normal editor area for story mode
   return (
     <section className="editor-area" aria-label="Editor area">
       <PreviewPanel />
       <div className="edit-panel">
-        {mode === 'story' ? (
-          <StoryModeEditor />
-        ) : (
-          <NodeModeEditor />
-        )}
+        <StoryModeEditor />
       </div>
     </section>
   )

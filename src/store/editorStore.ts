@@ -42,7 +42,7 @@ export interface EditorStore {
   currentFile: string | null
   modified: boolean
   
-  // AST state - shared between Story Mode and Node Mode
+  // AST state - shared between Story Mode and Multi-Label View
   ast: RenpyScript | null
   
   // AST version - increments on undo/redo to trigger re-renders
@@ -51,9 +51,6 @@ export interface EditorStore {
   // Selection state
   selectedNodeId: string | null
   selectedBlockId: string | null
-  
-  // Block mode state - the label being edited in block mode
-  currentBlockLabel: string | null
   
   // History state (read-only from store perspective)
   canUndo: boolean
@@ -69,11 +66,6 @@ export interface EditorStore {
   setSelectedBlockId: (id: string | null) => void
   setAst: (ast: RenpyScript | null) => void
   
-  // Block mode actions
-  setCurrentBlockLabel: (label: string | null) => void
-  enterBlockMode: (labelName: string) => void
-  exitBlockMode: () => void
-  
   // History actions
   undo: () => void
   redo: () => void
@@ -86,7 +78,7 @@ export interface EditorStore {
 // Helper to create state snapshot with deep copy of AST
 function createStateSnapshot(state: Partial<EditorStore>): EditorState {
   return {
-    mode: state.mode ?? 'story',
+    mode: state.mode ?? 'multi-label',
     complexity: state.complexity ?? 'simple',
     projectPath: state.projectPath ?? null,
     currentFile: state.currentFile ?? null,
@@ -95,14 +87,13 @@ function createStateSnapshot(state: Partial<EditorStore>): EditorState {
     selectedBlockId: state.selectedBlockId ?? null,
     // Deep copy AST to prevent mutations from affecting history
     ast: state.ast ? JSON.parse(JSON.stringify(state.ast)) : null,
-    currentBlockLabel: state.currentBlockLabel ?? null,
   }
 }
 
 export const useEditorStore = create<EditorStore>((set, get) => {
   // Initialize history with initial state
   const initialState: EditorState = {
-    mode: 'story',
+    mode: 'multi-label',
     complexity: 'simple',
     projectPath: null,
     currentFile: null,
@@ -110,13 +101,12 @@ export const useEditorStore = create<EditorStore>((set, get) => {
     selectedNodeId: null,
     selectedBlockId: null,
     ast: null,
-    currentBlockLabel: null,
   }
   historyManager.initialize(initialState)
 
   return {
-    // Initial state
-    mode: 'story',
+    // Initial state - default to multi-label mode
+    mode: 'multi-label',
     complexity: 'simple',
     projectPath: null,
     currentFile: null,
@@ -125,7 +115,6 @@ export const useEditorStore = create<EditorStore>((set, get) => {
     selectedBlockId: null,
     ast: null,
     astVersion: 0,
-    currentBlockLabel: null,
     canUndo: false,
     canRedo: false,
     
@@ -195,47 +184,6 @@ export const useEditorStore = create<EditorStore>((set, get) => {
       })
     },
     
-    // Block mode actions
-    setCurrentBlockLabel: (currentBlockLabel) => {
-      set({ currentBlockLabel })
-    },
-    
-    /**
-     * Enter block mode for editing a specific label
-     * Implements Requirement 9.2: Double-click label to enter block mode
-     * Preserves AST data during mode switch (Property 6: Mode Switching State Preservation)
-     */
-    enterBlockMode: (labelName) => {
-      const state = get()
-      // Push current state to history before change
-      historyManager.push(createStateSnapshot(state))
-      set({
-        mode: 'block',
-        currentBlockLabel: labelName,
-        // AST is preserved - block mode shares the same data
-        canUndo: historyManager.canUndo(),
-        canRedo: historyManager.canRedo(),
-      })
-    },
-    
-    /**
-     * Exit block mode and return to the previous mode (node mode)
-     * Implements Requirement 9.3: Click back to return to flow mode
-     * Preserves unsaved changes (Requirement 9.4)
-     */
-    exitBlockMode: () => {
-      const state = get()
-      // Push current state to history before change
-      historyManager.push(createStateSnapshot(state))
-      set({
-        mode: 'node',
-        currentBlockLabel: null,
-        // AST is preserved - unsaved changes are kept
-        canUndo: historyManager.canUndo(),
-        canRedo: historyManager.canRedo(),
-      })
-    },
-    
     // History actions
     undo: () => {
       const previousState = historyManager.undo()
@@ -243,11 +191,9 @@ export const useEditorStore = create<EditorStore>((set, get) => {
         const currentState = get()
         set({
           ...previousState,
-          // Preserve current mode and block label when undoing from block mode
-          // This allows undo to work on AST changes without exiting block mode
+          // Preserve current mode when undoing
           mode: currentState.mode,
-          currentBlockLabel: currentState.currentBlockLabel,
-          // Increment astVersion to trigger re-renders in block mode
+          // Increment astVersion to trigger re-renders
           astVersion: currentState.astVersion + 1,
           canUndo: historyManager.canUndo(),
           canRedo: historyManager.canRedo(),
@@ -261,10 +207,9 @@ export const useEditorStore = create<EditorStore>((set, get) => {
         const currentState = get()
         set({
           ...nextState,
-          // Preserve current mode and block label when redoing from block mode
+          // Preserve current mode when redoing
           mode: currentState.mode,
-          currentBlockLabel: currentState.currentBlockLabel,
-          // Increment astVersion to trigger re-renders in block mode
+          // Increment astVersion to trigger re-renders
           astVersion: currentState.astVersion + 1,
           canUndo: historyManager.canUndo(),
           canRedo: historyManager.canRedo(),

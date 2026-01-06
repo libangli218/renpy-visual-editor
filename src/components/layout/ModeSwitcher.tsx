@@ -3,8 +3,8 @@ import { useEditorStore } from '../../store/editorStore'
 import { EditorMode } from '../../types/editor'
 
 /**
- * ModeSwitcher component - Toggle between Story Mode and Node Mode
- * Implements Requirements 2.1: Provide Story Mode and Node Mode editing views
+ * ModeSwitcher component - Toggle between Story Mode and Multi-Label View
+ * Implements Requirements 7.1: Default to Multi-Label View
  */
 export const ModeSwitcher: React.FC = () => {
   const { mode, setMode } = useEditorStore()
@@ -27,13 +27,13 @@ export const ModeSwitcher: React.FC = () => {
       </button>
       <button
         role="tab"
-        aria-selected={mode === 'node'}
-        className={`mode-button ${mode === 'node' ? 'active' : ''}`}
-        onClick={() => handleModeChange('node')}
-        title="Node Mode - Flow chart editing"
+        aria-selected={mode === 'multi-label'}
+        className={`mode-button ${mode === 'multi-label' ? 'active' : ''}`}
+        onClick={() => handleModeChange('multi-label')}
+        title="Multi-Label View - Edit all labels in a grid"
       >
-        <span className="mode-icon">🔗</span>
-        <span className="mode-label">Node Mode</span>
+        <span className="mode-icon">🧩</span>
+        <span className="mode-label">Multi-Label</span>
       </button>
     </div>
   )
