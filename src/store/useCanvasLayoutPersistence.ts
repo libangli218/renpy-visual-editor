@@ -178,12 +178,10 @@ export function useCanvasLayoutPersistence(
    */
   const load = useCallback(async () => {
     if (!projectPath) {
-      console.log('[Persistence] No project path, skipping load')
       setHasLoadedOnce(true) // Mark as loaded even without project path
       return
     }
 
-    console.log('[Persistence] Loading layout from:', projectPath)
     setIsLoading(true)
     errorRef.current = null
 
@@ -193,17 +191,14 @@ export function useCanvasLayoutPersistence(
       if (config) {
         // Load positions
         const positions = positionsRecordToMap(config.positions)
-        console.log('[Persistence] Loaded positions:', positions.size, 'labels')
         setLabelPositions(positions)
         lastSavedPositionsRef.current = JSON.stringify(Array.from(positions.entries()))
 
         // Load transform if available
         if (config.lastTransform) {
-          console.log('[Persistence] Loaded transform:', config.lastTransform)
           setTransform(config.lastTransform)
         }
       } else {
-        console.log('[Persistence] No config found, initializing empty')
         // Initialize lastSavedPositionsRef to empty array string so auto-save knows this is the initial state
         lastSavedPositionsRef.current = '[]'
       }
@@ -217,7 +212,6 @@ export function useCanvasLayoutPersistence(
     } finally {
       setIsLoading(false)
       setHasLoadedOnce(true)
-      console.log('[Persistence] Load complete, hasLoadedOnce = true')
     }
   }, [projectPath, fileSystem, setLabelPositions, setTransform])
 
@@ -233,7 +227,6 @@ export function useCanvasLayoutPersistence(
     // Check if positions actually changed from last saved state
     const currentPositions = JSON.stringify(Array.from(labelPositions.entries()))
     if (currentPositions !== lastSavedPositionsRef.current && lastSavedPositionsRef.current !== '') {
-      console.log('[Persistence] Auto-saving positions, changed from last saved')
       save()
     }
   }, [labelPositions, autoSave, projectPath, save, hasLoadedOnce])

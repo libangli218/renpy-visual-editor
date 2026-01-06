@@ -165,21 +165,17 @@ export async function loadCanvasLayout(
   fs: CanvasLayoutFileSystem = electronCanvasLayoutFileSystem
 ): Promise<CanvasLayoutConfig | null> {
   const configPath = joinPath(projectPath, CANVAS_LAYOUT_CONFIG_PATH)
-  console.log('[loadCanvasLayout] Config path:', configPath)
   
   try {
     // Check if config file exists
     const exists = await fs.exists(configPath)
-    console.log('[loadCanvasLayout] File exists:', exists)
     if (!exists) {
       return null
     }
     
     // Read and parse config file
     const content = await fs.readFile(configPath)
-    console.log('[loadCanvasLayout] File content length:', content?.length, 'first 200 chars:', content?.substring(0, 200))
     const config = JSON.parse(content) as unknown
-    console.log('[loadCanvasLayout] Parsed config:', config)
     
     // Validate config structure
     if (typeof config !== 'object' || config === null) {

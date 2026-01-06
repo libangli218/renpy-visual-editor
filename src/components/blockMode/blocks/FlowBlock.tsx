@@ -371,7 +371,7 @@ export const FlowBlock: React.FC<FlowBlockProps> = ({
           />
         </div>
         
-        {/* Branches Container with drag-drop support */}
+        {/* Branches Container with drag-drop support for elif/else */}
         <div 
           ref={childrenContainerRef}
           className={`if-branches-container ${isDragOver ? 'drag-over' : ''}`}
@@ -385,7 +385,13 @@ export const FlowBlock: React.FC<FlowBlockProps> = ({
             <div className="if-branch-header">
               <span>✅ 条件为真时执行:</span>
             </div>
-            <div className={`if-branch-children ${trueBranchChildren.length === 0 ? 'empty' : ''}`}>
+            <div 
+              className={`if-branch-children ${trueBranchChildren.length === 0 ? 'empty' : ''}`}
+              onDragOver={handleDragOver}
+              onDragEnter={handleDragEnter}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDrop}
+            >
               {trueBranchChildren.length === 0 ? (
                 <div className="block-children-container empty">
                   <span className="block-children-placeholder">
@@ -407,7 +413,7 @@ export const FlowBlock: React.FC<FlowBlockProps> = ({
             renderChildBlock ? renderChildBlock(branch, depth) : null
           ))}
           
-          {/* Drop indicator */}
+          {/* Drop indicator for elif/else */}
           {isDragOver && (
             <div 
               className="if-drop-indicator"

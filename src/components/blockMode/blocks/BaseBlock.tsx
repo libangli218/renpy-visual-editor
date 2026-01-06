@@ -252,8 +252,8 @@ export const BaseBlock: React.FC<BaseBlockProps> = memo(({
         {/* Custom header content */}
         {headerContent}
         
-        {/* Delete button - shows when selected */}
-        {selected && onDelete && (
+        {/* Delete button - shows on hover when onDelete is provided */}
+        {onDelete && (
           <button
             className="block-delete-btn"
             onClick={handleDelete}

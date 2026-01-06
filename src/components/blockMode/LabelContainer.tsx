@@ -126,13 +126,8 @@ export const LabelContainer: React.FC<LabelContainerProps> = memo(({
     
     const containerRect = contentRef.current.getBoundingClientRect()
     
-    console.log('[calculateDropIndex] clientY:', clientY)
-    console.log('[calculateDropIndex] containerRect.top:', containerRect.top)
-    console.log('[calculateDropIndex] blockElements count:', blockElements.length)
-    
     // If above all blocks, insert at beginning
     if (clientY < containerRect.top) {
-      console.log('[calculateDropIndex] above all blocks, returning 0')
       return 0
     }
 
@@ -140,16 +135,12 @@ export const LabelContainer: React.FC<LabelContainerProps> = memo(({
       const blockRect = blockElements[i].getBoundingClientRect()
       const blockMiddle = blockRect.top + blockRect.height / 2
 
-      console.log(`[calculateDropIndex] block ${i}: top=${blockRect.top}, bottom=${blockRect.bottom}, middle=${blockMiddle}`)
-      
       if (clientY < blockMiddle) {
-        console.log(`[calculateDropIndex] clientY < blockMiddle, returning ${i}`)
         return i
       }
     }
 
     // If below all blocks, insert at end
-    console.log(`[calculateDropIndex] below all blocks, returning ${children.length}`)
     return children.length
   }, [children.length])
 
@@ -175,26 +166,12 @@ export const LabelContainer: React.FC<LabelContainerProps> = memo(({
     const allChildren = Array.from(contentRef.current.children)
     const blockElements = allChildren.filter(el => el.hasAttribute('data-block-id'))
     
-    // DEBUG: Log what elements we're finding
-    console.log('[DropIndicator] allChildren count:', allChildren.length)
-    console.log('[DropIndicator] blockElements count:', blockElements.length)
-    console.log('[DropIndicator] canvasScale:', canvasScale)
-    
     const containerRect = contentRef.current.getBoundingClientRect()
     const scrollTop = contentRef.current.scrollTop
-    
-    console.log('[DropIndicator] containerRect:', { top: containerRect.top, bottom: containerRect.bottom })
-    console.log('[DropIndicator] target index:', index)
     
     if (blockElements.length === 0) {
       // When empty, position at the top of the content area (with some padding)
       return 12 // Match the container padding
-    }
-
-    // Helper function to convert screen Y to CSS Y (accounting for scale)
-    const screenToCssY = (screenY: number): number => {
-      // Screen coordinates are already scaled, so divide by scale to get CSS value
-      return screenY / canvasScale
     }
 
     if (index === 0) {
@@ -202,7 +179,6 @@ export const LabelContainer: React.FC<LabelContainerProps> = memo(({
       const firstRect = firstBlock.getBoundingClientRect()
       // Position above the first block, in the gap between container top and block
       const blockTop = (firstRect.top - containerRect.top) / canvasScale + scrollTop
-      console.log('[DropIndicator] index=0, blockTop:', blockTop, 'result:', blockTop - 4)
       return blockTop - 4 // Position in the margin gap above first block
     }
 
@@ -211,7 +187,6 @@ export const LabelContainer: React.FC<LabelContainerProps> = memo(({
       const lastRect = lastBlock.getBoundingClientRect()
       // Position below the last block, in the gap after it
       const blockBottom = (lastRect.bottom - containerRect.top) / canvasScale + scrollTop
-      console.log('[DropIndicator] index>=length, blockBottom:', blockBottom, 'result:', blockBottom + 4)
       return blockBottom + 4 // Position in the margin gap below last block
     }
 
@@ -226,11 +201,8 @@ export const LabelContainer: React.FC<LabelContainerProps> = memo(({
     const prevBottom = (prevRect.bottom - containerRect.top) / canvasScale + scrollTop
     const nextTop = (nextRect.top - containerRect.top) / canvasScale + scrollTop
     
-    const result = (prevBottom + nextTop) / 2
-    console.log('[DropIndicator] between blocks, prevBottom:', prevBottom, 'nextTop:', nextTop, 'result:', result)
-    
     // Return the midpoint of the gap between blocks
-    return result
+    return (prevBottom + nextTop) / 2
   }, [canvasScale])
 
   /**

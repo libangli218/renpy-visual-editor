@@ -37,6 +37,8 @@ export interface MenuBlockProps extends Omit<BaseBlockProps, 'children'> {
   renderChildBlock?: (block: Block, depth: number) => React.ReactNode
   /** Current depth level */
   depth?: number
+  /** Canvas scale factor for correct drop indicator positioning */
+  canvasScale?: number
 }
 
 /**
@@ -86,20 +88,21 @@ export const MenuBlock: React.FC<MenuBlockProps> = ({
   slotErrors = {},
   renderChildBlock,
   depth = 0,
+  canvasScale = 1,
   ...baseProps
 }) => {
   const choices = block.children || []
   
   // Drag-drop state
   const [isDragOver, setIsDragOver] = useState(false)
-  const [dropIndex, setDropIndex] = useState<number | null>(null)
+  const [dropPosition, setDropPosition] = useState<{ index: number; y: number } | null>(null)
   const choicesContainerRef = useRef<HTMLDivElement>(null)
   
   // Reset drag state when drag ends globally (handles cases where drop happens outside)
   useEffect(() => {
     const handleGlobalDragEnd = () => {
       setIsDragOver(false)
-      setDropIndex(null)
+      setDropPosition(null)
     }
     
     document.addEventListener('dragend', handleGlobalDragEnd)
@@ -123,7 +126,7 @@ export const MenuBlock: React.FC<MenuBlockProps> = ({
       return 0
     }
 
-    const blockElements = choicesContainerRef.current.querySelectorAll('[data-block-id]')
+    const blockElements = choicesContainerRef.current.querySelectorAll(':scope > [data-block-id]')
     const containerRect = choicesContainerRef.current.getBoundingClientRect()
     
     if (clientY < containerRect.top) {
@@ -143,6 +146,52 @@ export const MenuBlock: React.FC<MenuBlockProps> = ({
   }, [choices.length])
   
   /**
+   * Get Y position for drop indicator based on index
+   * 
+   * IMPORTANT: When the canvas is scaled, getBoundingClientRect() returns
+   * screen coordinates (already transformed), but CSS top/left values are
+   * applied BEFORE the transform. So we need to divide by scale to compensate.
+   */
+  const getDropIndicatorY = useCallback((index: number): number => {
+    if (!choicesContainerRef.current) {
+      return 0
+    }
+
+    const blockElements = choicesContainerRef.current.querySelectorAll(':scope > [data-block-id]')
+    const containerRect = choicesContainerRef.current.getBoundingClientRect()
+    
+    if (blockElements.length === 0) {
+      return 20 // Center position when empty
+    }
+
+    if (index === 0) {
+      const firstBlock = blockElements[0]
+      const firstRect = firstBlock.getBoundingClientRect()
+      // Divide by scale to convert from screen coordinates to CSS coordinates
+      return (firstRect.top - containerRect.top) / canvasScale - 4
+    }
+
+    if (index >= blockElements.length) {
+      const lastBlock = blockElements[blockElements.length - 1]
+      const lastRect = lastBlock.getBoundingClientRect()
+      // Divide by scale to convert from screen coordinates to CSS coordinates
+      return (lastRect.bottom - containerRect.top) / canvasScale + 4
+    }
+
+    // Position between two blocks
+    const prevBlock = blockElements[index - 1]
+    const nextBlock = blockElements[index]
+    const prevRect = prevBlock.getBoundingClientRect()
+    const nextRect = nextBlock.getBoundingClientRect()
+    
+    // Calculate the midpoint between the bottom of prev block and top of next block
+    // Divide by scale to convert from screen coordinates to CSS coordinates
+    const prevBottom = (prevRect.bottom - containerRect.top) / canvasScale
+    const nextTop = (nextRect.top - containerRect.top) / canvasScale
+    return (prevBottom + nextTop) / 2
+  }, [canvasScale])
+  
+  /**
    * Handle drag over the choices container
    */
   const handleDragOver = useCallback((e: React.DragEvent) => {
@@ -154,10 +203,12 @@ export const MenuBlock: React.FC<MenuBlockProps> = ({
     
     if (hasBlockType || hasBlockId) {
       e.dataTransfer.dropEffect = hasBlockType ? 'copy' : 'move'
+      const index = calculateDropIndex(e.clientY)
+      const y = getDropIndicatorY(index)
       setIsDragOver(true)
-      setDropIndex(calculateDropIndex(e.clientY))
+      setDropPosition({ index, y })
     }
-  }, [calculateDropIndex])
+  }, [calculateDropIndex, getDropIndicatorY])
   
   /**
    * Handle drag enter
@@ -181,7 +232,7 @@ export const MenuBlock: React.FC<MenuBlockProps> = ({
     
     if (!relatedTarget || !currentTarget.contains(relatedTarget)) {
       setIsDragOver(false)
-      setDropIndex(null)
+      setDropPosition(null)
     }
   }, [])
   
@@ -196,7 +247,7 @@ export const MenuBlock: React.FC<MenuBlockProps> = ({
 
     // Reset drag state first
     setIsDragOver(false)
-    setDropIndex(null)
+    setDropPosition(null)
 
     // Check if dropping a block from palette (new block)
     const blockType = e.dataTransfer.getData('application/x-block-type')
@@ -263,11 +314,12 @@ export const MenuBlock: React.FC<MenuBlockProps> = ({
         )}
         
         {/* Drop indicator */}
-        {isDragOver && dropIndex !== null && (
+        {isDragOver && dropPosition && (
           <div 
             className="menu-drop-indicator" 
             style={{ 
-              top: choices.length === 0 ? '50%' : `${dropIndex * 60}px` 
+              top: `${dropPosition.y}px`,
+              transform: 'translateY(-50%)'
             }}
           />
         )}
@@ -451,8 +503,10 @@ export const ChoiceBlock: React.FC<ChoiceBlockProps> = ({
   }, [calculateDropIndex, block.id, onBlockDrop, onBlockMove])
   
   // Custom header content with inline text input
+  // Don Norman: Visibility principle - delete button must always be visible and accessible
+  // Using a flex container with proper constraints to prevent text from pushing button out
   const headerContent = (
-    <>
+    <div className="choice-header-content">
       <input
         type="text"
         className={`choice-text-input ${slotErrors['text'] ? 'has-error' : ''}`}
@@ -470,7 +524,7 @@ export const ChoiceBlock: React.FC<ChoiceBlockProps> = ({
       >
         🗑️
       </button>
-    </>
+    </div>
   )
   
   return (

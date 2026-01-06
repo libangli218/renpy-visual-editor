@@ -86,18 +86,55 @@
   }
 }
 
-/* Container block specific styles */
+/* Container block specific styles
+ * Edward Tufte principle: Minimize non-data ink.
+ * Only show colored border on top-level blocks, not nested ones.
+ */
 .base-block.container-block {
   border-left-width: 4px;
   border-left-color: var(--block-color, var(--accent-primary));
 }
 
-/* Depth-based indentation for nested blocks */
-.base-block.depth-1 { margin-left: 8px; }
-.base-block.depth-2 { margin-left: 16px; }
-.base-block.depth-3 { margin-left: 24px; }
-.base-block.depth-4 { margin-left: 32px; }
-.base-block.depth-5 { margin-left: 40px; }
+/* Remove colored border from nested container blocks to reduce visual noise */
+.block-children-container .base-block.container-block,
+.if-branch-children .base-block.container-block,
+.choice-children-container .base-block.container-block {
+  border-left-width: 2px;
+  border-left-color: var(--border-color);
+}
+
+/* Depth-based indentation for nested blocks
+ * 
+ * Alan Kay principle: Question the fundamental assumption.
+ * 
+ * Original problem: Nested indentation causes space collapse.
+ * Root cause: We assumed indentation = hierarchy visualization.
+ * 
+ * Solution: REMOVE indentation entirely for nested blocks.
+ * Use left border color/thickness to indicate depth instead.
+ * This keeps all blocks at full width regardless of nesting depth.
+ * 
+ * The visual hierarchy is maintained through:
+ * 1. Left border color (inherited from parent block type)
+ * 2. Containment within parent block's content area
+ * 3. Subtle background color differences
+ */
+
+/* No margin-left indentation - blocks stay full width */
+.base-block.depth-1,
+.base-block.depth-2,
+.base-block.depth-3,
+.base-block.depth-4,
+.base-block.depth-5 {
+  margin-left: 0;
+}
+
+/* Use border thickness to subtly indicate depth */
+.base-block.depth-1 { border-left-width: 3px; }
+.base-block.depth-2 { border-left-width: 3px; }
+.base-block.depth-3 { border-left-width: 4px; }
+.base-block.depth-4 { border-left-width: 4px; }
+.base-block.depth-5 { border-left-width: 5px; }
 
 /* ========================================
  * Block Header
@@ -160,6 +197,10 @@
   border-radius: 4px;
   transition: all 0.15s ease;
   margin-left: auto;
+  opacity: 0;
+}
+
+.base-block:hover .block-delete-btn {
   opacity: 0.6;
 }
 
@@ -224,7 +265,7 @@
  * ======================================== */
 
 .block-content {
-  padding: 12px;
+  padding: 8px;  /* Reduced from 12px to minimize nesting shrinkage */
 }
 
 .block-content:empty {
@@ -478,14 +519,28 @@
   min-height: 36px;
 }
 
+/* Don Norman: Visibility principle - header content container ensures delete button is always visible */
+.choice-header-content {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0; /* Allow flex item to shrink below content size */
+  margin-left: auto; /* Push to the right side of header */
+}
+
 .choice-text-input {
   flex: 1;
+  min-width: 60px; /* Minimum readable width */
   padding: 4px 8px;
   border: 1px solid transparent;
   border-radius: 4px;
   background: transparent;
   color: var(--text-primary);
   font-size: 13px;
+  /* Text overflow handling */
+  text-overflow: ellipsis;
+  overflow: hidden;
 }
 
 .choice-text-input:focus {
@@ -494,12 +549,15 @@
   outline: none;
 }
 
+/* Don Norman: Delete button must always be accessible - fixed size, never hidden by overflow */
 .choice-delete-btn {
   display: flex;
   align-items: center;
   justify-content: center;
   width: 24px;
   height: 24px;
+  min-width: 24px; /* Prevent shrinking */
+  flex-shrink: 0; /* Never shrink */
   padding: 0;
   border: none;
   background: transparent;
@@ -520,8 +578,10 @@
 }
 
 .choice-children-container {
-  margin-left: 16px;
-  padding-left: 12px;
+  margin-left: 0;
+  margin-right: 0;
+  padding: 4px 0 4px 8px;  /* No right padding - open to the right */
+  /* C-shape: only left border */
   border-left: 2px solid var(--border-color);
 }
 
@@ -530,7 +590,7 @@
  * ======================================== */
 
 .flow-block .block-content {
-  padding: 8px 12px;
+  padding: 6px 8px;  /* Reduced to minimize nesting shrinkage */
 }
 
 .flow-target-row {
@@ -550,18 +610,26 @@
 }
 
 /* If block branches */
+/* If block branches - C-shape (half-open) design
+ * Inspired by Scratch: Only left border, right side open.
+ * Children extend to full width of parent container.
+ */
 .if-branches-container {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  margin-top: 8px;
+  gap: 4px;
+  margin-top: 4px;
 }
 
 .if-branch {
-  padding: 8px;
-  background-color: var(--bg-secondary);
-  border-radius: 6px;
+  padding: 4px 0 4px 8px;  /* No right padding - open to the right */
+  background: transparent;  /* No background - open feel */
+  border-radius: 0;
+  /* C-shape: only left border */
   border-left: 3px solid var(--branch-color, var(--border-color));
+  border-top: none;
+  border-right: none;
+  border-bottom: none;
 }
 
 .if-branch-header {
@@ -650,27 +718,31 @@
   flex: 1;
 }
 
-/* ========================================
- * Children Container (for nested blocks)
- * ======================================== */
-
+/* Children Container (for nested blocks)
+ * C-shape (half-open) design: only left border, right side open.
+ * This prevents width shrinkage at deep nesting levels.
+ */
 .block-children-container {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  padding: 8px;
-  margin-top: 8px;
-  background-color: var(--bg-secondary);
-  border-radius: 6px;
-  min-height: 50px;
+  gap: 2px;
+  padding: 4px 0 4px 8px;  /* No right padding */
+  margin-top: 4px;
+  background: transparent;  /* No background enclosure */
+  border-left: 2px solid var(--border-color);
+  border-radius: 0;
+  min-height: 36px;
 }
 
 .block-children-container.empty {
   display: flex;
   align-items: center;
-  justify-content: center;
-  border: 2px dashed var(--border-color);
+  justify-content: flex-start;  /* Align to left for C-shape */
+  /* C-shape empty state: dashed left border only */
+  border: none;
+  border-left: 2px dashed var(--border-color);
   background-color: transparent;
+  padding-left: 12px;
 }
 
 .block-children-placeholder {
@@ -853,13 +925,13 @@
   position: absolute;
   left: 8px;
   right: 8px;
-  bottom: 40px; /* Above the add button */
   height: 3px;
   background-color: var(--accent-primary, #2196F3);
   border-radius: 2px;
   pointer-events: none;
   z-index: 10;
   box-shadow: 0 0 4px rgba(33, 150, 243, 0.5);
+  /* top is set dynamically via inline style */
 }
 
 

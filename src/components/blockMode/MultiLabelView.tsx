@@ -142,8 +142,8 @@ export const MultiLabelView: React.FC<MultiLabelViewProps> = ({
     saveTransform: true,
   })
 
-  // Block editor store for validation
-  const { validationErrors } = useBlockEditorStore()
+  // Block editor store for validation and collapse
+  const { validationErrors, collapsedBlocks, toggleBlockCollapsed } = useBlockEditorStore()
 
   // Canvas ref for imperative navigation
   const canvasRef = useRef<FreeCanvasHandle>(null)
@@ -203,11 +203,8 @@ export const MultiLabelView: React.FC<MultiLabelViewProps> = ({
   // Only run after persistence has loaded (or if no project path)
   // Requirements: 4.3
   useEffect(() => {
-    console.log('[MultiLabelView] Init positions effect - projectPath:', projectPath, 'hasLoadedOnce:', hasLoadedOnce, 'labelDataList.length:', labelDataList.length, 'labelPositions.size:', labelPositions.size)
-    
     // Wait for persistence to load first (if project path is set)
     if (projectPath && !hasLoadedOnce) {
-      console.log('[MultiLabelView] Waiting for persistence to load...')
       return
     }
     if (labelDataList.length === 0) return
@@ -217,10 +214,8 @@ export const MultiLabelView: React.FC<MultiLabelViewProps> = ({
     
     // Only update if there are new positions (missing labels)
     const missingCount = mergedPositions.size - labelPositions.size
-    console.log('[MultiLabelView] Merged positions:', mergedPositions.size, 'existing:', labelPositions.size, 'missing:', missingCount)
     
     if (missingCount > 0) {
-      console.log('[MultiLabelView] Setting merged positions')
       setLabelPositions(mergedPositions)
     }
   }, [labelDataList, labelPositions, setLabelPositions, projectPath, hasLoadedOnce])
@@ -685,6 +680,87 @@ export const MultiLabelView: React.FC<MultiLabelViewProps> = ({
     }
   }, [readOnly, ast, blockOperationHandler, onAstChange])
 
+  // Handle adding a choice to a menu block
+  const handleAddChoice = useCallback((
+    labelName: string,
+    blockTree: Block,
+    menuBlockId: string
+  ) => {
+    if (readOnly || !ast) return
+
+    // Add a choice block to the menu
+    const result = blockOperationHandler.addBlock('choice' as BlockType, menuBlockId, -1, {
+      blockTree,
+      ast,
+      labelName,
+    })
+
+    if (result.success && result.ast) {
+      onAstChange?.(result.ast)
+    }
+  }, [readOnly, ast, blockOperationHandler, onAstChange])
+
+  // Handle deleting a choice from a menu block
+  const handleDeleteChoice = useCallback((
+    labelName: string,
+    blockTree: Block,
+    choiceBlockId: string
+  ) => {
+    if (readOnly || !ast) return
+
+    const result = blockOperationHandler.deleteBlock(choiceBlockId, {
+      blockTree,
+      ast,
+      labelName,
+    })
+
+    if (result.success && result.ast) {
+      onAstChange?.(result.ast)
+    }
+  }, [readOnly, ast, blockOperationHandler, onAstChange])
+
+  // Handle block drop into a choice (nested blocks)
+  const handleBlockDropIntoChoice = useCallback((
+    labelName: string,
+    blockTree: Block,
+    blockType: string,
+    choiceBlockId: string,
+    index: number
+  ) => {
+    if (readOnly || !ast) return
+
+    const result = blockOperationHandler.addBlock(blockType as BlockType, choiceBlockId, index, {
+      blockTree,
+      ast,
+      labelName,
+    })
+
+    if (result.success && result.ast) {
+      onAstChange?.(result.ast)
+    }
+  }, [readOnly, ast, blockOperationHandler, onAstChange])
+
+  // Handle moving an existing block into a choice
+  const handleBlockMoveIntoChoice = useCallback((
+    labelName: string,
+    blockTree: Block,
+    blockId: string,
+    choiceBlockId: string,
+    index: number
+  ) => {
+    if (readOnly || !ast) return
+
+    const result = blockOperationHandler.moveBlock(blockId, choiceBlockId, index, {
+      blockTree,
+      ast,
+      labelName,
+    })
+
+    if (result.success && result.ast) {
+      onAstChange?.(result.ast)
+    }
+  }, [readOnly, ast, blockOperationHandler, onAstChange])
+
   // Handle block reorder within a label
   const handleBlockReorder = useCallback((
     labelName: string,
@@ -859,10 +935,11 @@ export const MultiLabelView: React.FC<MultiLabelViewProps> = ({
         selected: isSelected,
         hasError,
         errorMessage,
-        collapsed: false,
+        collapsed: collapsedBlocks.has(block.id),
         onClick: () => handleBlockClick(block.id),
         onDoubleClick: () => handleBlockDoubleClick(block.id),
         onDelete: !readOnly ? () => handleDeleteBlock(labelName, blockTree, block.id) : undefined,
+        onToggleCollapse: () => toggleBlockCollapsed(block.id),
         draggable: !readOnly,
         slotErrors,
         onSlotChange: (blockId: string, slotName: string, value: unknown) => 
@@ -911,12 +988,27 @@ export const MultiLabelView: React.FC<MultiLabelViewProps> = ({
             />
           )
         case 'menu':
+          return (
+            <MenuBlock
+              key={block.id}
+              {...commonProps}
+              renderChildBlock={renderChildBlock}
+              canvasScale={transform.scale}
+              onAddChoice={!readOnly ? () => handleAddChoice(labelName, blockTree, block.id) : undefined}
+              onDeleteChoice={!readOnly ? (choiceId) => handleDeleteChoice(labelName, blockTree, choiceId) : undefined}
+              onBlockDrop={!readOnly ? (blockType, _menuId, index) => handleBlockDropIntoChoice(labelName, blockTree, blockType, block.id, index) : undefined}
+              onBlockMove={!readOnly ? (blockId, _menuId, index) => handleBlockMoveIntoChoice(labelName, blockTree, blockId, block.id, index) : undefined}
+              onBlockDropIntoChoice={!readOnly ? (blockType, choiceId, index) => handleBlockDropIntoChoice(labelName, blockTree, blockType, choiceId, index) : undefined}
+              onBlockMoveIntoChoice={!readOnly ? (blockId, choiceId, index) => handleBlockMoveIntoChoice(labelName, blockTree, blockId, choiceId, index) : undefined}
+            />
+          )
         case 'choice':
           return (
             <MenuBlock
               key={block.id}
               {...commonProps}
               renderChildBlock={renderChildBlock}
+              canvasScale={transform.scale}
             />
           )
         case 'jump':
@@ -931,6 +1023,8 @@ export const MultiLabelView: React.FC<MultiLabelViewProps> = ({
               {...commonProps}
               availableLabels={labelOptions}
               renderChildBlock={renderChildBlock}
+              onBlockDrop={!readOnly ? (blockType, containerId, index) => handleBlockDropIntoChoice(labelName, blockTree, blockType, containerId, index) : undefined}
+              onBlockMove={!readOnly ? (blockId, containerId, index) => handleBlockMoveIntoChoice(labelName, blockTree, blockId, containerId, index) : undefined}
             />
           )
         case 'play-music':
@@ -963,6 +1057,9 @@ export const MultiLabelView: React.FC<MultiLabelViewProps> = ({
     imageTags,
     labelOptions,
     audioOptions,
+    transform.scale,
+    collapsedBlocks,
+    toggleBlockCollapsed,
   ])
 
   // Build class names
