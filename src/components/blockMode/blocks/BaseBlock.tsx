@@ -32,6 +32,8 @@ export interface BaseBlockProps {
   errorMessage?: string
   /** Whether the block is collapsed (for container types) */
   collapsed?: boolean
+  /** Custom collapsed summary text */
+  collapsedSummary?: string
   /** Whether this block is the current playback block */
   isPlaybackCurrent?: boolean
   /** Whether playback is waiting for user input on this block */
@@ -42,6 +44,8 @@ export interface BaseBlockProps {
   onToggleCollapse?: (blockId: string) => void
   /** Callback when block is double-clicked */
   onDoubleClick?: (blockId: string) => void
+  /** Callback when block is deleted */
+  onDelete?: (blockId: string) => void
   /** Callback when drag starts */
   onDragStart?: (blockId: string, event: React.DragEvent) => void
   /** Callback when drag ends */
@@ -99,11 +103,13 @@ export const BaseBlock: React.FC<BaseBlockProps> = memo(({
   hasError = false,
   errorMessage,
   collapsed = false,
+  collapsedSummary,
   isPlaybackCurrent = false,
   isPlaybackWaiting = false,
   onClick,
   onToggleCollapse,
   onDoubleClick,
+  onDelete,
   onDragStart,
   onDragEnd,
   children,
@@ -145,6 +151,14 @@ export const BaseBlock: React.FC<BaseBlockProps> = memo(({
     e.stopPropagation()
     onToggleCollapse?.(block.id)
   }, [block.id, onToggleCollapse])
+  
+  /**
+   * Handle delete click
+   */
+  const handleDelete = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation()
+    onDelete?.(block.id)
+  }, [block.id, onDelete])
   
   /**
    * Handle drag start
@@ -238,10 +252,22 @@ export const BaseBlock: React.FC<BaseBlockProps> = memo(({
         {/* Custom header content */}
         {headerContent}
         
+        {/* Delete button - shows when selected */}
+        {selected && onDelete && (
+          <button
+            className="block-delete-btn"
+            onClick={handleDelete}
+            title="删除积木 (Delete)"
+            aria-label="删除积木"
+          >
+            🗑️
+          </button>
+        )}
+        
         {/* Collapsed summary */}
         {collapsed && isContainer && (
           <span className="block-collapsed-summary">
-            ({getCollapsedSummary(block)})
+            ({collapsedSummary || getCollapsedSummary(block)})
           </span>
         )}
       </div>

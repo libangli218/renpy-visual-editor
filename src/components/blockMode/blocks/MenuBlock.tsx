@@ -8,7 +8,7 @@
  * Requirements: 5.1-5.4
  */
 
-import React, { useCallback } from 'react'
+import React, { useCallback, useState, useRef, useEffect } from 'react'
 import { Block } from '../types'
 import { BaseBlock, BaseBlockProps } from './BaseBlock'
 import './Block.css'
@@ -23,6 +23,14 @@ export interface MenuBlockProps extends Omit<BaseBlockProps, 'children'> {
   onAddChoice?: (menuBlockId: string) => void
   /** Callback to delete a choice */
   onDeleteChoice?: (choiceBlockId: string) => void
+  /** Callback when a block is dropped into a choice */
+  onBlockDropIntoChoice?: (blockType: string, choiceBlockId: string, index: number) => void
+  /** Callback when an existing block is moved into a choice */
+  onBlockMoveIntoChoice?: (blockId: string, choiceBlockId: string, index: number) => void
+  /** Callback when a block is dropped into the menu (for choice blocks) */
+  onBlockDrop?: (blockType: string, menuBlockId: string, index: number) => void
+  /** Callback when an existing block is moved into the menu */
+  onBlockMove?: (blockId: string, menuBlockId: string, index: number) => void
   /** Validation errors for slots */
   slotErrors?: Record<string, string>
   /** Render function for child blocks */
@@ -39,6 +47,10 @@ export interface ChoiceBlockProps extends Omit<BaseBlockProps, 'children'> {
   onSlotChange?: (blockId: string, slotName: string, value: unknown) => void
   /** Callback to delete this choice */
   onDelete?: (choiceBlockId: string) => void
+  /** Callback when a block is dropped into this choice */
+  onBlockDrop?: (blockType: string, choiceBlockId: string, index: number) => void
+  /** Callback when an existing block is moved into this choice */
+  onBlockMove?: (blockId: string, choiceBlockId: string, index: number) => void
   /** Validation errors for slots */
   slotErrors?: Record<string, string>
   /** Render function for child blocks */
@@ -67,6 +79,10 @@ export const MenuBlock: React.FC<MenuBlockProps> = ({
   onSlotChange,
   onAddChoice,
   onDeleteChoice,
+  onBlockDropIntoChoice,
+  onBlockMoveIntoChoice,
+  onBlockDrop,
+  onBlockMove,
   slotErrors = {},
   renderChildBlock,
   depth = 0,
@@ -74,12 +90,131 @@ export const MenuBlock: React.FC<MenuBlockProps> = ({
 }) => {
   const choices = block.children || []
   
+  // Drag-drop state
+  const [isDragOver, setIsDragOver] = useState(false)
+  const [dropIndex, setDropIndex] = useState<number | null>(null)
+  const choicesContainerRef = useRef<HTMLDivElement>(null)
+  
+  // Reset drag state when drag ends globally (handles cases where drop happens outside)
+  useEffect(() => {
+    const handleGlobalDragEnd = () => {
+      setIsDragOver(false)
+      setDropIndex(null)
+    }
+    
+    document.addEventListener('dragend', handleGlobalDragEnd)
+    return () => {
+      document.removeEventListener('dragend', handleGlobalDragEnd)
+    }
+  }, [])
+  
   /**
    * Handle add choice button click
    */
   const handleAddChoice = useCallback(() => {
     onAddChoice?.(block.id)
   }, [block.id, onAddChoice])
+  
+  /**
+   * Calculate drop index based on mouse Y position
+   */
+  const calculateDropIndex = useCallback((clientY: number): number => {
+    if (!choicesContainerRef.current || choices.length === 0) {
+      return 0
+    }
+
+    const blockElements = choicesContainerRef.current.querySelectorAll('[data-block-id]')
+    const containerRect = choicesContainerRef.current.getBoundingClientRect()
+    
+    if (clientY < containerRect.top) {
+      return 0
+    }
+
+    for (let i = 0; i < blockElements.length; i++) {
+      const blockRect = blockElements[i].getBoundingClientRect()
+      const blockMiddle = blockRect.top + blockRect.height / 2
+
+      if (clientY < blockMiddle) {
+        return i
+      }
+    }
+
+    return choices.length
+  }, [choices.length])
+  
+  /**
+   * Handle drag over the choices container
+   */
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    
+    const hasBlockType = e.dataTransfer.types.includes('application/x-block-type')
+    const hasBlockId = e.dataTransfer.types.includes('application/x-block-id')
+    
+    if (hasBlockType || hasBlockId) {
+      e.dataTransfer.dropEffect = hasBlockType ? 'copy' : 'move'
+      setIsDragOver(true)
+      setDropIndex(calculateDropIndex(e.clientY))
+    }
+  }, [calculateDropIndex])
+  
+  /**
+   * Handle drag enter
+   */
+  const handleDragEnter = useCallback((e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setIsDragOver(true)
+  }, [])
+  
+  /**
+   * Handle drag leave
+   */
+  const handleDragLeave = useCallback((e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    
+    // Only clear if leaving the container entirely
+    const relatedTarget = e.relatedTarget as HTMLElement | null
+    const currentTarget = e.currentTarget as HTMLElement
+    
+    if (!relatedTarget || !currentTarget.contains(relatedTarget)) {
+      setIsDragOver(false)
+      setDropIndex(null)
+    }
+  }, [])
+  
+  /**
+   * Handle drop
+   */
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    
+    const index = calculateDropIndex(e.clientY)
+
+    // Reset drag state first
+    setIsDragOver(false)
+    setDropIndex(null)
+
+    // Check if dropping a block from palette (new block)
+    const blockType = e.dataTransfer.getData('application/x-block-type')
+    if (blockType) {
+      onBlockDrop?.(blockType, block.id, index)
+      return
+    }
+
+    // Check if dropping an existing block (move)
+    const blockId = e.dataTransfer.getData('application/x-block-id')
+    if (blockId) {
+      // Don't allow dropping a block into itself
+      if (blockId === block.id) {
+        return
+      }
+      onBlockMove?.(blockId, block.id, index)
+    }
+  }, [calculateDropIndex, block.id, onBlockDrop, onBlockMove])
   
   return (
     <BaseBlock
@@ -89,11 +224,18 @@ export const MenuBlock: React.FC<MenuBlockProps> = ({
       showCollapseButton={choices.length > 0}
       depth={depth}
     >
-      <div className="menu-choices-container">
+      <div 
+        ref={choicesContainerRef}
+        className={`menu-choices-container ${isDragOver ? 'drag-over' : ''}`}
+        onDragOver={handleDragOver}
+        onDragEnter={handleDragEnter}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
+      >
         {choices.length === 0 ? (
           <div className="block-children-container empty">
             <span className="block-children-placeholder">
-              点击下方按钮添加选项
+              拖拽选项积木到这里，或点击下方按钮添加
             </span>
           </div>
         ) : (
@@ -103,6 +245,8 @@ export const MenuBlock: React.FC<MenuBlockProps> = ({
               block={choice}
               onSlotChange={onSlotChange}
               onDelete={onDeleteChoice}
+              onBlockDrop={onBlockDropIntoChoice}
+              onBlockMove={onBlockMoveIntoChoice}
               slotErrors={slotErrors}
               renderChildBlock={renderChildBlock}
               depth={depth + 1}
@@ -116,6 +260,16 @@ export const MenuBlock: React.FC<MenuBlockProps> = ({
               collapsed={choice.collapsed}
             />
           ))
+        )}
+        
+        {/* Drop indicator */}
+        {isDragOver && dropIndex !== null && (
+          <div 
+            className="menu-drop-indicator" 
+            style={{ 
+              top: choices.length === 0 ? '50%' : `${dropIndex * 60}px` 
+            }}
+          />
         )}
         
         {/* Add Choice Button */}
@@ -143,6 +297,8 @@ export const ChoiceBlock: React.FC<ChoiceBlockProps> = ({
   block,
   onSlotChange,
   onDelete,
+  onBlockDrop,
+  onBlockMove,
   slotErrors = {},
   renderChildBlock,
   depth = 0,
@@ -151,6 +307,24 @@ export const ChoiceBlock: React.FC<ChoiceBlockProps> = ({
   const text = getSlotValue(block, 'text') as string
   const condition = getSlotValue(block, 'condition') as string | null
   const children = block.children || []
+  
+  // Drag-drop state
+  const [isDragOver, setIsDragOver] = useState(false)
+  const [dropIndex, setDropIndex] = useState<number | null>(null)
+  const childrenContainerRef = useRef<HTMLDivElement>(null)
+  
+  // Reset drag state when drag ends globally (handles cases where drop happens outside)
+  useEffect(() => {
+    const handleGlobalDragEnd = () => {
+      setIsDragOver(false)
+      setDropIndex(null)
+    }
+    
+    document.addEventListener('dragend', handleGlobalDragEnd)
+    return () => {
+      document.removeEventListener('dragend', handleGlobalDragEnd)
+    }
+  }, [])
   
   /**
    * Handle text change
@@ -173,6 +347,108 @@ export const ChoiceBlock: React.FC<ChoiceBlockProps> = ({
     e.stopPropagation()
     onDelete?.(block.id)
   }, [block.id, onDelete])
+  
+  /**
+   * Calculate drop index based on mouse Y position
+   */
+  const calculateDropIndex = useCallback((clientY: number): number => {
+    if (!childrenContainerRef.current || children.length === 0) {
+      return 0
+    }
+
+    const blockElements = childrenContainerRef.current.querySelectorAll('[data-block-id]')
+    const containerRect = childrenContainerRef.current.getBoundingClientRect()
+    
+    if (clientY < containerRect.top) {
+      return 0
+    }
+
+    for (let i = 0; i < blockElements.length; i++) {
+      const blockRect = blockElements[i].getBoundingClientRect()
+      const blockMiddle = blockRect.top + blockRect.height / 2
+
+      if (clientY < blockMiddle) {
+        return i
+      }
+    }
+
+    return children.length
+  }, [children.length])
+  
+  /**
+   * Handle drag over the children container
+   */
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    
+    const hasBlockType = e.dataTransfer.types.includes('application/x-block-type')
+    const hasBlockId = e.dataTransfer.types.includes('application/x-block-id')
+    
+    if (hasBlockType || hasBlockId) {
+      e.dataTransfer.dropEffect = hasBlockType ? 'copy' : 'move'
+      setIsDragOver(true)
+      setDropIndex(calculateDropIndex(e.clientY))
+    }
+  }, [calculateDropIndex])
+  
+  /**
+   * Handle drag enter
+   */
+  const handleDragEnter = useCallback((e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setIsDragOver(true)
+  }, [])
+  
+  /**
+   * Handle drag leave
+   */
+  const handleDragLeave = useCallback((e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    
+    // Only clear if leaving the container entirely
+    const relatedTarget = e.relatedTarget as HTMLElement | null
+    const currentTarget = e.currentTarget as HTMLElement
+    
+    // Check if we're leaving to an element outside the container
+    if (!relatedTarget || !currentTarget.contains(relatedTarget)) {
+      setIsDragOver(false)
+      setDropIndex(null)
+    }
+  }, [])
+  
+  /**
+   * Handle drop
+   */
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    
+    const index = calculateDropIndex(e.clientY)
+
+    // Reset drag state first
+    setIsDragOver(false)
+    setDropIndex(null)
+
+    // Check if dropping a block from palette (new block)
+    const blockType = e.dataTransfer.getData('application/x-block-type')
+    if (blockType) {
+      onBlockDrop?.(blockType, block.id, index)
+      return
+    }
+
+    // Check if dropping an existing block (move)
+    const blockId = e.dataTransfer.getData('application/x-block-id')
+    if (blockId) {
+      // Don't allow dropping a block into itself
+      if (blockId === block.id) {
+        return
+      }
+      onBlockMove?.(blockId, block.id, index)
+    }
+  }, [calculateDropIndex, block.id, onBlockDrop, onBlockMove])
   
   // Custom header content with inline text input
   const headerContent = (
@@ -222,8 +498,15 @@ export const ChoiceBlock: React.FC<ChoiceBlockProps> = ({
           />
         </div>
         
-        {/* Children Container */}
-        <div className={`choice-children-container ${children.length === 0 ? 'empty' : ''}`}>
+        {/* Children Container with drag-drop support */}
+        <div 
+          ref={childrenContainerRef}
+          className={`choice-children-container ${children.length === 0 ? 'empty' : ''} ${isDragOver ? 'drag-over' : ''}`}
+          onDragOver={handleDragOver}
+          onDragEnter={handleDragEnter}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
+        >
           {children.length === 0 ? (
             <div className="block-children-container empty">
               <span className="block-children-placeholder">
@@ -236,6 +519,16 @@ export const ChoiceBlock: React.FC<ChoiceBlockProps> = ({
                 renderChildBlock ? renderChildBlock(child, depth + 1) : null
               )}
             </div>
+          )}
+          
+          {/* Drop indicator - only show when actively dragging over */}
+          {isDragOver && dropIndex !== null && (
+            <div 
+              className="choice-drop-indicator"
+              style={{ 
+                top: children.length === 0 ? '50%' : `${dropIndex * 40}px` 
+              }}
+            />
           )}
         </div>
       </div>

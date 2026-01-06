@@ -145,6 +145,34 @@
   color: var(--text-primary);
 }
 
+/* Delete button */
+.block-delete-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  border-radius: 4px;
+  transition: all 0.15s ease;
+  margin-left: auto;
+  opacity: 0.6;
+}
+
+.block-delete-btn:hover {
+  background-color: rgba(244, 67, 54, 0.15);
+  color: #f44336;
+  opacity: 1;
+}
+
+.block-delete-btn:active {
+  background-color: rgba(244, 67, 54, 0.25);
+}
+
 .collapse-icon {
   font-size: 10px;
   transition: transform 0.2s ease;
@@ -733,4 +761,142 @@
     flex-direction: column;
     gap: 8px;
   }
+}
+
+
+/* ========================================
+ * Choice Block Drag-Drop Styles
+ * ======================================== */
+
+.choice-children-container {
+  position: relative;
+  min-height: 50px;
+  transition: all 0.15s ease;
+}
+
+.choice-children-container.drag-over {
+  background-color: rgba(var(--accent-primary-rgb, 33, 150, 243), 0.1);
+  border-color: var(--accent-primary, #2196F3);
+}
+
+.choice-children-container.drag-over.empty {
+  border-style: solid;
+  border-color: var(--accent-primary, #2196F3);
+}
+
+.choice-children-container.drag-over .block-children-placeholder {
+  color: var(--accent-primary, #2196F3);
+}
+
+.choice-drop-indicator {
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  height: 3px;
+  background-color: var(--accent-primary, #2196F3);
+  border-radius: 2px;
+  pointer-events: none;
+  z-index: 10;
+  box-shadow: 0 0 4px rgba(33, 150, 243, 0.5);
+}
+
+/* ========================================
+ * If Block Drag-Drop Styles
+ * ======================================== */
+
+.if-branches-container {
+  position: relative;
+  min-height: 60px;
+}
+
+.if-branches-container.drag-over {
+  background-color: rgba(33, 150, 243, 0.1);
+  border-color: var(--accent-primary, #2196F3);
+}
+
+.if-branches-container.drag-over .block-children-placeholder {
+  color: var(--accent-primary, #2196F3);
+}
+
+.if-drop-indicator {
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  bottom: 4px;
+  height: 3px;
+  background-color: var(--accent-primary, #2196F3);
+  border-radius: 2px;
+  pointer-events: none;
+  z-index: 10;
+  box-shadow: 0 0 4px rgba(33, 150, 243, 0.5);
+}
+
+/* ========================================
+ * Menu Block Drag-Drop Styles
+ * ======================================== */
+
+.menu-choices-container {
+  position: relative;
+  min-height: 60px;
+}
+
+.menu-choices-container.drag-over {
+  background-color: rgba(33, 150, 243, 0.1);
+  border-color: var(--accent-primary, #2196F3);
+}
+
+.menu-choices-container.drag-over .block-children-placeholder {
+  color: var(--accent-primary, #2196F3);
+}
+
+.menu-drop-indicator {
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  bottom: 40px; /* Above the add button */
+  height: 3px;
+  background-color: var(--accent-primary, #2196F3);
+  border-radius: 2px;
+  pointer-events: none;
+  z-index: 10;
+  box-shadow: 0 0 4px rgba(33, 150, 243, 0.5);
+}
+
+
+/* ========================================
+ * Elif/Else Block Drag-Drop Styles
+ * ======================================== */
+
+.if-branch-children {
+  position: relative;
+  min-height: 50px;
+  transition: all 0.15s ease;
+}
+
+.if-branch-children.drag-over {
+  background-color: rgba(var(--accent-primary-rgb, 33, 150, 243), 0.1);
+  border-color: var(--accent-primary, #2196F3);
+}
+
+.if-branch-children.drag-over.empty {
+  border-style: solid;
+  border-color: var(--accent-primary, #2196F3);
+}
+
+.if-branch-children.drag-over .block-children-placeholder {
+  color: var(--accent-primary, #2196F3);
+}
+
+.elif-drop-indicator,
+.else-drop-indicator {
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  bottom: 4px;
+  height: 3px;
+  background-color: var(--accent-primary, #2196F3);
+  border-radius: 2px;
+  pointer-events: none;
+  z-index: 10;
+  box-shadow: 0 0 4px rgba(33, 150, 243, 0.5);
 }

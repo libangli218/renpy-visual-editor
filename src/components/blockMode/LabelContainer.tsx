@@ -14,7 +14,7 @@
  * Requirements: 2.1-2.5
  */
 
-import React, { useCallback, useState, useRef, useMemo, memo } from 'react'
+import React, { useCallback, useState, useRef, useMemo, memo, useEffect } from 'react'
 import { Block } from './types'
 import './LabelContainer.css'
 
@@ -89,19 +89,36 @@ export const LabelContainer: React.FC<LabelContainerProps> = memo(({
   const containerRef = useRef<HTMLDivElement>(null)
   const contentRef = useRef<HTMLDivElement>(null)
 
+  // Reset drag state when drag ends globally (handles cases where drop happens in nested containers)
+  useEffect(() => {
+    const handleGlobalDragEnd = () => {
+      setIsDragOver(false)
+      setDropPosition(null)
+      setDraggedBlockId(null)
+    }
+    
+    document.addEventListener('dragend', handleGlobalDragEnd)
+    return () => {
+      document.removeEventListener('dragend', handleGlobalDragEnd)
+    }
+  }, [])
+
   // Memoize children array reference
   const children = useMemo(() => block.children || [], [block.children])
   const isEmpty = children.length === 0
 
   /**
    * Calculate drop index based on mouse Y position
+   * Only considers direct children, not nested blocks
    */
   const calculateDropIndex = useCallback((clientY: number): number => {
     if (!contentRef.current || children.length === 0) {
       return 0
     }
 
-    const blockElements = contentRef.current.querySelectorAll('[data-block-id]')
+    // Only select direct child blocks, not nested ones
+    // Use :scope > to select only direct children
+    const blockElements = contentRef.current.querySelectorAll(':scope > [data-block-id]')
     const containerRect = contentRef.current.getBoundingClientRect()
     
     // If above all blocks, insert at beginning
@@ -124,13 +141,15 @@ export const LabelContainer: React.FC<LabelContainerProps> = memo(({
 
   /**
    * Get Y position for drop indicator
+   * Only considers direct children, not nested blocks
    */
   const getDropIndicatorY = useCallback((index: number): number => {
     if (!contentRef.current) {
       return 0
     }
 
-    const blockElements = contentRef.current.querySelectorAll('[data-block-id]')
+    // Only select direct child blocks, not nested ones
+    const blockElements = contentRef.current.querySelectorAll(':scope > [data-block-id]')
     const containerRect = contentRef.current.getBoundingClientRect()
     const scrollTop = contentRef.current.scrollTop
     
@@ -248,16 +267,11 @@ export const LabelContainer: React.FC<LabelContainerProps> = memo(({
       if (isInternalBlock) {
         // Find current index
         const currentIndex = children.findIndex(child => child.id === blockId)
-        
-        // Adjust drop index if moving down
-        let adjustedIndex = dropIndex
-        if (currentIndex < dropIndex) {
-          adjustedIndex = Math.max(0, dropIndex - 1)
-        }
 
         // Only reorder if position changed
-        if (currentIndex !== adjustedIndex) {
-          onBlockReorder?.(blockId, adjustedIndex)
+        // Note: Don't adjust index here - BlockOperationHandler.moveBlock handles the adjustment
+        if (currentIndex !== dropIndex && currentIndex !== dropIndex - 1) {
+          onBlockReorder?.(blockId, dropIndex)
         }
       } else {
         // Block from another container

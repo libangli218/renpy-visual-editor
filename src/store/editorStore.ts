@@ -45,6 +45,9 @@ export interface EditorStore {
   // AST state - shared between Story Mode and Node Mode
   ast: RenpyScript | null
   
+  // AST version - increments on undo/redo to trigger re-renders
+  astVersion: number
+  
   // Selection state
   selectedNodeId: string | null
   selectedBlockId: string | null
@@ -80,7 +83,7 @@ export interface EditorStore {
   getStateSnapshot: () => EditorState
 }
 
-// Helper to create state snapshot
+// Helper to create state snapshot with deep copy of AST
 function createStateSnapshot(state: Partial<EditorStore>): EditorState {
   return {
     mode: state.mode ?? 'story',
@@ -90,7 +93,8 @@ function createStateSnapshot(state: Partial<EditorStore>): EditorState {
     modified: state.modified ?? false,
     selectedNodeId: state.selectedNodeId ?? null,
     selectedBlockId: state.selectedBlockId ?? null,
-    ast: state.ast ?? null,
+    // Deep copy AST to prevent mutations from affecting history
+    ast: state.ast ? JSON.parse(JSON.stringify(state.ast)) : null,
     currentBlockLabel: state.currentBlockLabel ?? null,
   }
 }
@@ -120,6 +124,7 @@ export const useEditorStore = create<EditorStore>((set, get) => {
     selectedNodeId: null,
     selectedBlockId: null,
     ast: null,
+    astVersion: 0,
     currentBlockLabel: null,
     canUndo: false,
     canRedo: false,
@@ -235,8 +240,15 @@ export const useEditorStore = create<EditorStore>((set, get) => {
     undo: () => {
       const previousState = historyManager.undo()
       if (previousState) {
+        const currentState = get()
         set({
           ...previousState,
+          // Preserve current mode and block label when undoing from block mode
+          // This allows undo to work on AST changes without exiting block mode
+          mode: currentState.mode,
+          currentBlockLabel: currentState.currentBlockLabel,
+          // Increment astVersion to trigger re-renders in block mode
+          astVersion: currentState.astVersion + 1,
           canUndo: historyManager.canUndo(),
           canRedo: historyManager.canRedo(),
         })
@@ -246,8 +258,14 @@ export const useEditorStore = create<EditorStore>((set, get) => {
     redo: () => {
       const nextState = historyManager.redo()
       if (nextState) {
+        const currentState = get()
         set({
           ...nextState,
+          // Preserve current mode and block label when redoing from block mode
+          mode: currentState.mode,
+          currentBlockLabel: currentState.currentBlockLabel,
+          // Increment astVersion to trigger re-renders in block mode
+          astVersion: currentState.astVersion + 1,
           canUndo: historyManager.canUndo(),
           canRedo: historyManager.canRedo(),
         })

@@ -15,7 +15,7 @@
  * Requirements: 1.1, 2.1, 9.5, 12.1-12.6
  */
 
-import React, { useCallback, useEffect, useMemo, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useState, useRef } from 'react'
 import { Block, BlockType, ValidationContext, SlotOption } from './types'
 import { BlockPalette } from './blocks/BlockPalette'
 import { LabelContainer } from './LabelContainer'
@@ -27,6 +27,7 @@ import { PreviewPanel } from './PreviewPanel'
 import { PlaybackControls } from './PlaybackControls'
 import { MenuChoiceOverlay } from './MenuChoiceOverlay'
 import { useBlockEditorStore } from './stores/blockEditorStore'
+import { useEditorStore } from '../../store/editorStore'
 import { usePlayback } from './hooks/usePlayback'
 import { createBlockOperationHandler } from './BlockOperationHandler'
 import { createBlockTreeBuilder } from './BlockTreeBuilder'
@@ -102,6 +103,7 @@ export const BlockModeEditor: React.FC<BlockModeEditorProps> = ({
     blockTree,
     selectedBlockId,
     validationErrors,
+    collapsedBlocks,
     setCurrentLabel,
     setBlockTree,
     setSelectedBlockId,
@@ -109,10 +111,17 @@ export const BlockModeEditor: React.FC<BlockModeEditorProps> = ({
     setReadOnly,
     updateGameState,
     setPlaybackBlock,
+    toggleBlockCollapsed,
   } = useBlockEditorStore()
+
+  // Get undo/redo from main editor store
+  const { undo: editorUndo, redo: editorRedo, canUndo, canRedo, astVersion } = useEditorStore()
 
   // State for preview panel width
   const [previewWidth, setPreviewWidth] = useState(300)
+  
+  // Track the AST version we last processed to detect external changes (undo/redo)
+  const lastProcessedAstVersionRef = useRef(-1)
 
   // Create handlers
   const blockTreeBuilder = useMemo(() => createBlockTreeBuilder(), [])
@@ -184,6 +193,44 @@ export const BlockModeEditor: React.FC<BlockModeEditorProps> = ({
     }
   }, [labelName, ast, readOnly, currentLabel, blockTree, blockTreeBuilder, blockValidator, validationContext, setCurrentLabel, setBlockTree, setValidationErrors, setReadOnly])
 
+  // Rebuild blockTree when AST changes externally (e.g., from undo/redo)
+  useEffect(() => {
+    // Skip if we're not initialized yet
+    if (currentLabel !== labelName) {
+      return
+    }
+    
+    // Only rebuild on undo/redo (when astVersion changes)
+    // Skip if we already processed this version
+    if (lastProcessedAstVersionRef.current === astVersion) {
+      return
+    }
+    
+    // Update processed version
+    lastProcessedAstVersionRef.current = astVersion
+    
+    // Find the label in the AST and rebuild block tree
+    const labelNode = ast.statements.find(
+      s => s.type === 'label' && (s as LabelNode).name === labelName
+    ) as LabelNode | undefined
+
+    if (labelNode) {
+      const tree = blockTreeBuilder.buildFromLabel(labelNode)
+      setBlockTree(tree)
+
+      // Re-validate
+      const errors = blockValidator.validateTree(tree, validationContext)
+      setValidationErrors(errors)
+    }
+  }, [ast, astVersion, labelName, currentLabel, blockTreeBuilder, blockValidator, validationContext, setBlockTree, setValidationErrors])
+
+  // Helper to notify parent of AST change
+  const notifyAstChange = useCallback((newAst: RenpyScript) => {
+    if (onAstChange) {
+      onAstChange(newAst)
+    }
+  }, [onAstChange])
+
   // Handle block click
   const handleBlockClick = useCallback((blockId: string) => {
     setSelectedBlockId(blockId)
@@ -194,6 +241,11 @@ export const BlockModeEditor: React.FC<BlockModeEditorProps> = ({
     setSelectedBlockId(blockId)
     // Could open inline editor or property panel
   }, [setSelectedBlockId])
+
+  // Handle block collapse toggle
+  const handleToggleCollapse = useCallback((blockId: string) => {
+    toggleBlockCollapsed(blockId)
+  }, [toggleBlockCollapsed])
 
   // Handle adding a new block from palette
   const handlePaletteDrop = useCallback((blockType: BlockType, containerId: string, index: number) => {
@@ -212,15 +264,15 @@ export const BlockModeEditor: React.FC<BlockModeEditorProps> = ({
       }
       
       // Notify parent of AST change
-      if (result.ast && onAstChange) {
-        onAstChange(result.ast)
+      if (result.ast) {
+        notifyAstChange(result.ast)
       }
 
       // Re-validate
       const errors = blockValidator.validateTree(result.blockTree, validationContext)
       setValidationErrors(errors)
     }
-  }, [readOnly, blockTree, ast, labelName, blockOperationHandler, blockValidator, validationContext, setBlockTree, setSelectedBlockId, setValidationErrors, onAstChange])
+  }, [readOnly, blockTree, ast, labelName, blockOperationHandler, blockValidator, validationContext, setBlockTree, setSelectedBlockId, setValidationErrors, notifyAstChange])
 
   // Handle moving an existing block
   const handleBlockMove = useCallback((blockId: string, newParentId: string, newIndex: number) => {
@@ -236,15 +288,15 @@ export const BlockModeEditor: React.FC<BlockModeEditorProps> = ({
       setBlockTree(result.blockTree)
       
       // Notify parent of AST change
-      if (result.ast && onAstChange) {
-        onAstChange(result.ast)
+      if (result.ast) {
+        notifyAstChange(result.ast)
       }
 
       // Re-validate
       const errors = blockValidator.validateTree(result.blockTree, validationContext)
       setValidationErrors(errors)
     }
-  }, [readOnly, blockTree, ast, labelName, blockOperationHandler, blockValidator, validationContext, setBlockTree, setValidationErrors, onAstChange])
+  }, [readOnly, blockTree, ast, labelName, blockOperationHandler, blockValidator, validationContext, setBlockTree, setValidationErrors, notifyAstChange])
 
   // Handle invalid drop
   const handleInvalidDrop = useCallback((blockId: string) => {
@@ -266,15 +318,193 @@ export const BlockModeEditor: React.FC<BlockModeEditorProps> = ({
       setBlockTree(result.blockTree)
       
       // Notify parent of AST change
-      if (result.ast && onAstChange) {
-        onAstChange(result.ast)
+      if (result.ast) {
+        notifyAstChange(result.ast)
       }
 
       // Re-validate
       const errors = blockValidator.validateTree(result.blockTree, validationContext)
       setValidationErrors(errors)
     }
-  }, [readOnly, blockTree, ast, labelName, blockOperationHandler, blockValidator, validationContext, setBlockTree, setValidationErrors, onAstChange])
+  }, [readOnly, blockTree, ast, labelName, blockOperationHandler, blockValidator, validationContext, setBlockTree, setValidationErrors, notifyAstChange])
+
+  // Handle adding a choice to a menu block
+  const handleAddChoice = useCallback((menuBlockId: string) => {
+    if (readOnly || !blockTree) return
+
+    // Find the menu block to get the number of existing choices
+    const menuBlock = blockOperationHandler.findBlockById(blockTree, menuBlockId)
+    const insertIndex = menuBlock?.children?.length ?? 0
+
+    const result = blockOperationHandler.addBlock('choice', menuBlockId, insertIndex, {
+      blockTree,
+      ast,
+      labelName,
+    })
+
+    if (result.success && result.blockTree) {
+      setBlockTree(result.blockTree)
+      if (result.blockId) {
+        setSelectedBlockId(result.blockId)
+      }
+      
+      // Notify parent of AST change
+      if (result.ast) {
+        notifyAstChange(result.ast)
+      }
+
+      // Re-validate
+      const errors = blockValidator.validateTree(result.blockTree, validationContext)
+      setValidationErrors(errors)
+    }
+  }, [readOnly, blockTree, ast, labelName, blockOperationHandler, blockValidator, validationContext, setBlockTree, setSelectedBlockId, setValidationErrors, notifyAstChange])
+
+  // Handle deleting a choice from a menu block
+  const handleDeleteChoice = useCallback((choiceBlockId: string) => {
+    if (readOnly || !blockTree) return
+
+    const result = blockOperationHandler.deleteBlock(choiceBlockId, {
+      blockTree,
+      ast,
+      labelName,
+    })
+
+    if (result.success && result.blockTree) {
+      setBlockTree(result.blockTree)
+      
+      // Clear selection if deleted block was selected
+      if (selectedBlockId === choiceBlockId) {
+        setSelectedBlockId(null)
+      }
+      
+      // Notify parent of AST change
+      if (result.ast) {
+        notifyAstChange(result.ast)
+      }
+
+      // Re-validate
+      const errors = blockValidator.validateTree(result.blockTree, validationContext)
+      setValidationErrors(errors)
+    }
+  }, [readOnly, blockTree, ast, labelName, selectedBlockId, blockOperationHandler, blockValidator, validationContext, setBlockTree, setSelectedBlockId, setValidationErrors, notifyAstChange])
+
+  // Handle deleting any block (general delete)
+  const handleDeleteBlock = useCallback((blockId: string) => {
+    if (readOnly || !blockTree) return
+    
+    // Don't allow deleting the root label block
+    if (blockId === blockTree.id) return
+
+    const result = blockOperationHandler.deleteBlock(blockId, {
+      blockTree,
+      ast,
+      labelName,
+    })
+
+    if (result.success && result.blockTree) {
+      setBlockTree(result.blockTree)
+      
+      // Clear selection if deleted block was selected
+      if (selectedBlockId === blockId) {
+        setSelectedBlockId(null)
+      }
+      
+      // Notify parent of AST change
+      if (result.ast) {
+        notifyAstChange(result.ast)
+      }
+
+      // Re-validate
+      const errors = blockValidator.validateTree(result.blockTree, validationContext)
+      setValidationErrors(errors)
+    }
+  }, [readOnly, blockTree, ast, labelName, selectedBlockId, blockOperationHandler, blockValidator, validationContext, setBlockTree, setSelectedBlockId, setValidationErrors, notifyAstChange])
+
+  // Handle keyboard events for delete and undo/redo
+  const handleKeyDown = useCallback((event: React.KeyboardEvent) => {
+    // Don't handle if focus is in an input field
+    const target = event.target as HTMLElement
+    if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable) {
+      return
+    }
+    
+    // Ctrl+Z for undo
+    if (event.ctrlKey && event.key === 'z' && !event.shiftKey) {
+      event.preventDefault()
+      if (canUndo) {
+        editorUndo()
+      }
+      return
+    }
+    
+    // Ctrl+Y or Ctrl+Shift+Z for redo
+    if ((event.ctrlKey && event.key === 'y') || (event.ctrlKey && event.shiftKey && event.key === 'z')) {
+      event.preventDefault()
+      if (canRedo) {
+        editorRedo()
+      }
+      return
+    }
+    
+    if (readOnly) return
+    
+    // Delete or Backspace to delete selected block
+    if ((event.key === 'Delete' || event.key === 'Backspace') && selectedBlockId) {
+      event.preventDefault()
+      handleDeleteBlock(selectedBlockId)
+    }
+  }, [readOnly, selectedBlockId, handleDeleteBlock, canUndo, canRedo, editorUndo, editorRedo])
+
+  // Handle dropping a new block into a choice
+  const handleBlockDropIntoChoice = useCallback((blockType: string, choiceBlockId: string, index: number) => {
+    if (readOnly || !blockTree) return
+
+    const result = blockOperationHandler.addBlock(blockType as BlockType, choiceBlockId, index, {
+      blockTree,
+      ast,
+      labelName,
+    })
+
+    if (result.success && result.blockTree) {
+      setBlockTree(result.blockTree)
+      if (result.blockId) {
+        setSelectedBlockId(result.blockId)
+      }
+      
+      // Notify parent of AST change
+      if (result.ast) {
+        notifyAstChange(result.ast)
+      }
+
+      // Re-validate
+      const errors = blockValidator.validateTree(result.blockTree, validationContext)
+      setValidationErrors(errors)
+    }
+  }, [readOnly, blockTree, ast, labelName, blockOperationHandler, blockValidator, validationContext, setBlockTree, setSelectedBlockId, setValidationErrors, notifyAstChange])
+
+  // Handle moving an existing block into a choice
+  const handleBlockMoveIntoChoice = useCallback((blockId: string, choiceBlockId: string, index: number) => {
+    if (readOnly || !blockTree) return
+
+    const result = blockOperationHandler.moveBlock(blockId, choiceBlockId, index, {
+      blockTree,
+      ast,
+      labelName,
+    })
+
+    if (result.success && result.blockTree) {
+      setBlockTree(result.blockTree)
+      
+      // Notify parent of AST change
+      if (result.ast) {
+        notifyAstChange(result.ast)
+      }
+
+      // Re-validate
+      const errors = blockValidator.validateTree(result.blockTree, validationContext)
+      setValidationErrors(errors)
+    }
+  }, [readOnly, blockTree, ast, labelName, blockOperationHandler, blockValidator, validationContext, setBlockTree, setValidationErrors, notifyAstChange])
 
   // Build character options for dialogue blocks
   // Build character options for dialogue blocks (from script definitions)
@@ -398,6 +628,7 @@ export const BlockModeEditor: React.FC<BlockModeEditorProps> = ({
     const hasError = blockErrors.length > 0
     const errorMessage = blockErrors.map(e => e.message).join('; ')
     const slotErrors = getSlotErrors(block.id)
+    const isCollapsed = collapsedBlocks.has(block.id)
 
     // Common props for all block types (key is passed separately)
     const commonProps = {
@@ -407,8 +638,11 @@ export const BlockModeEditor: React.FC<BlockModeEditorProps> = ({
       errorMessage,
       isPlaybackCurrent,
       isPlaybackWaiting,
+      collapsed: isCollapsed,
       onClick: () => handleBlockClick(block.id),
       onDoubleClick: () => handleBlockDoubleClick(block.id),
+      onToggleCollapse: () => handleToggleCollapse(block.id),
+      onDelete: !readOnly ? () => handleDeleteBlock(block.id) : undefined,
       draggable: !readOnly,
       slotErrors,
       onSlotChange: handleSlotChange,
@@ -475,6 +709,12 @@ export const BlockModeEditor: React.FC<BlockModeEditorProps> = ({
             key={block.id}
             {...commonProps}
             renderChildBlock={renderChildBlock}
+            onAddChoice={handleAddChoice}
+            onDeleteChoice={handleDeleteChoice}
+            onBlockDropIntoChoice={handleBlockDropIntoChoice}
+            onBlockMoveIntoChoice={handleBlockMoveIntoChoice}
+            onBlockDrop={handleBlockDropIntoChoice}
+            onBlockMove={handleBlockMoveIntoChoice}
           />
         )
       
@@ -490,6 +730,8 @@ export const BlockModeEditor: React.FC<BlockModeEditorProps> = ({
             {...commonProps}
             availableLabels={labelOptions}
             renderChildBlock={renderChildBlock}
+            onBlockDrop={handleBlockDropIntoChoice}
+            onBlockMove={handleBlockMoveIntoChoice}
           />
         )
       
@@ -515,7 +757,7 @@ export const BlockModeEditor: React.FC<BlockModeEditorProps> = ({
           </BaseBlock>
         )
     }
-  }, [selectedBlockId, playback.currentBlockId, playback.isWaitingForMenu, playback.currentMenuBlock, validationErrors, readOnly, handleBlockClick, handleBlockDoubleClick, getSlotErrors, handleSlotChange, characterOptions, imageOptions, labelOptions, audioOptions])
+  }, [selectedBlockId, playback.currentBlockId, playback.isWaitingForMenu, playback.currentMenuBlock, validationErrors, readOnly, collapsedBlocks, handleBlockClick, handleBlockDoubleClick, handleToggleCollapse, getSlotErrors, handleSlotChange, characterOptions, imageOptions, labelOptions, audioOptions])
 
   // Error count for display
   const errorCount = validationErrors.length
@@ -527,7 +769,11 @@ export const BlockModeEditor: React.FC<BlockModeEditorProps> = ({
       onInvalidDrop={handleInvalidDrop}
       blockTree={blockTree}
     >
-      <div className={`block-mode-editor ${className}`}>
+      <div 
+        className={`block-mode-editor ${className}`}
+        onKeyDown={handleKeyDown}
+        tabIndex={0}
+      >
         {/* Main Content Area */}
         <div className="block-mode-editor-content">
           {/* Left Panel: Block Palette */}
@@ -548,6 +794,7 @@ export const BlockModeEditor: React.FC<BlockModeEditorProps> = ({
                 onBlockDoubleClick={handleBlockDoubleClick}
                 onBlockDrop={(blockType, index) => handlePaletteDrop(blockType as BlockType, blockTree.id, index)}
                 onBlockMove={(blockId, index) => handleBlockMove(blockId, blockTree.id, index)}
+                onBlockReorder={(blockId, newIndex) => handleBlockMove(blockId, blockTree.id, newIndex)}
                 renderBlock={renderBlock}
                 readOnly={readOnly}
                 selectedBlockId={selectedBlockId}

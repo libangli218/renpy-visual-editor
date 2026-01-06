@@ -7,7 +7,7 @@
  * Requirements: 5.5-5.8
  */
 
-import React, { useCallback } from 'react'
+import React, { useCallback, useState, useRef, useEffect } from 'react'
 import { Block, SlotOption } from '../types'
 import { BaseBlock, BaseBlockProps } from './BaseBlock'
 import './Block.css'
@@ -26,6 +26,10 @@ export interface FlowBlockProps extends Omit<BaseBlockProps, 'children'> {
   renderChildBlock?: (block: Block, depth: number) => React.ReactNode
   /** Current depth level */
   depth?: number
+  /** Callback when a block is dropped into this container */
+  onBlockDrop?: (blockType: string, containerId: string, index: number) => void
+  /** Callback when an existing block is moved into this container */
+  onBlockMove?: (blockId: string, containerId: string, index: number) => void
 }
 
 /**
@@ -45,6 +49,53 @@ function isSlotRequired(block: Block, slotName: string): boolean {
 }
 
 /**
+ * Count total blocks in a tree (including nested children)
+ */
+function countTotalBlocks(blocks: Block[]): number {
+  let count = 0
+  for (const block of blocks) {
+    count += 1
+    if (block.children && block.children.length > 0) {
+      count += countTotalBlocks(block.children)
+    }
+  }
+  return count
+}
+
+/**
+ * Get collapsed summary for If block
+ */
+function getIfCollapsedSummary(block: Block): string {
+  const children = block.children || []
+  
+  // Separate children into true branch and else/elif branches
+  const trueBranchChildren: Block[] = []
+  const elseBranches: Block[] = []
+  
+  for (const child of children) {
+    if (child.type === 'elif' || child.type === 'else') {
+      elseBranches.push(child)
+    } else {
+      trueBranchChildren.push(child)
+    }
+  }
+  
+  // Count branches: 1 (true branch) + number of elif/else branches
+  const branchCount = 1 + elseBranches.length
+  
+  // Count total blocks in all branches
+  let totalBlocks = trueBranchChildren.length
+  for (const branch of elseBranches) {
+    totalBlocks += 1 // Count the elif/else block itself
+    if (branch.children) {
+      totalBlocks += branch.children.length
+    }
+  }
+  
+  return `${branchCount}个分支，${totalBlocks}个积木`
+}
+
+/**
  * FlowBlock - Flow control block component
  * 
  * Implements Requirements:
@@ -60,14 +111,135 @@ export const FlowBlock: React.FC<FlowBlockProps> = ({
   slotErrors = {},
   renderChildBlock,
   depth = 0,
+  onBlockDrop,
+  onBlockMove,
   ...baseProps
 }) => {
+  // Drag-drop state for If block
+  const [isDragOver, setIsDragOver] = useState(false)
+  const [dropIndex, setDropIndex] = useState<number | null>(null)
+  const childrenContainerRef = useRef<HTMLDivElement>(null)
+  
+  // Reset drag state when drag ends globally (handles cases where drop happens outside)
+  useEffect(() => {
+    const handleGlobalDragEnd = () => {
+      setIsDragOver(false)
+      setDropIndex(null)
+    }
+    
+    document.addEventListener('dragend', handleGlobalDragEnd)
+    return () => {
+      document.removeEventListener('dragend', handleGlobalDragEnd)
+    }
+  }, [])
   /**
    * Handle slot value change
    */
   const handleSlotChange = useCallback((slotName: string, value: unknown) => {
     onSlotChange?.(block.id, slotName, value)
   }, [block.id, onSlotChange])
+  
+  /**
+   * Calculate drop index based on mouse Y position
+   */
+  const calculateDropIndex = useCallback((clientY: number): number => {
+    const children = block.children || []
+    if (!childrenContainerRef.current || children.length === 0) {
+      return 0
+    }
+
+    const blockElements = childrenContainerRef.current.querySelectorAll('[data-block-id]')
+    const containerRect = childrenContainerRef.current.getBoundingClientRect()
+    
+    if (clientY < containerRect.top) {
+      return 0
+    }
+
+    for (let i = 0; i < blockElements.length; i++) {
+      const blockRect = blockElements[i].getBoundingClientRect()
+      const blockMiddle = blockRect.top + blockRect.height / 2
+
+      if (clientY < blockMiddle) {
+        return i
+      }
+    }
+
+    return children.length
+  }, [block.children])
+  
+  /**
+   * Handle drag over the children container
+   */
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    
+    const hasBlockType = e.dataTransfer.types.includes('application/x-block-type')
+    const hasBlockId = e.dataTransfer.types.includes('application/x-block-id')
+    
+    if (hasBlockType || hasBlockId) {
+      e.dataTransfer.dropEffect = hasBlockType ? 'copy' : 'move'
+      setIsDragOver(true)
+      setDropIndex(calculateDropIndex(e.clientY))
+    }
+  }, [calculateDropIndex])
+  
+  /**
+   * Handle drag enter
+   */
+  const handleDragEnter = useCallback((e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setIsDragOver(true)
+  }, [])
+  
+  /**
+   * Handle drag leave
+   */
+  const handleDragLeave = useCallback((e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    
+    // Only clear if leaving the container entirely
+    const relatedTarget = e.relatedTarget as HTMLElement | null
+    const currentTarget = e.currentTarget as HTMLElement
+    
+    if (!relatedTarget || !currentTarget.contains(relatedTarget)) {
+      setIsDragOver(false)
+      setDropIndex(null)
+    }
+  }, [])
+  
+  /**
+   * Handle drop
+   */
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    
+    const index = calculateDropIndex(e.clientY)
+
+    // Reset drag state first
+    setIsDragOver(false)
+    setDropIndex(null)
+
+    // Check if dropping a block from palette (new block)
+    const blockType = e.dataTransfer.getData('application/x-block-type')
+    if (blockType) {
+      onBlockDrop?.(blockType, block.id, index)
+      return
+    }
+
+    // Check if dropping an existing block (move)
+    const blockId = e.dataTransfer.getData('application/x-block-id')
+    if (blockId) {
+      // Don't allow dropping a block into itself
+      if (blockId === block.id) {
+        return
+      }
+      onBlockMove?.(blockId, block.id, index)
+    }
+  }, [calculateDropIndex, block.id, onBlockDrop, onBlockMove])
   
   // Check for errors
   const hasSlotErrors = Object.keys(slotErrors).length > 0
@@ -199,8 +371,15 @@ export const FlowBlock: React.FC<FlowBlockProps> = ({
           />
         </div>
         
-        {/* Branches Container */}
-        <div className="if-branches-container">
+        {/* Branches Container with drag-drop support */}
+        <div 
+          ref={childrenContainerRef}
+          className={`if-branches-container ${isDragOver ? 'drag-over' : ''}`}
+          onDragOver={handleDragOver}
+          onDragEnter={handleDragEnter}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
+        >
           {/* True Branch */}
           <div className="if-branch true-branch">
             <div className="if-branch-header">
@@ -227,6 +406,13 @@ export const FlowBlock: React.FC<FlowBlockProps> = ({
           {elseBranches.map(branch => (
             renderChildBlock ? renderChildBlock(branch, depth) : null
           ))}
+          
+          {/* Drop indicator */}
+          {isDragOver && (
+            <div 
+              className="if-drop-indicator"
+            />
+          )}
         </div>
       </div>
     )
@@ -256,8 +442,15 @@ export const FlowBlock: React.FC<FlowBlockProps> = ({
           />
         </div>
         
-        {/* Children Container */}
-        <div className={`block-children-container ${children.length === 0 ? 'empty' : ''}`}>
+        {/* Children Container with drag-drop support */}
+        <div 
+          ref={childrenContainerRef}
+          className={`block-children-container ${children.length === 0 ? 'empty' : ''} ${isDragOver ? 'drag-over' : ''}`}
+          onDragOver={handleDragOver}
+          onDragEnter={handleDragEnter}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
+        >
           {children.length === 0 ? (
             <span className="block-children-placeholder">
               拖拽积木到这里
@@ -266,6 +459,11 @@ export const FlowBlock: React.FC<FlowBlockProps> = ({
             children.map(child => 
               renderChildBlock ? renderChildBlock(child, depth + 1) : null
             )
+          )}
+          
+          {/* Drop indicator */}
+          {isDragOver && (
+            <div className="elif-drop-indicator" />
           )}
         </div>
       </div>
@@ -284,7 +482,14 @@ export const FlowBlock: React.FC<FlowBlockProps> = ({
           <div className="if-branch-header">
             <span>❌ 否则执行:</span>
           </div>
-          <div className={`if-branch-children ${children.length === 0 ? 'empty' : ''}`}>
+          <div 
+            ref={childrenContainerRef}
+            className={`if-branch-children ${children.length === 0 ? 'empty' : ''} ${isDragOver ? 'drag-over' : ''}`}
+            onDragOver={handleDragOver}
+            onDragEnter={handleDragEnter}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+          >
             {children.length === 0 ? (
               <div className="block-children-container empty">
                 <span className="block-children-placeholder">
@@ -298,6 +503,11 @@ export const FlowBlock: React.FC<FlowBlockProps> = ({
                 )}
               </div>
             )}
+            
+            {/* Drop indicator */}
+            {isDragOver && (
+              <div className="else-drop-indicator" />
+            )}
           </div>
         </div>
       </div>
@@ -308,13 +518,21 @@ export const FlowBlock: React.FC<FlowBlockProps> = ({
   const isContainer = ['if', 'elif', 'else'].includes(block.type)
   const children = block.children || []
   
+  // For If blocks, always show collapse button since they have branches
+  // For elif/else, show collapse button if they have children
+  const shouldShowCollapseButton = block.type === 'if' || (isContainer && children.length > 0)
+  
+  // Get custom collapsed summary for If blocks
+  const collapsedSummary = block.type === 'if' ? getIfCollapsedSummary(block) : undefined
+  
   return (
     <BaseBlock
       {...baseProps}
       block={block}
       hasError={hasError}
       className={`flow-block flow-block-${block.type} ${block.type === 'return' ? 'return-block' : ''} ${baseProps.className || ''}`}
-      showCollapseButton={isContainer && children.length > 0}
+      showCollapseButton={shouldShowCollapseButton}
+      collapsedSummary={collapsedSummary}
       depth={depth}
     >
       {renderContent()}

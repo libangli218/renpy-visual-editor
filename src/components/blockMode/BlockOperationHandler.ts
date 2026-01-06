@@ -137,6 +137,16 @@ export class BlockOperationHandler {
     // Create the new block
     const newBlock = this.createBlock(type)
     
+    // Special handling for choice blocks - they are added to menu's choices array
+    if (type === 'choice' && parent.type === 'menu') {
+      return this.addChoiceToMenu(newBlock, parent, index, context)
+    }
+    
+    // Special handling for elif/else blocks - they are added to if's branches
+    if ((type === 'elif' || type === 'else') && parent.type === 'if') {
+      return this.addBranchToIf(newBlock, parent, index, context)
+    }
+    
     // Create corresponding AST node
     const astNode = this.createAstNode(type, newBlock)
     if (!astNode) {
@@ -167,6 +177,135 @@ export class BlockOperationHandler {
   }
 
   /**
+   * Add a choice block to a menu
+   * 
+   * @param choiceBlock - The choice block to add
+   * @param menuBlock - The parent menu block
+   * @param index - The position to insert at
+   * @param context - The operation context
+   * @returns Operation result with new block ID
+   */
+  private addChoiceToMenu(
+    choiceBlock: Block,
+    menuBlock: Block,
+    index: number,
+    context: BlockOperationContext
+  ): BlockOperationResult {
+    const { blockTree, ast, labelName } = context
+
+    // Find the menu AST node
+    const menuNode = this.findAstNodeById(ast, menuBlock.astNodeId) as MenuNode | null
+    if (!menuNode || menuNode.type !== 'menu') {
+      return { success: false, error: 'Menu AST node not found' }
+    }
+
+    // Get the choice text from the block's slot
+    const textSlot = choiceBlock.slots.find(s => s.name === 'text')
+    const choiceText = (textSlot?.value as string) || `选项 ${menuNode.choices.length + 1}`
+    
+    // Update the slot value if it was empty
+    if (textSlot && !textSlot.value) {
+      textSlot.value = choiceText
+    }
+
+    // Create the AST choice entry
+    const astChoice = {
+      text: choiceText,
+      condition: undefined,
+      body: [] as ASTNode[],
+    }
+
+    // Set the astNodeId for the choice block (synthetic ID based on menu + choice text)
+    choiceBlock.astNodeId = `${menuBlock.astNodeId}_choice_${choiceText}`
+
+    // Insert choice into menu's children
+    const insertIndex = Math.min(Math.max(0, index), menuBlock.children?.length ?? 0)
+    if (!menuBlock.children) {
+      menuBlock.children = []
+    }
+    menuBlock.children.splice(insertIndex, 0, choiceBlock)
+
+    // Insert choice into AST menu's choices array
+    const astInsertIndex = Math.min(Math.max(0, index), menuNode.choices.length)
+    menuNode.choices.splice(astInsertIndex, 0, astChoice)
+
+    return {
+      success: true,
+      blockId: choiceBlock.id,
+      blockTree,
+      ast,
+    }
+  }
+
+  /**
+   * Add an elif/else branch block to an if block
+   * 
+   * @param branchBlock - The elif/else block to add
+   * @param ifBlock - The parent if block
+   * @param index - The position to insert at
+   * @param context - The operation context
+   * @returns Operation result with new block ID
+   */
+  private addBranchToIf(
+    branchBlock: Block,
+    ifBlock: Block,
+    index: number,
+    context: BlockOperationContext
+  ): BlockOperationResult {
+    const { blockTree, ast } = context
+
+    // Find the if AST node
+    const ifNode = this.findAstNodeById(ast, ifBlock.astNodeId) as IfNode | null
+    if (!ifNode || ifNode.type !== 'if') {
+      return { success: false, error: 'If AST node not found' }
+    }
+
+    // Get the condition from the block's slot (for elif)
+    const conditionSlot = branchBlock.slots.find(s => s.name === 'condition')
+    const condition = branchBlock.type === 'else' 
+      ? null  // else has no condition
+      : (conditionSlot?.value as string) || 'True'
+    
+    // Update the slot value if it was empty (for elif)
+    if (branchBlock.type === 'elif' && conditionSlot && !conditionSlot.value) {
+      conditionSlot.value = condition
+    }
+
+    // Create the AST branch entry
+    const astBranch = {
+      condition: condition,
+      body: [] as ASTNode[],
+    }
+
+    // Determine the branch index in the AST
+    // The first branch is the "true" branch of the if, subsequent branches are elif/else
+    const branchIndex = ifNode.branches.length
+
+    // Set the astNodeId for the branch block (synthetic ID based on if + branch index)
+    branchBlock.astNodeId = `${ifBlock.astNodeId}_branch_${branchIndex}`
+
+    // Insert branch block into if's children
+    // elif/else blocks should be added after regular children (true branch content)
+    if (!ifBlock.children) {
+      ifBlock.children = []
+    }
+    
+    // Find the correct position - elif/else should be at the end
+    const insertIndex = ifBlock.children.length
+    ifBlock.children.splice(insertIndex, 0, branchBlock)
+
+    // Insert branch into AST if's branches array
+    ifNode.branches.push(astBranch)
+
+    return {
+      success: true,
+      blockId: branchBlock.id,
+      blockTree,
+      ast,
+    }
+  }
+
+  /**
    * Delete a block from the block tree and AST
    * 
    * @param blockId - The ID of the block to delete
@@ -185,6 +324,11 @@ export class BlockOperationHandler {
       return { success: false, error: `Block not found: ${blockId}` }
     }
 
+    // Special handling for choice blocks - they are removed from menu's choices array
+    if (block.type === 'choice' && parent.type === 'menu') {
+      return this.deleteChoiceFromMenu(block, parent, index, context)
+    }
+
     // Collect all AST node IDs to remove (including children)
     const astNodeIds = this.collectAstNodeIds(block)
 
@@ -196,6 +340,51 @@ export class BlockOperationHandler {
     // Remove AST nodes
     for (const astNodeId of astNodeIds) {
       this.removeAstNode(astNodeId, ast, labelName)
+    }
+
+    return {
+      success: true,
+      blockTree,
+      ast,
+    }
+  }
+
+  /**
+   * Delete a choice block from a menu
+   * 
+   * @param choiceBlock - The choice block to delete
+   * @param menuBlock - The parent menu block
+   * @param index - The index of the choice in the menu
+   * @param context - The operation context
+   * @returns Operation result
+   */
+  private deleteChoiceFromMenu(
+    choiceBlock: Block,
+    menuBlock: Block,
+    index: number,
+    context: BlockOperationContext
+  ): BlockOperationResult {
+    const { blockTree, ast } = context
+
+    // Find the menu AST node
+    const menuNode = this.findAstNodeById(ast, menuBlock.astNodeId) as MenuNode | null
+    if (!menuNode || menuNode.type !== 'menu') {
+      return { success: false, error: 'Menu AST node not found' }
+    }
+
+    // Get the choice text to find the matching AST choice
+    const textSlot = choiceBlock.slots.find(s => s.name === 'text')
+    const choiceText = textSlot?.value as string
+
+    // Find and remove the choice from AST menu's choices array
+    const astChoiceIndex = menuNode.choices.findIndex(c => c.text === choiceText)
+    if (astChoiceIndex !== -1) {
+      menuNode.choices.splice(astChoiceIndex, 1)
+    }
+
+    // Remove choice block from menu's children
+    if (menuBlock.children) {
+      menuBlock.children.splice(index, 1)
     }
 
     return {
@@ -737,12 +926,20 @@ export class BlockOperationHandler {
     labelName: string
   ): { success: boolean; error?: string } {
     // Find the label in the AST
-    const label = ast.statements.find(
+    let label = ast.statements.find(
       s => s.type === 'label' && (s as LabelNode).name === labelName
     ) as LabelNode | undefined
 
+    // If label doesn't exist in AST, create it (for new empty labels)
     if (!label) {
-      return { success: false, error: `Label not found: ${labelName}` }
+      const newLabel: LabelNode = {
+        id: generateAstId('label'),
+        type: 'label',
+        name: labelName,
+        body: [],
+      }
+      ast.statements.push(newLabel)
+      label = newLabel
     }
 
     // Determine where to insert based on parent block type
@@ -1125,10 +1322,28 @@ export class BlockOperationHandler {
       return { success: false, error: 'Menu not found for choice' }
     }
 
-    // Find the choice by the old text value
-    const textSlot = block.slots.find(s => s.name === 'text')
-    const oldText = slotName === 'text' ? textSlot?.value : textSlot?.value
-    const choice = menuNode.choices.find(c => c.text === oldText)
+    // For text changes, we need to find the choice by the OLD text (from astNodeId)
+    // because the slot value has already been updated
+    let choice
+    if (slotName === 'text') {
+      // Extract old text from astNodeId: {menuId}_choice_{oldText}
+      const match = block.astNodeId.match(/_choice_(.+)$/)
+      const oldText = match ? match[1] : null
+      choice = oldText ? menuNode.choices.find(c => c.text === oldText) : null
+      
+      // Update the astNodeId with the new text
+      if (choice) {
+        const menuIdMatch = block.astNodeId.match(/^(.+)_choice_/)
+        if (menuIdMatch) {
+          block.astNodeId = `${menuIdMatch[1]}_choice_${value as string}`
+        }
+      }
+    } else {
+      // For other properties, find by current text
+      const textSlot = block.slots.find(s => s.name === 'text')
+      const currentText = textSlot?.value as string
+      choice = menuNode.choices.find(c => c.text === currentText)
+    }
     
     if (!choice) {
       return { success: false, error: 'Choice not found in menu' }
