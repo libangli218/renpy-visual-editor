@@ -23,8 +23,8 @@ export interface MultiLabelToolbarProps {
   searchQuery: string
   /** Search change callback */
   onSearchChange: (query: string) => void
-  /** Create new label callback */
-  onCreateLabel: () => void
+  /** Create new label callback - receives the validated label name */
+  onCreateLabel: (labelName: string) => void
   /** Layout mode */
   layoutMode: LayoutMode
   /** Layout change callback */
@@ -41,6 +41,8 @@ export interface MultiLabelToolbarProps {
   readOnly?: boolean
   /** Additional class name */
   className?: string
+  /** Existing label names for duplicate validation */
+  existingLabelNames?: string[]
 }
 
 /**
@@ -64,6 +66,7 @@ export const MultiLabelToolbar: React.FC<MultiLabelToolbarProps> = memo(({
   filteredCount,
   readOnly = false,
   className = '',
+  existingLabelNames = [],
 }) => {
   // State for new label dialog
   const [showNewLabelDialog, setShowNewLabelDialog] = useState(false)
@@ -114,9 +117,15 @@ export const MultiLabelToolbar: React.FC<MultiLabelToolbarProps> = memo(({
       return
     }
 
+    // Check for duplicate names
+    if (existingLabelNames.includes(trimmedName)) {
+      setNewLabelError(`Label "${trimmedName}" 已存在，请使用其他名称`)
+      return
+    }
+
     setShowNewLabelDialog(false)
-    onCreateLabel()
-  }, [newLabelName, onCreateLabel])
+    onCreateLabel(trimmedName)
+  }, [newLabelName, onCreateLabel, existingLabelNames])
 
   // Handle new label cancel
   const handleCancelNewLabel = useCallback(() => {

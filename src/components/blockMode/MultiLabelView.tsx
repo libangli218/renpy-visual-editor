@@ -155,19 +155,9 @@ export const MultiLabelView: React.FC<MultiLabelViewProps> = ({
   }, [expandAll])
 
   // Handle create new label
-  const handleCreateLabel = useCallback(() => {
-    // The toolbar will handle showing the dialog
-    // This callback is called when the user confirms creation
-    // For now, we'll create a default label name
+  // Implements Requirements 5.1, 5.2: Create new label with validated name
+  const handleCreateLabel = useCallback((labelName: string) => {
     if (!ast || readOnly) return
-
-    // Generate a unique label name
-    let labelName = 'new_label'
-    let counter = 1
-    while (labelDataList.some(l => l.name === labelName)) {
-      labelName = `new_label_${counter}`
-      counter++
-    }
 
     // Create new label node
     const newLabelNode: LabelNode = {
@@ -184,7 +174,7 @@ export const MultiLabelView: React.FC<MultiLabelViewProps> = ({
     }
 
     onAstChange?.(newAst)
-  }, [ast, readOnly, labelDataList, onAstChange])
+  }, [ast, readOnly, onAstChange])
 
   // Handle delete label
   const handleDeleteLabel = useCallback((labelName: string) => {
@@ -560,6 +550,7 @@ export const MultiLabelView: React.FC<MultiLabelViewProps> = ({
         labelCount={labelDataList.length}
         filteredCount={filteredLabels.length}
         readOnly={readOnly}
+        existingLabelNames={allLabelNames}
       />
 
       {/* Main Content */}
