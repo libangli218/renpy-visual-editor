@@ -31,7 +31,7 @@ import { MenuBlock } from './blocks/MenuBlock'
 import { FlowBlock } from './blocks/FlowBlock'
 import { AudioBlock } from './blocks/AudioBlock'
 import { RenpyScript, LabelNode } from '../../types/ast'
-import { Block, BlockType, SlotOption } from './types'
+import { Block, BlockType, SlotOption, BlockClipboard } from './types'
 import { ImageTag } from '../../resource/ResourceManager'
 import './MultiLabelView.css'
 
@@ -143,7 +143,15 @@ export const MultiLabelView: React.FC<MultiLabelViewProps> = ({
   })
 
   // Block editor store for validation and collapse
-  const { validationErrors, collapsedBlocks, toggleBlockCollapsed } = useBlockEditorStore()
+  const { 
+    validationErrors, 
+    collapsedBlocks, 
+    toggleBlockCollapsed,
+    selectedBlockId,
+    setSelectedBlockId,
+    clipboard,
+    setClipboard,
+  } = useBlockEditorStore()
 
   // Canvas ref for imperative navigation
   const canvasRef = useRef<FreeCanvasHandle>(null)
@@ -629,10 +637,10 @@ export const MultiLabelView: React.FC<MultiLabelViewProps> = ({
     setSelectedLabel(labelName)
   }, [setSelectedLabel])
 
-  // Handle block click within a label
-  const handleBlockClick = useCallback((_blockId: string) => {
-    // Could be used for selection
-  }, [])
+  // Handle block click within a label - select the block
+  const handleBlockClick = useCallback((blockId: string) => {
+    setSelectedBlockId(blockId)
+  }, [setSelectedBlockId])
 
   // Handle block double click
   const handleBlockDoubleClick = useCallback((_blockId: string) => {
@@ -859,9 +867,176 @@ export const MultiLabelView: React.FC<MultiLabelViewProps> = ({
     })
 
     if (result.success && result.ast) {
+      // Clear selection if deleted block was selected
+      if (selectedBlockId === blockId) {
+        setSelectedBlockId(null)
+      }
       onAstChange?.(result.ast)
     }
-  }, [readOnly, ast, blockOperationHandler, onAstChange])
+  }, [readOnly, ast, blockOperationHandler, onAstChange, selectedBlockId, setSelectedBlockId])
+
+  // Helper function to find block and its label
+  const findBlockAndLabel = useCallback((blockId: string): { block: Block; labelData: LabelData } | null => {
+    for (const labelData of labelDataList) {
+      const findBlock = (block: Block): Block | null => {
+        if (block.id === blockId) return block
+        if (block.children) {
+          for (const child of block.children) {
+            const found = findBlock(child)
+            if (found) return found
+          }
+        }
+        return null
+      }
+      
+      const block = findBlock(labelData.blockTree)
+      if (block) {
+        return { block, labelData }
+      }
+    }
+    return null
+  }, [labelDataList])
+
+  // Helper function to find parent block and index
+  const findParentAndIndex = useCallback((root: Block, blockId: string): { parent: Block; index: number } | null => {
+    if (root.children) {
+      for (let i = 0; i < root.children.length; i++) {
+        if (root.children[i].id === blockId) {
+          return { parent: root, index: i }
+        }
+        const found = findParentAndIndex(root.children[i], blockId)
+        if (found) return found
+      }
+    }
+    return null
+  }, [])
+
+  // Handle copy block (Ctrl+C)
+  const handleCopyBlock = useCallback(() => {
+    if (!selectedBlockId) return
+    
+    const result = findBlockAndLabel(selectedBlockId)
+    if (!result) return
+    
+    const clipboardData: BlockClipboard = {
+      blocks: [JSON.parse(JSON.stringify(result.block))],
+      sourceLabel: result.labelData.name,
+      timestamp: Date.now(),
+    }
+    
+    setClipboard(clipboardData)
+  }, [selectedBlockId, findBlockAndLabel, setClipboard])
+
+  // Handle paste block (Ctrl+V)
+  const handlePasteBlock = useCallback(() => {
+    if (readOnly || !clipboard || !ast) return
+    
+    // Determine paste target - if a block is selected, paste after it
+    // Otherwise paste at the end of the first label
+    let targetLabelData: LabelData | null = null
+    let parentId: string | null = null
+    let index = 0
+    
+    if (selectedBlockId) {
+      const result = findBlockAndLabel(selectedBlockId)
+      if (result) {
+        targetLabelData = result.labelData
+        const parentResult = findParentAndIndex(result.labelData.blockTree, selectedBlockId)
+        if (parentResult) {
+          parentId = parentResult.parent.id
+          index = parentResult.index + 1
+        } else {
+          // Selected block is at root level
+          parentId = result.labelData.blockTree.id
+          const rootChildren = result.labelData.blockTree.children || []
+          const selectedIndex = rootChildren.findIndex(c => c.id === selectedBlockId)
+          index = selectedIndex >= 0 ? selectedIndex + 1 : rootChildren.length
+        }
+      }
+    }
+    
+    // If no selection, paste at the end of the first label
+    if (!targetLabelData && labelDataList.length > 0) {
+      targetLabelData = labelDataList[0]
+      parentId = targetLabelData.blockTree.id
+      index = targetLabelData.blockTree.children?.length ?? 0
+    }
+    
+    if (!targetLabelData || !parentId) return
+    
+    const pasteResult = blockOperationHandler.pasteBlock(clipboard, parentId, index, {
+      blockTree: targetLabelData.blockTree,
+      ast,
+      labelName: targetLabelData.name,
+    })
+    
+    if (pasteResult.success && pasteResult.ast) {
+      if (pasteResult.blockId) {
+        setSelectedBlockId(pasteResult.blockId)
+      }
+      onAstChange?.(pasteResult.ast)
+    }
+  }, [readOnly, clipboard, ast, selectedBlockId, labelDataList, findBlockAndLabel, findParentAndIndex, blockOperationHandler, setSelectedBlockId, onAstChange])
+
+  // Handle cut block (Ctrl+X)
+  const handleCutBlock = useCallback(() => {
+    if (readOnly || !selectedBlockId) return
+    
+    // First copy
+    handleCopyBlock()
+    
+    // Then delete
+    const result = findBlockAndLabel(selectedBlockId)
+    if (result) {
+      handleDeleteBlock(result.labelData.name, result.labelData.blockTree, selectedBlockId)
+    }
+  }, [readOnly, selectedBlockId, handleCopyBlock, findBlockAndLabel, handleDeleteBlock])
+
+  // Handle keyboard events for delete, copy, paste
+  const handleKeyDown = useCallback((event: React.KeyboardEvent) => {
+    // Don't handle shortcuts when typing in input fields
+    const target = event.target as HTMLElement
+    if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable) {
+      return
+    }
+
+    // Ctrl+C to copy
+    if ((event.ctrlKey || event.metaKey) && event.key === 'c' && selectedBlockId) {
+      event.preventDefault()
+      handleCopyBlock()
+      return
+    }
+    
+    // Ctrl+V to paste
+    if ((event.ctrlKey || event.metaKey) && event.key === 'v' && clipboard) {
+      event.preventDefault()
+      handlePasteBlock()
+      return
+    }
+    
+    // Ctrl+X to cut
+    if ((event.ctrlKey || event.metaKey) && event.key === 'x' && selectedBlockId && !readOnly) {
+      event.preventDefault()
+      handleCutBlock()
+      return
+    }
+
+    // Delete or Backspace to delete selected block
+    if ((event.key === 'Delete' || event.key === 'Backspace') && selectedBlockId && !readOnly) {
+      event.preventDefault()
+      
+      // Find which label contains the selected block
+      const result = findBlockAndLabel(selectedBlockId)
+      if (result) {
+        handleDeleteBlock(result.labelData.name, result.labelData.blockTree, selectedBlockId)
+      }
+    }
+    
+    // Escape to clear selection
+    if (event.key === 'Escape') {
+      setSelectedBlockId(null)
+    }
+  }, [selectedBlockId, readOnly, clipboard, findBlockAndLabel, handleDeleteBlock, setSelectedBlockId, handleCopyBlock, handlePasteBlock, handleCutBlock])
 
   // Build character options
   const characterOptions: SlotOption[] = useMemo(() => {
@@ -919,7 +1094,7 @@ export const MultiLabelView: React.FC<MultiLabelViewProps> = ({
   // Render block function for LabelContainer
   const createRenderBlock = useCallback((labelName: string, blockTree: Block) => {
     return (block: Block, _index: number): React.ReactNode => {
-      const isSelected = false // Could track selection per label
+      const isSelected = selectedBlockId === block.id
       const blockErrors = validationErrors.filter(e => e.blockId === block.id)
       const hasError = blockErrors.length > 0
       const errorMessage = blockErrors.map(e => e.message).join('; ')
@@ -1060,6 +1235,7 @@ export const MultiLabelView: React.FC<MultiLabelViewProps> = ({
     transform.scale,
     collapsedBlocks,
     toggleBlockCollapsed,
+    selectedBlockId,
   ])
 
   // Build class names
@@ -1074,7 +1250,11 @@ export const MultiLabelView: React.FC<MultiLabelViewProps> = ({
 
   return (
     <DragDropProvider>
-      <div className={viewClasses}>
+      <div 
+        className={viewClasses}
+        onKeyDown={handleKeyDown}
+        tabIndex={0}
+      >
         {/* Toolbar with zoom controls */}
         <MultiLabelToolbar
           searchQuery={searchQuery}

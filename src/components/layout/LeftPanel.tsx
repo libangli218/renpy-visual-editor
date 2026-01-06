@@ -40,7 +40,7 @@ const sections: SectionConfig[] = [
 ]
 
 export const LeftPanel: React.FC = () => {
-  const { projectPath, setProjectPath, setAst } = useEditorStore()
+  const { projectPath, setProjectPath, setAst, resetHistory } = useEditorStore()
   const [expandedSections, setExpandedSections] = useState<Set<PanelSection>>(
     new Set(['labels', 'characters'])
   )
@@ -102,6 +102,8 @@ export const LeftPanel: React.FC = () => {
             setAst(defaultScript)
           }
         }
+        // Reset history after loading project to prevent undo from going back to empty state
+        resetHistory()
       } else {
         setError(result.error || 'Failed to open project')
       }
@@ -155,6 +157,8 @@ export const LeftPanel: React.FC = () => {
             setAst(defaultScript)
           }
         }
+        // Reset history after creating project to prevent undo from going back to empty state
+        resetHistory()
       } else {
         setError(result.error || 'Failed to create project')
       }

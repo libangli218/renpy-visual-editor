@@ -70,6 +70,7 @@ export interface EditorStore {
   undo: () => void
   redo: () => void
   pushToHistory: () => void
+  resetHistory: () => void
   
   // Get current state snapshot
   getStateSnapshot: () => EditorState
@@ -223,6 +224,17 @@ export const useEditorStore = create<EditorStore>((set, get) => {
       set({
         canUndo: historyManager.canUndo(),
         canRedo: historyManager.canRedo(),
+      })
+    },
+
+    // Reset history with current state as the new initial state
+    // Used when loading a project to prevent undo from going back to empty state
+    resetHistory: () => {
+      const state = get()
+      historyManager.initialize(createStateSnapshot(state))
+      set({
+        canUndo: false,
+        canRedo: false,
       })
     },
     
