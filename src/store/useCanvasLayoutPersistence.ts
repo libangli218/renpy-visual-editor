@@ -8,7 +8,7 @@
  * Requirements: 4.1
  */
 
-import { useCallback, useEffect, useRef } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useCanvasLayoutStore, Point, CanvasTransform } from './canvasLayoutStore'
 import {
   loadCanvasLayout,
@@ -52,6 +52,8 @@ export interface UseCanvasLayoutPersistenceReturn {
   saveImmediate: () => Promise<void>
   /** Whether currently loading */
   isLoading: boolean
+  /** Whether load has been attempted at least once */
+  hasLoadedOnce: boolean
   /** Whether there are unsaved changes */
   hasUnsavedChanges: boolean
   /** Last error message */
@@ -108,8 +110,11 @@ export function useCanvasLayoutPersistence(
     saveTransform = true,
   } = options
 
-  // State refs
-  const isLoadingRef = useRef(false)
+  // State - use useState for isLoading so component re-renders when loading completes
+  const [isLoading, setIsLoading] = useState(false)
+  const [hasLoadedOnce, setHasLoadedOnce] = useState(false)
+  
+  // Refs for values that don't need to trigger re-renders
   const hasUnsavedChangesRef = useRef(false)
   const errorRef = useRef<string | null>(null)
   const lastSavedPositionsRef = useRef<string>('')
@@ -173,10 +178,13 @@ export function useCanvasLayoutPersistence(
    */
   const load = useCallback(async () => {
     if (!projectPath) {
+      console.log('[Persistence] No project path, skipping load')
+      setHasLoadedOnce(true) // Mark as loaded even without project path
       return
     }
 
-    isLoadingRef.current = true
+    console.log('[Persistence] Loading layout from:', projectPath)
+    setIsLoading(true)
     errorRef.current = null
 
     try {
@@ -185,38 +193,50 @@ export function useCanvasLayoutPersistence(
       if (config) {
         // Load positions
         const positions = positionsRecordToMap(config.positions)
+        console.log('[Persistence] Loaded positions:', positions.size, 'labels')
         setLabelPositions(positions)
         lastSavedPositionsRef.current = JSON.stringify(Array.from(positions.entries()))
 
         // Load transform if available
         if (config.lastTransform) {
+          console.log('[Persistence] Loaded transform:', config.lastTransform)
           setTransform(config.lastTransform)
         }
+      } else {
+        console.log('[Persistence] No config found, initializing empty')
+        // Initialize lastSavedPositionsRef to empty array string so auto-save knows this is the initial state
+        lastSavedPositionsRef.current = '[]'
       }
       
       hasUnsavedChangesRef.current = false
     } catch (error) {
       errorRef.current = error instanceof Error ? error.message : String(error)
       console.error('Failed to load canvas layout:', error)
+      // Still initialize lastSavedPositionsRef on error
+      lastSavedPositionsRef.current = '[]'
     } finally {
-      isLoadingRef.current = false
+      setIsLoading(false)
+      setHasLoadedOnce(true)
+      console.log('[Persistence] Load complete, hasLoadedOnce = true')
     }
   }, [projectPath, fileSystem, setLabelPositions, setTransform])
 
   /**
    * Auto-save when positions change
+   * Only save after initial load is complete to avoid overwriting saved data
    */
   useEffect(() => {
-    if (!autoSave || !projectPath) {
+    if (!autoSave || !projectPath || !hasLoadedOnce) {
       return
     }
 
-    // Check if positions actually changed
+    // Check if positions actually changed from last saved state
     const currentPositions = JSON.stringify(Array.from(labelPositions.entries()))
-    if (currentPositions !== lastSavedPositionsRef.current) {
+    if (currentPositions !== lastSavedPositionsRef.current && lastSavedPositionsRef.current !== '') {
+      console.log('[Persistence] Auto-saving positions, changed from last saved')
       save()
     }
-  }, [labelPositions, autoSave, projectPath, save])
+  }, [labelPositions, autoSave, projectPath, save, hasLoadedOnce])
 
   /**
    * Save on unmount if there are unsaved changes
@@ -242,7 +262,8 @@ export function useCanvasLayoutPersistence(
     load,
     save,
     saveImmediate,
-    isLoading: isLoadingRef.current,
+    isLoading,
+    hasLoadedOnce,
     hasUnsavedChanges: hasUnsavedChangesRef.current,
     error: errorRef.current,
   }

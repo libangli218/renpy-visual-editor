@@ -136,7 +136,7 @@ export const MultiLabelView: React.FC<MultiLabelViewProps> = ({
   } = useCanvasLayoutStore()
 
   // Canvas layout persistence
-  const { load: loadLayout, save: saveLayout } = useCanvasLayoutPersistence({
+  const { load: loadLayout, save: saveLayout, hasLoadedOnce } = useCanvasLayoutPersistence({
     projectPath,
     autoSave: true,
     saveTransform: true,
@@ -191,18 +191,30 @@ export const MultiLabelView: React.FC<MultiLabelViewProps> = ({
   )
 
   // Initialize positions for labels that don't have saved positions
+  // Only run after persistence has loaded (or if no project path)
   // Requirements: 4.3
   useEffect(() => {
+    console.log('[MultiLabelView] Init positions effect - projectPath:', projectPath, 'hasLoadedOnce:', hasLoadedOnce, 'labelDataList.length:', labelDataList.length, 'labelPositions.size:', labelPositions.size)
+    
+    // Wait for persistence to load first (if project path is set)
+    if (projectPath && !hasLoadedOnce) {
+      console.log('[MultiLabelView] Waiting for persistence to load...')
+      return
+    }
     if (labelDataList.length === 0) return
 
     const labelNames = labelDataList.map(l => l.name)
     const mergedPositions = mergeWithAutoLayout(labelPositions, labelNames)
     
-    // Only update if there are new positions
-    if (mergedPositions.size !== labelPositions.size) {
+    // Only update if there are new positions (missing labels)
+    const missingCount = mergedPositions.size - labelPositions.size
+    console.log('[MultiLabelView] Merged positions:', mergedPositions.size, 'existing:', labelPositions.size, 'missing:', missingCount)
+    
+    if (missingCount > 0) {
+      console.log('[MultiLabelView] Setting merged positions')
       setLabelPositions(mergedPositions)
     }
-  }, [labelDataList, labelPositions, setLabelPositions])
+  }, [labelDataList, labelPositions, setLabelPositions, projectPath, hasLoadedOnce])
 
   // Load layout on mount and when project path changes
   useEffect(() => {

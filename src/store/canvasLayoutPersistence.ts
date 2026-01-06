@@ -74,17 +74,31 @@ export const electronCanvasLayoutFileSystem: CanvasLayoutFileSystem = {
 
 /**
  * Join path segments (cross-platform)
+ * Handles both Windows backslashes and Unix forward slashes
  */
 function joinPath(...segments: string[]): string {
-  return segments.join('/').replace(/\/+/g, '/')
+  // Normalize all segments to use forward slashes
+  const normalized = segments.map(s => s.replace(/\\/g, '/'))
+  // Join with forward slash and remove duplicate slashes
+  const joined = normalized.join('/').replace(/\/+/g, '/')
+  // On Windows, convert back to backslashes if the path starts with a drive letter
+  if (/^[A-Za-z]:/.test(joined)) {
+    return joined.replace(/\//g, '\\')
+  }
+  return joined
 }
 
 /**
  * Get directory path from file path
+ * Handles both Windows backslashes and Unix forward slashes
  */
 function getDirPath(filePath: string): string {
   const parts = filePath.split(/[/\\]/)
   parts.pop()
+  // On Windows, use backslashes if the path starts with a drive letter
+  if (/^[A-Za-z]:/.test(filePath)) {
+    return parts.join('\\')
+  }
   return parts.join('/')
 }
 
@@ -151,16 +165,21 @@ export async function loadCanvasLayout(
   fs: CanvasLayoutFileSystem = electronCanvasLayoutFileSystem
 ): Promise<CanvasLayoutConfig | null> {
   const configPath = joinPath(projectPath, CANVAS_LAYOUT_CONFIG_PATH)
+  console.log('[loadCanvasLayout] Config path:', configPath)
   
   try {
     // Check if config file exists
-    if (!await fs.exists(configPath)) {
+    const exists = await fs.exists(configPath)
+    console.log('[loadCanvasLayout] File exists:', exists)
+    if (!exists) {
       return null
     }
     
     // Read and parse config file
     const content = await fs.readFile(configPath)
+    console.log('[loadCanvasLayout] File content length:', content?.length, 'first 200 chars:', content?.substring(0, 200))
     const config = JSON.parse(content) as unknown
+    console.log('[loadCanvasLayout] Parsed config:', config)
     
     // Validate config structure
     if (typeof config !== 'object' || config === null) {
