@@ -46,6 +46,11 @@ export * from './slots'
 
 // Container Components
 export * from './LabelContainer'
+export * from './LabelCard'
+
+// Multi-Label View Components
+export * from './MultiLabelToolbar'
+export * from './MultiLabelView'
 
 // Drag-Drop System
 export * from './DragDropContext'

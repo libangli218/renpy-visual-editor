@@ -5,3 +5,4 @@
 
 export * from './blockEditorStore'
 export * from './editorModeStore'
+export * from './multiLabelViewStore'
