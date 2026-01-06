@@ -1,0 +1,110 @@
+/**
+ * DraggableLabelCard Component Styles
+ * 可拖动 Label 卡片组件样式
+ * 
+ * Requirements: 1.1, 1.2
+ */
+
+/* ========================================
+ * Wrapper Base Styles
+ * ======================================== */
+
+.draggable-label-card {
+  position: absolute;
+  /* Ensure the card is above the canvas grid */
+  z-index: 1;
+  /* Smooth transitions when not dragging */
+  transition: box-shadow 0.2s ease, transform 0.1s ease;
+}
+
+/* ========================================
+ * Dragging State Styles
+ * ======================================== */
+
+.draggable-label-card.dragging {
+  /* Elevated shadow during drag */
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+  /* Higher z-index to appear above other cards */
+  z-index: 100;
+  /* Grabbing cursor */
+  cursor: grabbing;
+  /* Disable transitions during drag for responsiveness */
+  transition: none;
+  /* Slight scale up for visual feedback */
+  transform: scale(1.02);
+}
+
+.draggable-label-card.dragging .label-card {
+  /* Slight opacity reduction during drag */
+  opacity: 0.95;
+}
+
+/* ========================================
+ * Selected State Styles
+ * ======================================== */
+
+.draggable-label-card.selected {
+  /* Selection highlight */
+  z-index: 2;
+}
+
+.draggable-label-card.selected .label-card {
+  /* Selection border is handled by LabelCard.css */
+}
+
+/* ========================================
+ * Header Drag Handle
+ * ======================================== */
+
+.draggable-label-card .label-card-header {
+  /* Indicate draggable area */
+  cursor: grab;
+}
+
+.draggable-label-card.dragging .label-card-header {
+  cursor: grabbing;
+}
+
+/* ========================================
+ * Inner Card Styles
+ * ======================================== */
+
+.draggable-label-card-inner {
+  /* Ensure full width/height */
+  width: 100%;
+  height: 100%;
+}
+
+/* ========================================
+ * Hover State
+ * ======================================== */
+
+.draggable-label-card:hover:not(.dragging) {
+  /* Subtle elevation on hover */
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* ========================================
+ * Content Area (Non-draggable)
+ * ======================================== */
+
+.draggable-label-card .label-card-content {
+  /* Content area should not trigger drag */
+  cursor: default;
+}
+
+.draggable-label-card .label-card-summary {
+  /* Summary area should not trigger drag */
+  cursor: pointer;
+}
+
+/* ========================================
+ * Responsive Adjustments
+ * ======================================== */
+
+@media (max-width: 600px) {
+  .draggable-label-card.dragging {
+    /* Smaller scale on mobile */
+    transform: scale(1.01);
+  }
+}

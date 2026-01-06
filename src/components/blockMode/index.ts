@@ -47,6 +47,7 @@ export * from './slots'
 // Container Components
 export * from './LabelContainer'
 export * from './LabelCard'
+export * from './DraggableLabelCard'
 
 // Free Canvas Layout
 export * from './FreeCanvas'
