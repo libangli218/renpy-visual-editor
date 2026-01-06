@@ -13,7 +13,7 @@ import { RenpyScript, ASTNode, DialogueNode, LabelNode, SceneNode } from '../typ
  */
 
 // Arbitrary generators for editor state components
-const arbitraryEditorMode = fc.constantFrom<EditorMode>('story', 'node')
+const arbitraryEditorMode = fc.constantFrom<EditorMode>('story', 'multi-label')
 const arbitraryComplexityLevel = fc.constantFrom<ComplexityLevel>('simple', 'preview', 'advanced')
 
 // Generate a valid identifier (for label names, etc.)
@@ -82,7 +82,7 @@ const arbitraryEditorState: fc.Arbitrary<EditorState> = fc.record({
 
 /**
  * Helper function to simulate mode switching
- * This represents the core logic of switching between Story Mode and Node Mode
+ * This represents the core logic of switching between Story Mode and Multi-Label View
  */
 function switchMode(state: EditorState, newMode: EditorMode): EditorState {
   return {
@@ -120,17 +120,17 @@ describe('Mode Switching Property Tests', () => {
   /**
    * Feature: renpy-visual-editor, Property 2: Mode Synchronization
    * 
-   * For any editor state, switching between Story Mode and Node Mode 
+   * For any editor state, switching between Story Mode and Multi-Label View 
    * should preserve all data.
    * 
    * ∀ state ∈ EditorState: 
-   *   toNodeMode(toStoryMode(state)).ast ≡ state.ast
-   *   toStoryMode(toNodeMode(state)).ast ≡ state.ast
+   *   toMultiLabel(toStoryMode(state)).ast ≡ state.ast
+   *   toStoryMode(toMultiLabel(state)).ast ≡ state.ast
    * 
    * Validates: Requirements 2.2, 2.5
    */
   describe('Property 2: Mode Synchronization', () => {
-    it('switching from story to node mode preserves AST', () => {
+    it('switching from story to multi-label mode preserves AST', () => {
       fc.assert(
         fc.property(
           arbitraryEditorState,
@@ -138,31 +138,31 @@ describe('Mode Switching Property Tests', () => {
             // Start in story mode
             const storyState: EditorState = { ...state, mode: 'story' }
             
-            // Switch to node mode
-            const nodeState = switchMode(storyState, 'node')
+            // Switch to multi-label mode
+            const multiLabelState = switchMode(storyState, 'multi-label')
             
             // AST should be preserved
-            expect(astEquals(nodeState.ast, storyState.ast)).toBe(true)
-            expect(nodeState.mode).toBe('node')
+            expect(astEquals(multiLabelState.ast, storyState.ast)).toBe(true)
+            expect(multiLabelState.mode).toBe('multi-label')
           }
         ),
         { numRuns: 100 }
       )
     })
 
-    it('switching from node to story mode preserves AST', () => {
+    it('switching from multi-label to story mode preserves AST', () => {
       fc.assert(
         fc.property(
           arbitraryEditorState,
           (state) => {
-            // Start in node mode
-            const nodeState: EditorState = { ...state, mode: 'node' }
+            // Start in multi-label mode
+            const multiLabelState: EditorState = { ...state, mode: 'multi-label' }
             
             // Switch to story mode
-            const storyState = switchMode(nodeState, 'story')
+            const storyState = switchMode(multiLabelState, 'story')
             
             // AST should be preserved
-            expect(astEquals(storyState.ast, nodeState.ast)).toBe(true)
+            expect(astEquals(storyState.ast, multiLabelState.ast)).toBe(true)
             expect(storyState.mode).toBe('story')
           }
         ),
@@ -175,20 +175,20 @@ describe('Mode Switching Property Tests', () => {
         fc.property(
           arbitraryEditorState,
           (initialState) => {
-            // Switch story -> node -> story
-            const afterNodeMode = switchMode(initialState, 'node')
-            const afterStoryMode = switchMode(afterNodeMode, 'story')
+            // Switch story -> multi-label -> story
+            const afterMultiLabel = switchMode(initialState, 'multi-label')
+            const afterStoryMode = switchMode(afterMultiLabel, 'story')
             
             // AST should be identical to initial
             expect(astEquals(afterStoryMode.ast, initialState.ast)).toBe(true)
             
-            // Switch node -> story -> node
-            const nodeState: EditorState = { ...initialState, mode: 'node' }
-            const afterStory = switchMode(nodeState, 'story')
-            const afterNode = switchMode(afterStory, 'node')
+            // Switch multi-label -> story -> multi-label
+            const multiLabelState: EditorState = { ...initialState, mode: 'multi-label' }
+            const afterStory = switchMode(multiLabelState, 'story')
+            const afterMulti = switchMode(afterStory, 'multi-label')
             
             // AST should be identical
-            expect(astEquals(afterNode.ast, nodeState.ast)).toBe(true)
+            expect(astEquals(afterMulti.ast, multiLabelState.ast)).toBe(true)
           }
         ),
         { numRuns: 100 }

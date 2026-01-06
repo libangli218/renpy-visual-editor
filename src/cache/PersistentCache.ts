@@ -8,7 +8,7 @@
  */
 
 import { RenpyScript } from '../types/ast'
-import { FlowGraph } from '../components/nodeMode/FlowGraphBuilder'
+import { FlowGraph } from '../types/flowGraph'
 
 /**
  * Database configuration

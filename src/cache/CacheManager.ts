@@ -11,7 +11,7 @@
  */
 
 import { RenpyScript } from '../types/ast'
-import { FlowGraph } from '../components/nodeMode/FlowGraphBuilder'
+import { FlowGraph } from '../types/flowGraph'
 import { parse } from '../parser/renpyParser'
 import { CacheEntry, CacheStats, CacheConfig, ICacheManager } from './types'
 import { computeHash, estimateSize } from './hashUtils'

@@ -9,7 +9,7 @@
  * - 1.3: 通过检测包含对话的 label 识别剧情脚本
  */
 
-import { RenpyScript, ASTNode, LabelNode } from '../../types/ast'
+import { RenpyScript, ASTNode, LabelNode } from '../types/ast'
 
 /**
  * File classification result

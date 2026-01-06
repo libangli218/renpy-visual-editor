@@ -4,7 +4,6 @@
 
 import { describe, it, expect } from 'vitest'
 import { parse } from './renpyParser'
-import { FlowGraphBuilder } from '../components/nodeMode/FlowGraphBuilder'
 
 const THE_QUESTION_SCRIPT = `
 define s = Character(_("Sylvie"), color="#c8ffc8")
@@ -68,57 +67,43 @@ describe('the_question script parsing', () => {
     expect(labels.length).toBe(6)
   })
 
-  it('should build flow graph with all scene nodes', () => {
+  it('should parse menu choices correctly', () => {
     const result = parse(THE_QUESTION_SCRIPT, 'script.rpy')
-    const builder = new FlowGraphBuilder()
-    const graph = builder.buildGraph(result.ast)
     
-    // Get all scene nodes (one per label)
-    const sceneNodes = graph.nodes.filter(n => n.type === 'scene')
-    const sceneLabels = sceneNodes.map(n => n.data.label)
+    // Find start label
+    const startLabel = result.ast.statements.find(
+      s => s.type === 'label' && (s as any).name === 'start'
+    ) as any
     
-    expect(sceneLabels).toContain('start')
-    expect(sceneLabels).toContain('rightaway')
-    expect(sceneLabels).toContain('game')
-    expect(sceneLabels).toContain('book')
-    expect(sceneLabels).toContain('marry')
-    expect(sceneLabels).toContain('later')
-    expect(sceneNodes.length).toBe(6)
+    expect(startLabel).toBeDefined()
+    
+    // Find menu in start label
+    const menu = startLabel.body.find((s: any) => s.type === 'menu')
+    expect(menu).toBeDefined()
+    expect(menu.choices.length).toBe(2)
+    expect(menu.choices[0].text).toBe('To ask her right away.')
+    expect(menu.choices[1].text).toBe('To ask her later.')
   })
 
-  it('should create edges from menu choices to target labels', () => {
+  it('should parse jump statements in menu choices', () => {
     const result = parse(THE_QUESTION_SCRIPT, 'script.rpy')
-    const builder = new FlowGraphBuilder()
-    const graph = builder.buildGraph(result.ast)
     
-    // Find menu nodes
-    const menuNodes = graph.nodes.filter(n => n.type === 'menu')
+    // Find start label
+    const startLabel = result.ast.statements.find(
+      s => s.type === 'label' && (s as any).name === 'start'
+    ) as any
     
-    // Should have 2 menu nodes
-    expect(menuNodes.length).toBe(2)
+    // Find menu in start label
+    const menu = startLabel.body.find((s: any) => s.type === 'menu')
     
-    // First menu should have 2 choices
-    expect(menuNodes[0].data.choices?.length).toBe(2)
+    // Check jump targets in choices
+    const choice1Jump = menu.choices[0].body.find((s: any) => s.type === 'jump')
+    const choice2Jump = menu.choices[1].body.find((s: any) => s.type === 'jump')
     
-    // Second menu should also have 2 choices
-    expect(menuNodes[1].data.choices?.length).toBe(2)
-    
-    // Find edges from menu nodes
-    const menuEdges = graph.edges.filter(e => 
-      menuNodes.some(m => m.id === e.source)
-    )
-    
-    // Should have edges from menus to target labels (2 choices per menu = 4 edges)
-    expect(menuEdges.length).toBe(4)
-    
-    // Verify edges point to actual scene nodes (not missing-xxx)
-    const sceneNodes = graph.nodes.filter(n => n.type === 'scene')
-    const sceneNodeIds = new Set(sceneNodes.map(n => n.id))
-    
-    for (const edge of menuEdges) {
-      expect(sceneNodeIds.has(edge.target)).toBe(true)
-      expect(edge.target).not.toContain('missing-')
-    }
+    expect(choice1Jump).toBeDefined()
+    expect(choice1Jump.target).toBe('rightaway')
+    expect(choice2Jump).toBeDefined()
+    expect(choice2Jump.target).toBe('later')
   })
 })
 
@@ -152,26 +137,5 @@ label marry:
     expect(ifStatement.branches[0].condition).toBe('book')
     expect(ifStatement.branches[0].body.length).toBe(1)
     expect(ifStatement.branches[0].body[0].type).toBe('dialogue')
-  })
-
-  it('should build condition node for if statement', () => {
-    const SCRIPT_WITH_IF = `
-label marry:
-    "And so, we become a visual novel creating duo."
-    
-    if book:
-        "Our first game is based on one of Sylvie's ideas."
-    
-    "We take turns coming up with stories."
-    return
-`
-    const result = parse(SCRIPT_WITH_IF, 'test.rpy')
-    const builder = new FlowGraphBuilder()
-    const graph = builder.buildGraph(result.ast)
-    
-    // Should have a condition node
-    const conditionNodes = graph.nodes.filter(n => n.type === 'condition')
-    expect(conditionNodes.length).toBe(1)
-    expect(conditionNodes[0].data.condition).toBe('book')
   })
 })

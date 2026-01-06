@@ -1,6 +1,5 @@
 import React from 'react'
 import { useEditorStore } from '../../store/editorStore'
-import { NodePropertiesPanel } from '../nodeMode'
 import { CharacterPropertiesPanel, useCharacterStore } from '../character'
 
 /**
@@ -10,12 +9,11 @@ import { CharacterPropertiesPanel, useCharacterStore } from '../character'
  * 
  * Shows different content based on:
  * - Selected character (shows CharacterPropertiesPanel)
- * - Selected node in Node Mode
- * - Selected block in Story Mode
+ * - Selected block in Multi-Label View
  * - Complexity level (shows code preview in 'preview' and 'advanced' modes)
  */
 export const RightPanel: React.FC = () => {
-  const { selectedBlockId, mode, complexity } = useEditorStore()
+  const { selectedBlockId, complexity } = useEditorStore()
   const { selectedCharacterId } = useCharacterStore()
 
   return (
@@ -31,8 +29,6 @@ export const RightPanel: React.FC = () => {
             showCodePreview={complexity === 'preview' || complexity === 'advanced'}
             allowCodeEdit={complexity === 'advanced'}
           />
-        ) : mode === 'node' ? (
-          <NodePropertiesPanel />
         ) : !selectedBlockId ? (
           <div className="panel-empty">
             <p>Select an element to view its properties</p>

@@ -14,7 +14,7 @@
 
 import { describe, it, expect, beforeEach } from 'vitest'
 import { generate, generateNode } from './codeGenerator'
-import { ASTSynchronizer } from '../components/nodeMode/ASTSynchronizer'
+import { ASTSynchronizer } from '../utils/ASTSynchronizer'
 import {
   createLabelNode,
   createDialogueNode,

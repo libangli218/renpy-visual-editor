@@ -8,7 +8,7 @@ import {
   CharacterFormData,
 } from '../character'
 import { NewProjectWizard, ProjectConfig } from '../project'
-import { findDefaultFile } from '../nodeMode/FileClassifier'
+import { findDefaultFile } from '../../utils/FileClassifier'
 
 /**
  * LeftPanel component - Project browser panel

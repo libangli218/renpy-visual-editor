@@ -17,7 +17,7 @@ import { describe, it, expect } from 'vitest'
 import * as fc from 'fast-check'
 import { parse } from '../parser/renpyParser'
 import { generate } from './codeGenerator'
-import { ASTSynchronizer, DialogueData, MenuData } from '../components/nodeMode/ASTSynchronizer'
+import { ASTSynchronizer, DialogueData, MenuData } from '../utils/ASTSynchronizer'
 import {
   createLabelNode,
   createDialogueNode,
