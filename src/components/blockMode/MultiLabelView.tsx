@@ -12,6 +12,7 @@ import React, { useCallback, useMemo, useState, useRef } from 'react'
 import { LabelCard } from './LabelCard'
 import { MultiLabelToolbar } from './MultiLabelToolbar'
 import { BlockPalette } from './blocks/BlockPalette'
+import { DragDropProvider } from './DragDropContext'
 import { DragPreview } from './DragPreview'
 import { useMultiLabelViewStore } from './stores/multiLabelViewStore'
 import { useBlockEditorStore } from './stores/blockEditorStore'
@@ -537,97 +538,99 @@ export const MultiLabelView: React.FC<MultiLabelViewProps> = ({
   ].filter(Boolean).join(' '), [layoutMode, className])
 
   return (
-    <div className={viewClasses}>
-      {/* Toolbar */}
-      <MultiLabelToolbar
-        searchQuery={searchQuery}
-        onSearchChange={setSearchQuery}
-        onCreateLabel={handleCreateLabel}
-        layoutMode={layoutMode}
-        onLayoutChange={setLayoutMode}
-        onCollapseAll={handleCollapseAll}
-        onExpandAll={handleExpandAll}
-        labelCount={labelDataList.length}
-        filteredCount={filteredLabels.length}
-        readOnly={readOnly}
-        existingLabelNames={allLabelNames}
-      />
+    <DragDropProvider>
+      <div className={viewClasses}>
+        {/* Toolbar */}
+        <MultiLabelToolbar
+          searchQuery={searchQuery}
+          onSearchChange={setSearchQuery}
+          onCreateLabel={handleCreateLabel}
+          layoutMode={layoutMode}
+          onLayoutChange={setLayoutMode}
+          onCollapseAll={handleCollapseAll}
+          onExpandAll={handleExpandAll}
+          labelCount={labelDataList.length}
+          filteredCount={filteredLabels.length}
+          readOnly={readOnly}
+          existingLabelNames={allLabelNames}
+        />
 
-      {/* Main Content */}
-      <div className="multi-label-view-content">
-        {/* Left Panel: Block Palette */}
-        <div className="multi-label-view-palette">
-          <BlockPalette />
+        {/* Main Content */}
+        <div className="multi-label-view-content">
+          {/* Left Panel: Block Palette */}
+          <div className="multi-label-view-palette">
+            <BlockPalette />
+          </div>
+
+          {/* Center Panel: Label Cards Grid */}
+          <div className="multi-label-view-canvas">
+            {filteredLabels.length === 0 ? (
+              /* Empty State */
+              <div className="multi-label-view-empty">
+                {searchQuery.trim() ? (
+                  /* No Search Results */
+                  <>
+                    <span className="empty-icon">🔍</span>
+                    <p className="empty-text">没有找到匹配的 Label</p>
+                    <p className="empty-hint">
+                      尝试其他搜索词，或
+                      <button 
+                        className="empty-link"
+                        onClick={() => setSearchQuery('')}
+                      >
+                        清除搜索
+                      </button>
+                    </p>
+                  </>
+                ) : (
+                  /* No Labels */
+                  <>
+                    <span className="empty-icon">📝</span>
+                    <p className="empty-text">还没有 Label</p>
+                    <p className="empty-hint">
+                      点击上方的"新建 Label"按钮创建第一个场景
+                    </p>
+                  </>
+                )}
+              </div>
+            ) : (
+              /* Label Cards Grid */
+              <div className={`label-cards-grid ${layoutMode}`}>
+                {filteredLabels.map(labelData => (
+                  <LabelCard
+                    key={labelData.name}
+                    labelName={labelData.name}
+                    labelBlock={labelData.blockTree}
+                    collapsed={collapsedLabels.has(labelData.name)}
+                    onToggleCollapse={() => toggleLabelCollapsed(labelData.name)}
+                    onDelete={!readOnly ? () => handleDeleteLabel(labelData.name) : undefined}
+                    selected={selectedLabel === labelData.name}
+                    onClick={() => handleLabelClick(labelData.name)}
+                    containerProps={{
+                      onBlockClick: handleBlockClick,
+                      onBlockDoubleClick: handleBlockDoubleClick,
+                      onBlockDragStart: (blockId, event) =>
+                        handleBlockDragStart(labelData.name, blockId, event),
+                      onBlockDrop: (blockType, index) => 
+                        handleBlockDrop(labelData.name, labelData.blockTree, blockType, index),
+                      onBlockReorder: (blockId, newIndex) =>
+                        handleBlockReorder(labelData.name, labelData.blockTree, blockId, newIndex),
+                      onBlockMove: (blockId, index) =>
+                        handleBlockMove(labelData.name, labelData.blockTree, blockId, index),
+                      renderBlock: createRenderBlock(labelData.name, labelData.blockTree),
+                      readOnly,
+                    }}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
         </div>
 
-        {/* Center Panel: Label Cards Grid */}
-        <div className="multi-label-view-canvas">
-          {filteredLabels.length === 0 ? (
-            /* Empty State */
-            <div className="multi-label-view-empty">
-              {searchQuery.trim() ? (
-                /* No Search Results */
-                <>
-                  <span className="empty-icon">🔍</span>
-                  <p className="empty-text">没有找到匹配的 Label</p>
-                  <p className="empty-hint">
-                    尝试其他搜索词，或
-                    <button 
-                      className="empty-link"
-                      onClick={() => setSearchQuery('')}
-                    >
-                      清除搜索
-                    </button>
-                  </p>
-                </>
-              ) : (
-                /* No Labels */
-                <>
-                  <span className="empty-icon">📝</span>
-                  <p className="empty-text">还没有 Label</p>
-                  <p className="empty-hint">
-                    点击上方的"新建 Label"按钮创建第一个场景
-                  </p>
-                </>
-              )}
-            </div>
-          ) : (
-            /* Label Cards Grid */
-            <div className={`label-cards-grid ${layoutMode}`}>
-              {filteredLabels.map(labelData => (
-                <LabelCard
-                  key={labelData.name}
-                  labelName={labelData.name}
-                  labelBlock={labelData.blockTree}
-                  collapsed={collapsedLabels.has(labelData.name)}
-                  onToggleCollapse={() => toggleLabelCollapsed(labelData.name)}
-                  onDelete={!readOnly ? () => handleDeleteLabel(labelData.name) : undefined}
-                  selected={selectedLabel === labelData.name}
-                  onClick={() => handleLabelClick(labelData.name)}
-                  containerProps={{
-                    onBlockClick: handleBlockClick,
-                    onBlockDoubleClick: handleBlockDoubleClick,
-                    onBlockDragStart: (blockId, event) =>
-                      handleBlockDragStart(labelData.name, blockId, event),
-                    onBlockDrop: (blockType, index) => 
-                      handleBlockDrop(labelData.name, labelData.blockTree, blockType, index),
-                    onBlockReorder: (blockId, newIndex) =>
-                      handleBlockReorder(labelData.name, labelData.blockTree, blockId, newIndex),
-                    onBlockMove: (blockId, index) =>
-                      handleBlockMove(labelData.name, labelData.blockTree, blockId, index),
-                    renderBlock: createRenderBlock(labelData.name, labelData.blockTree),
-                    readOnly,
-                  }}
-                />
-              ))}
-            </div>
-          )}
-        </div>
+        {/* Drag Preview */}
+        <DragPreview />
       </div>
-
-      {/* Drag Preview */}
-      <DragPreview />
-    </div>
+    </DragDropProvider>
   )
 }
 
