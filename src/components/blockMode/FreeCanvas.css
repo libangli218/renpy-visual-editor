@@ -1,0 +1,179 @@
+/**
+ * FreeCanvas Component Styles
+ * 自由画布组件样式
+ * 
+ * Requirements: 1.1, 1.4, 2.1, 2.2, 3.1
+ */
+
+/* ========================================
+ * Canvas Container
+ * ======================================== */
+
+.free-canvas {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background-color: var(--canvas-bg, #f8f9fa);
+  /* Prevent text selection during pan */
+  user-select: none;
+}
+
+.free-canvas.panning {
+  cursor: grabbing !important;
+}
+
+/* ========================================
+ * Viewport (Transform Container)
+ * ======================================== */
+
+.free-canvas-viewport {
+  position: absolute;
+  top: 0;
+  left: 0;
+  /* Transform is applied via inline style */
+  /* Using transform-origin: 0 0 for predictable zoom behavior */
+  will-change: transform;
+}
+
+/* ========================================
+ * Grid Background
+ * ======================================== */
+
+.free-canvas-grid {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  background-image: 
+    linear-gradient(to right, var(--grid-line-color, rgba(0, 0, 0, 0.05)) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--grid-line-color, rgba(0, 0, 0, 0.05)) 1px, transparent 1px);
+  background-size: 20px 20px;
+  background-position: var(--grid-offset-x, 0) var(--grid-offset-y, 0);
+  z-index: 0;
+}
+
+/* ========================================
+ * Canvas Children (LabelCards)
+ * ======================================== */
+
+.free-canvas-viewport > * {
+  position: absolute;
+  /* Children should have their own left/top positioning */
+}
+
+/* ========================================
+ * Zoom Level Indicator (optional)
+ * ======================================== */
+
+.free-canvas-zoom-indicator {
+  position: absolute;
+  bottom: 16px;
+  left: 16px;
+  padding: 4px 8px;
+  background-color: rgba(0, 0, 0, 0.6);
+  color: white;
+  font-size: 12px;
+  font-family: monospace;
+  border-radius: 4px;
+  pointer-events: none;
+  z-index: 100;
+}
+
+/* ========================================
+ * Pan Mode Indicator
+ * ======================================== */
+
+.free-canvas.pan-mode::after {
+  content: '按住空格键拖动画布';
+  position: absolute;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 8px 16px;
+  background-color: rgba(0, 0, 0, 0.7);
+  color: white;
+  font-size: 13px;
+  border-radius: 6px;
+  pointer-events: none;
+  z-index: 100;
+  animation: fadeIn 0.2s ease-out;
+}
+
+/* ========================================
+ * Selection Box (for multi-select)
+ * ======================================== */
+
+.free-canvas-selection-box {
+  position: absolute;
+  border: 2px dashed var(--accent-primary, #2196F3);
+  background-color: rgba(33, 150, 243, 0.1);
+  pointer-events: none;
+  z-index: 50;
+}
+
+/* ========================================
+ * Animations
+ * ======================================== */
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* ========================================
+ * Scrollbar (hidden - we use pan instead)
+ * ======================================== */
+
+.free-canvas::-webkit-scrollbar {
+  display: none;
+}
+
+.free-canvas {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* ========================================
+ * Focus Styles
+ * ======================================== */
+
+.free-canvas:focus {
+  outline: none;
+}
+
+.free-canvas:focus-visible {
+  outline: 2px solid var(--accent-primary, #2196F3);
+  outline-offset: -2px;
+}
+
+/* ========================================
+ * Dark Mode Support
+ * ======================================== */
+
+@media (prefers-color-scheme: dark) {
+  .free-canvas {
+    --canvas-bg: #1e1e1e;
+    --grid-line-color: rgba(255, 255, 255, 0.05);
+  }
+}
+
+/* ========================================
+ * Reduced Motion
+ * ======================================== */
+
+@media (prefers-reduced-motion: reduce) {
+  .free-canvas-viewport {
+    transition: none;
+  }
+  
+  .free-canvas.pan-mode::after {
+    animation: none;
+  }
+}

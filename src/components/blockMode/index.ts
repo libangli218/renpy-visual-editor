@@ -48,6 +48,9 @@ export * from './slots'
 export * from './LabelContainer'
 export * from './LabelCard'
 
+// Free Canvas Layout
+export * from './FreeCanvas'
+
 // Multi-Label View Components
 export * from './MultiLabelToolbar'
 export * from './MultiLabelView'
