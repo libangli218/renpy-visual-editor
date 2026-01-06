@@ -2,6 +2,11 @@
  * DraggableLabelCard Component
  * 可拖动的 Label 卡片组件
  * 
+ * Design inspired by Alan Kay's principles:
+ * - "Simple things should be simple, complex things should be possible"
+ * - Ctrl+click should work anywhere on the card for selection
+ * - Clear visual feedback when in selection mode
+ * 
  * Extends LabelCard with absolute positioning and drag functionality.
  * Used in FreeCanvas for free-form layout of labels.
  * 
@@ -60,7 +65,7 @@ export interface DraggableLabelCardProps extends Omit<LabelCardProps, 'className
  * - 7.2: Auto-snap to alignment position within threshold
  * - 7.3: Support horizontal and vertical alignment
  * - 7.4: Alt key disables snapping
- * - 8.3: Ctrl+click toggles selection
+ * - 8.3: Ctrl+click toggles selection (anywhere on card)
  * - 8.4: Drag selected labels together maintaining relative positions
  */
 export const DraggableLabelCard: React.FC<DraggableLabelCardProps> = ({
@@ -83,9 +88,49 @@ export const DraggableLabelCard: React.FC<DraggableLabelCardProps> = ({
 }) => {
   // Drag state
   const [isDragging, setIsDragging] = useState(false)
+  const [isCtrlPressed, setIsCtrlPressed] = useState(false)
   const dragStartRef = useRef<Point | null>(null)
   const initialPositionRef = useRef<Point | null>(null)
   const cardRef = useRef<HTMLDivElement>(null)
+
+  /**
+   * Track Ctrl key state for visual feedback
+   * Alan Kay principle: Clear visual feedback for mode changes
+   */
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.ctrlKey || e.metaKey) {
+        setIsCtrlPressed(true)
+      }
+    }
+    
+    const handleKeyUp = (e: KeyboardEvent) => {
+      if (!e.ctrlKey && !e.metaKey) {
+        setIsCtrlPressed(false)
+      }
+    }
+    
+    window.addEventListener('keydown', handleKeyDown)
+    window.addEventListener('keyup', handleKeyUp)
+    
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown)
+      window.removeEventListener('keyup', handleKeyUp)
+    }
+  }, [])
+
+  /**
+   * Handle Ctrl+click for selection - uses capture phase to intercept before children
+   * Alan Kay principle: Simple things should be simple - Ctrl+click anywhere selects
+   */
+  const handleClickCapture = useCallback((e: React.MouseEvent) => {
+    // If Ctrl/Cmd is pressed, handle selection and stop propagation
+    if (e.ctrlKey || e.metaKey) {
+      e.preventDefault()
+      e.stopPropagation()
+      onSelectionChange?.(!isSelected, true)
+    }
+  }, [isSelected, onSelectionChange])
 
   /**
    * Handle mouse down to start dragging
@@ -94,6 +139,9 @@ export const DraggableLabelCard: React.FC<DraggableLabelCardProps> = ({
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
     // Only start drag with left mouse button
     if (e.button !== 0) return
+
+    // If Ctrl is pressed, don't start drag - let clickCapture handle selection
+    if (e.ctrlKey || e.metaKey) return
 
     // Check if clicking on header (for drag) or content (for interaction)
     const target = e.target as HTMLElement
@@ -105,12 +153,6 @@ export const DraggableLabelCard: React.FC<DraggableLabelCardProps> = ({
 
     e.preventDefault()
     e.stopPropagation()
-
-    // Handle selection with Ctrl/Cmd key
-    if (e.ctrlKey || e.metaKey) {
-      onSelectionChange?.(true, true) // Additive selection
-      return
-    }
 
     // Start dragging
     setIsDragging(true)
@@ -206,20 +248,17 @@ export const DraggableLabelCard: React.FC<DraggableLabelCardProps> = ({
   }, [isDragging, handleMouseMove, handleMouseUp])
 
   /**
-   * Handle card click for selection
+   * Handle card click for selection (non-Ctrl clicks)
    */
   const handleClick = useCallback((e: React.MouseEvent) => {
+    // Ctrl+click is handled by clickCapture, skip here
+    if (e.ctrlKey || e.metaKey) return
+    
     // Prevent click from bubbling to canvas
     e.stopPropagation()
     
-    // Handle Ctrl+click for multi-select
-    if (e.ctrlKey || e.metaKey) {
-      onSelectionChange?.(!isSelected, true)
-    } else {
-      // Regular click - select only this card
-      onSelectionChange?.(true, false)
-    }
-  }, [isSelected, onSelectionChange])
+    // Regular click - select only this card (handled by mouseDown for header)
+  }, [])
 
   // Build style for absolute positioning
   const cardStyle = useMemo(() => ({
@@ -241,14 +280,16 @@ export const DraggableLabelCard: React.FC<DraggableLabelCardProps> = ({
     isDragging && 'dragging',
     isSelected && 'selected',
     isMultiDragging && 'multi-dragging',
+    isCtrlPressed && 'ctrl-mode', // Visual feedback for selection mode
     className,
-  ].filter(Boolean).join(' '), [isDragging, isSelected, isMultiDragging, className])
+  ].filter(Boolean).join(' '), [isDragging, isSelected, isMultiDragging, isCtrlPressed, className])
 
   return (
     <div
       ref={cardRef}
       className={wrapperClasses}
       style={cardStyle}
+      onClickCapture={handleClickCapture}
       onMouseDown={handleMouseDown}
       onClick={handleClick}
     >

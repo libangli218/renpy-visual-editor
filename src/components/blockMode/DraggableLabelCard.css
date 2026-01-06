@@ -2,8 +2,26 @@
  * DraggableLabelCard Component Styles
  * 可拖动 Label 卡片组件样式
  * 
+ * Design inspired by Bret Victor's principles:
+ * - Immediate, clear visual feedback
+ * - Distinct state differentiation
+ * - Subtle animations for interaction feel
+ * - High contrast without being harsh
+ * 
  * Requirements: 1.1, 1.2
  */
+
+/* ========================================
+ * CSS Variables for Selection Theme
+ * ======================================== */
+
+:root {
+  --selection-color: #0066FF;
+  --selection-color-light: rgba(0, 102, 255, 0.15);
+  --selection-color-medium: rgba(0, 102, 255, 0.3);
+  --selection-glow: 0 0 0 3px rgba(0, 102, 255, 0.25), 0 0 20px rgba(0, 102, 255, 0.15);
+  --selection-border-width: 2px;
+}
 
 /* ========================================
  * Wrapper Base Styles
@@ -14,7 +32,9 @@
   /* Ensure the card is above the canvas grid */
   z-index: 1;
   /* Smooth transitions when not dragging */
-  transition: box-shadow 0.2s ease, transform 0.1s ease;
+  transition: box-shadow 0.2s ease, transform 0.15s ease, filter 0.2s ease;
+  /* Border radius for selection outline */
+  border-radius: 10px;
 }
 
 /* ========================================
@@ -23,7 +43,7 @@
 
 .draggable-label-card.dragging {
   /* Elevated shadow during drag */
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.25);
   /* Higher z-index to appear above other cards */
   z-index: 100;
   /* Grabbing cursor */
@@ -45,7 +65,7 @@
 
 .draggable-label-card.multi-dragging {
   /* Elevated shadow during multi-drag */
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
   /* Higher z-index to appear above other cards */
   z-index: 99;
   /* Disable transitions during drag for responsiveness */
@@ -54,37 +74,110 @@
 
 .draggable-label-card.multi-dragging .label-card {
   /* Slight opacity reduction during multi-drag */
-  opacity: 0.9;
+  opacity: 0.92;
 }
 
 /* ========================================
- * Selected State Styles
+ * Selected State Styles (Bret Victor inspired)
+ * Clear, immediate visual feedback
  * Requirements: 8.5
  * ======================================== */
 
 .draggable-label-card.selected {
   /* Selection highlight */
-  z-index: 2;
+  z-index: 10;
+  /* Animated selection appearance */
+  animation: selectionPulse 0.3s ease-out;
 }
 
 .draggable-label-card.selected .label-card {
-  /* Enhanced selection border - handled by LabelCard.css but we add extra emphasis */
-  border-color: var(--accent-primary, #2196F3);
-  box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.3);
+  /* Strong selection border */
+  border: var(--selection-border-width) solid var(--selection-color) !important;
+  /* Prominent glow effect - Bret Victor style clear state indication */
+  box-shadow: var(--selection-glow);
+  /* Subtle background tint */
+  background: linear-gradient(
+    to bottom,
+    var(--selection-color-light) 0%,
+    transparent 100%
+  ), var(--bg-primary, #ffffff);
 }
 
-/* Selection indicator badge */
+/* Selection indicator badge - top-right corner */
 .draggable-label-card.selected::before {
+  content: '✓';
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  width: 22px;
+  height: 22px;
+  background: var(--selection-color);
+  border-radius: 50%;
+  z-index: 101;
+  box-shadow: 0 2px 8px rgba(0, 102, 255, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  color: white;
+  font-weight: bold;
+  /* Animated appearance */
+  animation: checkmarkAppear 0.2s ease-out;
+}
+
+/* Selection outline ring - additional visual emphasis */
+.draggable-label-card.selected::after {
   content: '';
   position: absolute;
   top: -4px;
+  left: -4px;
   right: -4px;
-  width: 12px;
-  height: 12px;
-  background-color: var(--accent-primary, #2196F3);
-  border-radius: 50%;
-  z-index: 101;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  bottom: -4px;
+  border: 2px solid var(--selection-color);
+  border-radius: 12px;
+  pointer-events: none;
+  opacity: 0.5;
+  animation: outlineExpand 0.3s ease-out;
+}
+
+/* Selection pulse animation */
+@keyframes selectionPulse {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.01);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* Checkmark appear animation */
+@keyframes checkmarkAppear {
+  0% {
+    transform: scale(0);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.2);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* Outline expand animation */
+@keyframes outlineExpand {
+  0% {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  100% {
+    opacity: 0.5;
+    transform: scale(1);
+  }
 }
 
 /* ========================================
@@ -98,6 +191,16 @@
 
 .draggable-label-card.dragging .label-card-header {
   cursor: grabbing;
+}
+
+/* Selected header gets accent color */
+.draggable-label-card.selected .label-card-header {
+  background: linear-gradient(
+    to right,
+    var(--selection-color-light) 0%,
+    var(--bg-secondary, #f5f5f5) 100%
+  );
+  border-bottom-color: var(--selection-color-medium);
 }
 
 /* ========================================
@@ -114,9 +217,15 @@
  * Hover State
  * ======================================== */
 
-.draggable-label-card:hover:not(.dragging) {
+.draggable-label-card:hover:not(.dragging):not(.selected) {
   /* Subtle elevation on hover */
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  transform: translateY(-1px);
+}
+
+/* Hover on selected card */
+.draggable-label-card.selected:hover:not(.dragging) {
+  box-shadow: var(--selection-glow), 0 6px 20px rgba(0, 0, 0, 0.15);
 }
 
 /* ========================================
@@ -134,6 +243,19 @@
 }
 
 /* ========================================
+ * Dark Mode Support
+ * ======================================== */
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --selection-color: #4DA3FF;
+    --selection-color-light: rgba(77, 163, 255, 0.2);
+    --selection-color-medium: rgba(77, 163, 255, 0.35);
+    --selection-glow: 0 0 0 3px rgba(77, 163, 255, 0.3), 0 0 24px rgba(77, 163, 255, 0.2);
+  }
+}
+
+/* ========================================
  * Responsive Adjustments
  * ======================================== */
 
@@ -141,5 +263,65 @@
   .draggable-label-card.dragging {
     /* Smaller scale on mobile */
     transform: scale(1.01);
+  }
+  
+  .draggable-label-card.selected::before {
+    width: 18px;
+    height: 18px;
+    font-size: 10px;
+    top: -6px;
+    right: -6px;
+  }
+}
+
+/* ========================================
+ * Ctrl Mode Styles (Selection Mode)
+ * Alan Kay inspired: Clear visual feedback for mode changes
+ * ======================================== */
+
+.draggable-label-card.ctrl-mode {
+  /* Cursor indicates clickable for selection */
+  cursor: pointer !important;
+}
+
+.draggable-label-card.ctrl-mode .label-card-header {
+  /* Override grab cursor in ctrl mode */
+  cursor: pointer !important;
+}
+
+.draggable-label-card.ctrl-mode .label-card {
+  /* Subtle highlight to indicate selection mode is active */
+  outline: 2px dashed var(--selection-color);
+  outline-offset: 2px;
+  opacity: 0.95;
+}
+
+/* Ctrl mode hover - show what will be selected */
+.draggable-label-card.ctrl-mode:hover:not(.selected) .label-card {
+  outline-style: solid;
+  background: var(--selection-color-light);
+  box-shadow: 0 0 12px rgba(0, 102, 255, 0.2);
+}
+
+/* Ctrl mode on already selected - show what will be deselected */
+.draggable-label-card.ctrl-mode.selected:hover .label-card {
+  outline: 2px dashed #ff6b6b;
+  outline-offset: 2px;
+  box-shadow: 0 0 12px rgba(255, 107, 107, 0.3);
+}
+
+/* ========================================
+ * Reduced Motion
+ * ======================================== */
+
+@media (prefers-reduced-motion: reduce) {
+  .draggable-label-card {
+    transition: none;
+  }
+  
+  .draggable-label-card.selected,
+  .draggable-label-card.selected::before,
+  .draggable-label-card.selected::after {
+    animation: none;
   }
 }

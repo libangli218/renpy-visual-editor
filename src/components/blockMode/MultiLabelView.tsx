@@ -356,9 +356,23 @@ export const MultiLabelView: React.FC<MultiLabelViewProps> = ({
       }
     }
     
-    // Move all selected labels
-    moveSelectedLabels(deltaX, deltaY)
-  }, [selectedLabels, labelPositions, moveSelectedLabels])
+    // Calculate new positions based on initial positions + delta
+    // (not current positions, since delta is cumulative from drag start)
+    const initialPositions = multiDragInitialPositionsRef.current
+    const newPositions = new Map(labelPositions)
+    
+    for (const labelName of selectedLabels) {
+      const initialPos = initialPositions.get(labelName)
+      if (initialPos) {
+        newPositions.set(labelName, {
+          x: initialPos.x + deltaX,
+          y: initialPos.y + deltaY,
+        })
+      }
+    }
+    
+    setLabelPositions(newPositions)
+  }, [selectedLabels, labelPositions, setLabelPositions])
 
   // Handle drag end - clear multi-drag state and save
   const handleDragEnd = useCallback(() => {
