@@ -89,6 +89,22 @@ export interface BlockOperationResult {
 }
 
 /**
+ * Context for cross-label block operations
+ */
+export interface CrossLabelOperationContext {
+  /** The source label's block tree */
+  sourceBlockTree: Block
+  /** The target label's block tree */
+  targetBlockTree: Block
+  /** The current AST */
+  ast: RenpyScript
+  /** The source label name */
+  sourceLabelName: string
+  /** The target label name */
+  targetLabelName: string
+}
+
+/**
  * Context for block operations
  */
 export interface BlockOperationContext {
@@ -459,6 +475,101 @@ export class BlockOperationHandler {
       blockTree,
       ast,
     }
+  }
+
+  /**
+   * Move a block from one label to another
+   * 
+   * Implements Requirements 3.4: 跨 Label 移动积木
+   * 
+   * @param blockId - The ID of the block to move
+   * @param targetIndex - The position in the target label
+   * @param context - The cross-label operation context
+   * @returns Operation result
+   */
+  moveBlockAcrossLabels(
+    blockId: string,
+    targetIndex: number,
+    context: CrossLabelOperationContext
+  ): BlockOperationResult {
+    const { sourceBlockTree, targetBlockTree, ast, sourceLabelName, targetLabelName } = context
+
+    // Find the block and its parent in the source tree
+    const { block, parent: sourceParent, index: sourceIndex } = this.findBlockWithParent(sourceBlockTree, blockId)
+    if (!block || !sourceParent) {
+      return { success: false, error: `Block not found in source label: ${blockId}` }
+    }
+
+    // Ensure target can have children
+    if (!targetBlockTree.children) {
+      targetBlockTree.children = []
+    }
+
+    // Store the AST node ID before removal
+    const astNodeId = block.astNodeId
+
+    // Remove block from source parent
+    if (sourceParent.children) {
+      sourceParent.children.splice(sourceIndex, 1)
+    }
+
+    // Insert block into target tree
+    const insertIndex = Math.min(Math.max(0, targetIndex), targetBlockTree.children.length)
+    targetBlockTree.children.splice(insertIndex, 0, block)
+
+    // Move AST node from source label to target label
+    const astMoveResult = this.moveAstNodeAcrossLabels(
+      astNodeId,
+      sourceParent,
+      targetBlockTree,
+      insertIndex,
+      ast,
+      sourceLabelName,
+      targetLabelName
+    )
+
+    if (!astMoveResult.success) {
+      // Rollback: move block back to source
+      targetBlockTree.children.splice(insertIndex, 1)
+      if (sourceParent.children) {
+        sourceParent.children.splice(sourceIndex, 0, block)
+      }
+      return { success: false, error: astMoveResult.error }
+    }
+
+    return {
+      success: true,
+      blockId: block.id,
+      ast,
+    }
+  }
+
+  /**
+   * Move an AST node from one label to another
+   */
+  private moveAstNodeAcrossLabels(
+    astNodeId: string,
+    _sourceParent: Block,
+    targetParent: Block,
+    targetIndex: number,
+    ast: RenpyScript,
+    sourceLabelName: string,
+    targetLabelName: string
+  ): { success: boolean; error?: string } {
+    // Find the AST node
+    const astNode = this.findAstNodeById(ast, astNodeId)
+    if (!astNode) {
+      return { success: false, error: `AST node not found: ${astNodeId}` }
+    }
+
+    // Remove from source label
+    const removed = this.removeAstNode(astNodeId, ast, sourceLabelName)
+    if (!removed) {
+      return { success: false, error: `Failed to remove AST node from source label: ${sourceLabelName}` }
+    }
+
+    // Insert into target label
+    return this.insertAstNode(astNode, targetParent, targetIndex, ast, targetLabelName)
   }
 
   /**

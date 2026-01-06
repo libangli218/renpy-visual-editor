@@ -5,17 +5,17 @@
  * Main view component that displays all labels in a grid/list layout.
  * Replaces the flow chart mode with a unified multi-label editing interface.
  * 
- * Requirements: 1.1, 1.2, 1.4, 6.1, 6.3, 6.4
+ * Requirements: 1.1, 1.2, 1.4, 3.4, 6.1, 6.3, 6.4
  */
 
-import React, { useCallback, useMemo } from 'react'
+import React, { useCallback, useMemo, useState, useRef } from 'react'
 import { LabelCard } from './LabelCard'
 import { MultiLabelToolbar } from './MultiLabelToolbar'
 import { BlockPalette } from './blocks/BlockPalette'
 import { DragPreview } from './DragPreview'
 import { useMultiLabelViewStore } from './stores/multiLabelViewStore'
 import { useBlockEditorStore } from './stores/blockEditorStore'
-import { createBlockOperationHandler } from './BlockOperationHandler'
+import { createBlockOperationHandler, CrossLabelOperationContext } from './BlockOperationHandler'
 import { createBlockTreeBuilder } from './BlockTreeBuilder'
 import { BaseBlock } from './blocks/BaseBlock'
 import { DialogueBlock } from './blocks/DialogueBlock'
@@ -104,6 +104,10 @@ export const MultiLabelView: React.FC<MultiLabelViewProps> = ({
 
   // Block editor store for validation
   const { validationErrors } = useBlockEditorStore()
+
+  // Track the source label for cross-label drag operations
+  // Implements Requirement 3.4: 跨 Label 移动积木
+  const dragSourceLabelRef = useRef<string | null>(null)
 
   // Create handlers
   const blockTreeBuilder = useMemo(() => createBlockTreeBuilder(), [])
@@ -275,25 +279,68 @@ export const MultiLabelView: React.FC<MultiLabelViewProps> = ({
     }
   }, [readOnly, ast, blockOperationHandler, onAstChange])
 
-  // Handle block move (from another container)
+  // Handle block move (from another container or cross-label)
+  // Implements Requirement 3.4: 跨 Label 移动积木
   const handleBlockMove = useCallback((
-    labelName: string,
-    blockTree: Block,
+    targetLabelName: string,
+    targetBlockTree: Block,
     blockId: string,
     index: number
   ) => {
     if (readOnly || !ast) return
 
-    const result = blockOperationHandler.moveBlock(blockId, blockTree.id, index, {
-      blockTree,
-      ast,
-      labelName,
-    })
+    const sourceLabelName = dragSourceLabelRef.current
 
-    if (result.success && result.ast) {
-      onAstChange?.(result.ast)
+    // Check if this is a cross-label move
+    if (sourceLabelName && sourceLabelName !== targetLabelName) {
+      // Find the source label's block tree
+      const sourceLabelData = labelDataList.find(l => l.name === sourceLabelName)
+      if (!sourceLabelData) {
+        console.error(`Source label not found: ${sourceLabelName}`)
+        return
+      }
+
+      // Perform cross-label move
+      const context: CrossLabelOperationContext = {
+        sourceBlockTree: sourceLabelData.blockTree,
+        targetBlockTree,
+        ast,
+        sourceLabelName,
+        targetLabelName,
+      }
+
+      const result = blockOperationHandler.moveBlockAcrossLabels(blockId, index, context)
+
+      if (result.success && result.ast) {
+        onAstChange?.(result.ast)
+      }
+    } else {
+      // Same label move (reorder)
+      const result = blockOperationHandler.moveBlock(blockId, targetBlockTree.id, index, {
+        blockTree: targetBlockTree,
+        ast,
+        labelName: targetLabelName,
+      })
+
+      if (result.success && result.ast) {
+        onAstChange?.(result.ast)
+      }
     }
-  }, [readOnly, ast, blockOperationHandler, onAstChange])
+
+    // Clear the drag source
+    dragSourceLabelRef.current = null
+  }, [readOnly, ast, blockOperationHandler, onAstChange, labelDataList])
+
+  // Handle block drag start - track source label for cross-label moves
+  const handleBlockDragStart = useCallback((labelName: string, blockId: string, event: React.DragEvent) => {
+    // Store the source label name for cross-label detection
+    dragSourceLabelRef.current = labelName
+    
+    // Set the block ID in the drag data
+    event.dataTransfer.setData('application/x-block-id', blockId)
+    event.dataTransfer.setData('application/x-source-label', labelName)
+    event.dataTransfer.effectAllowed = 'move'
+  }, [])
 
   // Handle delete block
   const handleDeleteBlock = useCallback((
@@ -569,6 +616,8 @@ export const MultiLabelView: React.FC<MultiLabelViewProps> = ({
                   containerProps={{
                     onBlockClick: handleBlockClick,
                     onBlockDoubleClick: handleBlockDoubleClick,
+                    onBlockDragStart: (blockId, event) =>
+                      handleBlockDragStart(labelData.name, blockId, event),
                     onBlockDrop: (blockType, index) => 
                       handleBlockDrop(labelData.name, labelData.blockTree, blockType, index),
                     onBlockReorder: (blockId, newIndex) =>
