@@ -2,13 +2,18 @@
  * LabelCard Component
  * Label 卡片组件
  * 
+ * Design inspired by Don Norman's principles:
+ * - "Progressive Disclosure" - show complexity only when needed
+ * - "Gulf of Execution" - minimize steps between intention and action
+ * - Inline editing reduces cognitive load vs modal dialogs
+ * 
  * Wraps LabelContainer with collapse/expand functionality and delete button.
  * Used in MultiLabelView to display individual labels as cards.
  * 
  * Requirements: 2.1, 2.2, 2.3, 2.4, 5.3, 5.4
  */
 
-import React, { useCallback, useState, memo, useMemo } from 'react'
+import React, { useCallback, useState, memo, useMemo, useRef, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { LabelContainer, LabelContainerProps } from './LabelContainer'
 import { Block } from './types'
@@ -36,6 +41,12 @@ export interface LabelCardProps {
   containerProps: Omit<LabelContainerProps, 'block' | 'labelName'>
   /** Additional class name */
   className?: string
+  /** Whether to start in editing mode (for newly created labels) */
+  isEditing?: boolean
+  /** Callback when name is changed via inline editing */
+  onNameChange?: (newName: string) => void
+  /** Existing label names for duplicate validation */
+  existingLabelNames?: string[]
 }
 
 /**
@@ -59,14 +70,38 @@ export const LabelCard: React.FC<LabelCardProps> = memo(({
   onClick,
   containerProps,
   className = '',
+  isEditing: initialIsEditing = false,
+  onNameChange,
+  existingLabelNames = [],
 }) => {
   // State for delete confirmation dialog
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  
+  // State for inline name editing (Don Norman: Progressive Disclosure)
+  const [isEditingName, setIsEditingName] = useState(initialIsEditing)
+  const [editingNameValue, setEditingNameValue] = useState(labelName)
+  const [editingNameError, setEditingNameError] = useState('')
+  const nameInputRef = useRef<HTMLInputElement>(null)
 
   // Calculate block count for summary
   const blockCount = useMemo(() => {
     return labelBlock.children?.length ?? 0
   }, [labelBlock.children])
+
+  // Focus input when entering edit mode
+  useEffect(() => {
+    if (isEditingName && nameInputRef.current) {
+      nameInputRef.current.focus()
+      nameInputRef.current.select()
+    }
+  }, [isEditingName])
+
+  // Update editing value when labelName changes externally
+  useEffect(() => {
+    if (!isEditingName) {
+      setEditingNameValue(labelName)
+    }
+  }, [labelName, isEditingName])
 
   // Handle collapse toggle
   const handleToggleCollapse = useCallback((e: React.MouseEvent) => {
@@ -95,6 +130,77 @@ export const LabelCard: React.FC<LabelCardProps> = memo(({
   const handleCardClick = useCallback(() => {
     onClick?.()
   }, [onClick])
+
+  // Handle double-click on label name to start editing
+  // Don Norman: Reduce Gulf of Execution - direct manipulation
+  const handleNameDoubleClick = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation()
+    if (onNameChange) {
+      setIsEditingName(true)
+      setEditingNameValue(labelName)
+      setEditingNameError('')
+    }
+  }, [labelName, onNameChange])
+
+  // Validate and commit name change
+  const commitNameChange = useCallback(() => {
+    const trimmedName = editingNameValue.trim()
+    
+    // Validate: not empty
+    if (!trimmedName) {
+      setEditingNameError('名称不能为空')
+      return false
+    }
+    
+    // Validate: valid identifier
+    if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(trimmedName)) {
+      setEditingNameError('只能包含字母、数字和下划线')
+      return false
+    }
+    
+    // Validate: not duplicate (excluding current name)
+    if (trimmedName !== labelName && existingLabelNames.includes(trimmedName)) {
+      setEditingNameError(`"${trimmedName}" 已存在`)
+      return false
+    }
+    
+    // Commit change
+    setIsEditingName(false)
+    setEditingNameError('')
+    if (trimmedName !== labelName) {
+      onNameChange?.(trimmedName)
+    }
+    return true
+  }, [editingNameValue, labelName, existingLabelNames, onNameChange])
+
+  // Handle name input key events
+  const handleNameKeyDown = useCallback((e: React.KeyboardEvent) => {
+    e.stopPropagation()
+    if (e.key === 'Enter') {
+      commitNameChange()
+    } else if (e.key === 'Escape') {
+      // Cancel editing, revert to original name
+      setIsEditingName(false)
+      setEditingNameValue(labelName)
+      setEditingNameError('')
+    }
+  }, [commitNameChange, labelName])
+
+  // Handle name input blur - commit on blur
+  const handleNameBlur = useCallback(() => {
+    // Small delay to allow click events to process first
+    setTimeout(() => {
+      if (isEditingName) {
+        commitNameChange()
+      }
+    }, 100)
+  }, [isEditingName, commitNameChange])
+
+  // Handle name input change
+  const handleNameInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    setEditingNameValue(e.target.value)
+    setEditingNameError('')
+  }, [])
 
   // Build class names
   const cardClasses = useMemo(() => [
@@ -125,10 +231,35 @@ export const LabelCard: React.FC<LabelCardProps> = memo(({
           </span>
         </button>
 
-        {/* Label Name */}
+        {/* Label Name - with inline editing support */}
         <div className="label-card-title">
           <span className="label-icon">🏷️</span>
-          <h3 className="label-name">{labelName}</h3>
+          {isEditingName ? (
+            <div className="label-name-edit-container">
+              <input
+                ref={nameInputRef}
+                type="text"
+                className={`label-name-input ${editingNameError ? 'error' : ''}`}
+                value={editingNameValue}
+                onChange={handleNameInputChange}
+                onKeyDown={handleNameKeyDown}
+                onBlur={handleNameBlur}
+                onClick={(e) => e.stopPropagation()}
+                placeholder="输入 Label 名称"
+              />
+              {editingNameError && (
+                <span className="label-name-error">{editingNameError}</span>
+              )}
+            </div>
+          ) : (
+            <h3 
+              className="label-name"
+              onDoubleClick={handleNameDoubleClick}
+              title={onNameChange ? '双击编辑名称' : undefined}
+            >
+              {labelName}
+            </h3>
+          )}
         </div>
 
         {/* Block Count Badge */}

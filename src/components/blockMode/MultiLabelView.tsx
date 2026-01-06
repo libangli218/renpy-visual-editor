@@ -8,7 +8,7 @@
  * Requirements: 1.1, 1.2, 1.4, 1.5, 2.1, 2.2, 2.3, 2.4, 3.1, 3.2, 3.3, 3.4, 3.5, 4.1, 4.2, 4.3, 5.1, 5.3, 5.4, 6.1, 6.2, 6.3, 6.4, 6.5, 7.1, 7.2, 7.3, 7.4, 8.1, 8.2, 8.3, 8.4, 8.5
  */
 
-import React, { useCallback, useMemo, useRef, useEffect } from 'react'
+import React, { useCallback, useMemo, useRef, useEffect, useState } from 'react'
 import { DraggableLabelCard } from './DraggableLabelCard'
 import { FreeCanvas, FreeCanvasHandle } from './FreeCanvas'
 import { MiniMap } from './MiniMap'
@@ -154,6 +154,15 @@ export const MultiLabelView: React.FC<MultiLabelViewProps> = ({
 
   // Track multi-drag initial positions
   const multiDragInitialPositionsRef = useRef<Map<string, Point> | null>(null)
+
+  // State for double-click create label dialog (Jef Raskin: UI consistency)
+  const [showCanvasCreateDialog, setShowCanvasCreateDialog] = useState(false)
+  const [canvasCreatePosition, setCanvasCreatePosition] = useState<Point | null>(null)
+  const [canvasCreateName, setCanvasCreateName] = useState('')
+  const [canvasCreateError, setCanvasCreateError] = useState('')
+
+  // State for newly created labels that need inline editing (Don Norman: Progressive Disclosure)
+  const [editingLabelName, setEditingLabelName] = useState<string | null>(null)
 
   // Create handlers
   const blockTreeBuilder = useMemo(() => createBlockTreeBuilder(), [])
@@ -417,28 +426,34 @@ export const MultiLabelView: React.FC<MultiLabelViewProps> = ({
     clearSelection()
   }, [clearSelection])
 
+  // Generate unique auto-name for new label (Don Norman: reduce cognitive load)
+  const generateAutoLabelName = useCallback(() => {
+    let counter = 1
+    let name = `label_${counter}`
+    while (allLabelNames.includes(name)) {
+      counter++
+      name = `label_${counter}`
+    }
+    return name
+  }, [allLabelNames])
+
   // Handle double-click on canvas to create new label
   // Requirements: 1.5
+  // Don Norman principle: Reduce Gulf of Execution - instant creation, inline editing
   const handleDoubleClickCanvas = useCallback((position: Point) => {
-    if (readOnly) return
-    
-    // Generate a unique label name
-    let baseName = 'new_label'
-    let counter = 1
-    let labelName = baseName
-    while (allLabelNames.includes(labelName)) {
-      labelName = `${baseName}_${counter}`
-      counter++
-    }
+    if (readOnly || !ast) return
     
     // Find non-overlapping position
     const finalPosition = findNonOverlappingPosition(position, labelPositions)
     
-    // Create new label node
+    // Generate auto name (Don Norman: reduce cognitive load)
+    const autoName = generateAutoLabelName()
+    
+    // Create new label node immediately
     const newLabelNode: LabelNode = {
-      id: `label_${labelName}_${Date.now()}`,
+      id: `label_${autoName}_${Date.now()}`,
       type: 'label',
-      name: labelName,
+      name: autoName,
       body: [],
     }
 
@@ -449,10 +464,71 @@ export const MultiLabelView: React.FC<MultiLabelViewProps> = ({
     }
 
     // Set position for the new label
-    setLabelPosition(labelName, finalPosition)
+    setLabelPosition(autoName, finalPosition)
+    
+    // Mark this label for inline editing
+    setEditingLabelName(autoName)
 
     onAstChange?.(newAst)
-  }, [readOnly, allLabelNames, labelPositions, ast, onAstChange, setLabelPosition])
+  }, [readOnly, ast, labelPositions, generateAutoLabelName, setLabelPosition, onAstChange])
+
+  // Handle confirm create label from canvas dialog
+  const handleConfirmCanvasCreate = useCallback(() => {
+    if (!canvasCreatePosition || !ast) return
+    
+    const trimmedName = canvasCreateName.trim()
+    
+    // Validate label name
+    if (!trimmedName) {
+      setCanvasCreateError('Label 名称不能为空')
+      return
+    }
+    
+    // Check for valid identifier
+    if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(trimmedName)) {
+      setCanvasCreateError('Label 名称只能包含字母、数字和下划线，且不能以数字开头')
+      return
+    }
+
+    // Check for duplicate names
+    if (allLabelNames.includes(trimmedName)) {
+      setCanvasCreateError(`Label "${trimmedName}" 已存在，请使用其他名称`)
+      return
+    }
+
+    // Create new label node
+    const newLabelNode: LabelNode = {
+      id: `label_${trimmedName}_${Date.now()}`,
+      type: 'label',
+      name: trimmedName,
+      body: [],
+    }
+
+    // Add to AST
+    const newAst: RenpyScript = {
+      ...ast,
+      statements: [...ast.statements, newLabelNode],
+    }
+
+    // Set position for the new label
+    setLabelPosition(trimmedName, canvasCreatePosition)
+
+    // Close dialog and reset state
+    setShowCanvasCreateDialog(false)
+    setCanvasCreatePosition(null)
+    setCanvasCreateName('')
+    setCanvasCreateError('')
+
+    onAstChange?.(newAst)
+  }, [canvasCreatePosition, canvasCreateName, ast, allLabelNames, setLabelPosition, onAstChange])
+
+  // Handle cancel create label from canvas dialog
+  const handleCancelCanvasCreate = useCallback(() => {
+    setShowCanvasCreateDialog(false)
+    setCanvasCreatePosition(null)
+    setCanvasCreateName('')
+    setCanvasCreateError('')
+  }, [])
 
   // Handle create new label from toolbar
   // Requirements: 5.1, 5.2
@@ -508,6 +584,47 @@ export const MultiLabelView: React.FC<MultiLabelViewProps> = ({
 
     onAstChange?.(newAst)
   }, [ast, readOnly, onAstChange])
+
+  // Handle rename label (Don Norman: inline editing for reduced cognitive load)
+  const handleRenameLabel = useCallback((oldName: string, newName: string) => {
+    if (!ast || readOnly) return
+    if (oldName === newName) {
+      // Clear editing state even if name didn't change
+      setEditingLabelName(null)
+      return
+    }
+
+    // Update label name in AST
+    const newStatements = ast.statements.map(s => {
+      if (s.type === 'label' && (s as LabelNode).name === oldName) {
+        return {
+          ...s,
+          name: newName,
+          id: `label_${newName}_${Date.now()}`,
+        } as LabelNode
+      }
+      return s
+    })
+
+    const newAst: RenpyScript = {
+      ...ast,
+      statements: newStatements,
+    }
+
+    // Update position mapping
+    const oldPosition = labelPositions.get(oldName)
+    if (oldPosition) {
+      const newPositions = new Map(labelPositions)
+      newPositions.delete(oldName)
+      newPositions.set(newName, oldPosition)
+      setLabelPositions(newPositions)
+    }
+
+    // Clear editing state
+    setEditingLabelName(null)
+
+    onAstChange?.(newAst)
+  }, [ast, readOnly, labelPositions, setLabelPositions, onAstChange])
 
   // Handle label card click
   const handleLabelClick = useCallback((labelName: string) => {
@@ -973,6 +1090,10 @@ export const MultiLabelView: React.FC<MultiLabelViewProps> = ({
                       snapDisabled={snapDisabled}
                       onMultiDrag={selectedLabels.size > 1 && isLabelSelected ? handleMultiDrag : undefined}
                       isMultiDragging={selectedLabels.size > 1 && isLabelSelected}
+                      // Don Norman: inline editing for newly created labels
+                      isEditing={editingLabelName === labelData.name}
+                      onNameChange={!readOnly ? (newName) => handleRenameLabel(labelData.name, newName) : undefined}
+                      existingLabelNames={allLabelNames}
                       containerProps={{
                         onBlockClick: handleBlockClick,
                         onBlockDoubleClick: handleBlockDoubleClick,

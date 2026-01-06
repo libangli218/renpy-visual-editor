@@ -101,6 +101,60 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  cursor: default;
+}
+
+/* Editable label name - Don Norman: direct manipulation */
+.label-card-title .label-name[title] {
+  cursor: text;
+}
+
+.label-card-title .label-name[title]:hover {
+  background-color: rgba(0, 0, 0, 0.04);
+  border-radius: 4px;
+  padding: 2px 4px;
+  margin: -2px -4px;
+}
+
+/* Inline name editing container */
+.label-name-edit-container {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+}
+
+.label-name-input {
+  flex: 1;
+  min-width: 0;
+  padding: 4px 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary, #333333);
+  background-color: var(--bg-primary, #ffffff);
+  border: 2px solid var(--accent-primary, #2196F3);
+  border-radius: 4px;
+  outline: none;
+  font-family: inherit;
+}
+
+.label-name-input:focus {
+  box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.2);
+}
+
+.label-name-input.error {
+  border-color: var(--error-color, #f44336);
+}
+
+.label-name-input.error:focus {
+  box-shadow: 0 0 0 3px rgba(244, 67, 54, 0.2);
+}
+
+.label-name-error {
+  font-size: 11px;
+  color: var(--error-color, #f44336);
+  margin-top: 2px;
+  padding-left: 2px;
 }
 
 /* Block Count Badge */

@@ -53,6 +53,12 @@ export interface DraggableLabelCardProps extends Omit<LabelCardProps, 'className
   onMultiDrag?: (deltaX: number, deltaY: number) => void
   /** Whether this card is part of a multi-selection being dragged */
   isMultiDragging?: boolean
+  /** Whether to start in editing mode (for newly created labels) - Don Norman */
+  isEditing?: boolean
+  /** Callback when name is changed via inline editing */
+  onNameChange?: (newName: string) => void
+  /** Existing label names for duplicate validation */
+  existingLabelNames?: string[]
 }
 
 /**
@@ -84,6 +90,10 @@ export const DraggableLabelCard: React.FC<DraggableLabelCardProps> = ({
   snapDisabled = false,
   onMultiDrag,
   isMultiDragging = false,
+  // Don Norman: inline editing props
+  isEditing,
+  onNameChange,
+  existingLabelNames,
   ...labelCardProps
 }) => {
   // Drag state
@@ -122,8 +132,15 @@ export const DraggableLabelCard: React.FC<DraggableLabelCardProps> = ({
   /**
    * Handle Ctrl+click for selection - uses capture phase to intercept before children
    * Alan Kay principle: Simple things should be simple - Ctrl+click anywhere selects
+   * But allow input elements to work normally when editing
    */
   const handleClickCapture = useCallback((e: React.MouseEvent) => {
+    // Allow input elements to work normally (for inline editing)
+    const target = e.target as HTMLElement
+    if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') {
+      return
+    }
+    
     // If Ctrl/Cmd is pressed, handle selection and stop propagation
     if (e.ctrlKey || e.metaKey) {
       e.preventDefault()
@@ -145,11 +162,18 @@ export const DraggableLabelCard: React.FC<DraggableLabelCardProps> = ({
 
     // Check if clicking on header (for drag) or content (for interaction)
     const target = e.target as HTMLElement
+    
+    // Allow input elements to work normally (for inline editing)
+    if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') {
+      return
+    }
+    
     const isHeader = target.closest('.label-card-header')
     const isButton = target.closest('button')
+    const isNameInput = target.closest('.label-name-edit-container')
     
-    // Don't start drag if clicking on buttons or not on header
-    if (isButton || !isHeader) return
+    // Don't start drag if clicking on buttons, input containers, or not on header
+    if (isButton || isNameInput || !isHeader) return
 
     e.preventDefault()
     e.stopPropagation()
@@ -300,6 +324,9 @@ export const DraggableLabelCard: React.FC<DraggableLabelCardProps> = ({
         {...labelCardProps}
         selected={isSelected}
         className="draggable-label-card-inner"
+        isEditing={isEditing}
+        onNameChange={onNameChange}
+        existingLabelNames={existingLabelNames}
       />
     </div>
   )
