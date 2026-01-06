@@ -363,3 +363,96 @@
     display: none;
   }
 }
+
+
+/* ========================================
+ * Canvas Controls Styles
+ * Requirements: 3.4, 5.3
+ * ======================================== */
+
+.canvas-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Fit All Button */
+.toolbar-fit-all {
+  background-color: var(--bg-primary, #ffffff);
+  border-color: var(--border-color, #e0e0e0);
+}
+
+.toolbar-fit-all:hover {
+  background-color: var(--bg-secondary, #f5f5f5);
+  border-color: var(--accent-primary, #2196F3);
+}
+
+/* Zoom Control */
+.zoom-control {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  background-color: var(--bg-primary, #ffffff);
+  border: 1px solid var(--border-color, #e0e0e0);
+  border-radius: 6px;
+}
+
+.zoom-level {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-primary, #333333);
+  min-width: 40px;
+  text-align: center;
+  font-family: monospace;
+}
+
+.zoom-reset-btn {
+  padding: 2px 8px;
+  border: none;
+  background-color: var(--bg-tertiary, #e8e8e8);
+  border-radius: 4px;
+  font-size: 11px;
+  color: var(--text-secondary, #666666);
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.zoom-reset-btn:hover {
+  background-color: var(--accent-primary, #2196F3);
+  color: white;
+}
+
+/* ========================================
+ * Responsive Adjustments for Canvas Controls
+ * ======================================== */
+
+@media (max-width: 768px) {
+  .canvas-controls {
+    order: 2;
+  }
+
+  .toolbar-fit-all .button-text {
+    display: none;
+  }
+
+  .toolbar-fit-all {
+    padding: 8px 10px;
+  }
+}
+
+@media (max-width: 480px) {
+  .zoom-control {
+    padding: 4px 8px;
+  }
+
+  .zoom-level {
+    font-size: 12px;
+    min-width: 35px;
+  }
+
+  .zoom-reset-btn {
+    font-size: 10px;
+    padding: 2px 6px;
+  }
+}

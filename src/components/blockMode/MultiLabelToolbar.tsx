@@ -23,6 +23,8 @@ export interface MultiLabelToolbarProps {
   searchQuery: string
   /** Search change callback */
   onSearchChange: (query: string) => void
+  /** Search select callback - called when user selects a label from search */
+  onSearchSelect?: (labelName: string) => void
   /** Create new label callback - receives the validated label name */
   onCreateLabel: (labelName: string) => void
   /** Layout mode */
@@ -43,6 +45,12 @@ export interface MultiLabelToolbarProps {
   className?: string
   /** Existing label names for duplicate validation */
   existingLabelNames?: string[]
+  /** Current zoom level percentage (e.g., 100 for 100%) */
+  zoomLevel?: number
+  /** Reset zoom callback */
+  onResetZoom?: () => void
+  /** Fit all labels callback */
+  onFitAll?: () => void
 }
 
 /**
@@ -57,6 +65,7 @@ export interface MultiLabelToolbarProps {
 export const MultiLabelToolbar: React.FC<MultiLabelToolbarProps> = memo(({
   searchQuery,
   onSearchChange,
+  onSearchSelect,
   onCreateLabel,
   layoutMode,
   onLayoutChange,
@@ -67,6 +76,9 @@ export const MultiLabelToolbar: React.FC<MultiLabelToolbarProps> = memo(({
   readOnly = false,
   className = '',
   existingLabelNames = [],
+  zoomLevel = 100,
+  onResetZoom,
+  onFitAll,
 }) => {
   // State for new label dialog
   const [showNewLabelDialog, setShowNewLabelDialog] = useState(false)
@@ -218,9 +230,41 @@ export const MultiLabelToolbar: React.FC<MultiLabelToolbarProps> = memo(({
         )}
       </div>
 
-      {/* Right Section: Layout Toggle */}
+      {/* Right Section: Canvas Controls and Layout Toggle */}
       <div className="toolbar-section toolbar-right">
-        <div className="layout-toggle" role="group" aria-label="布局模式">
+        {/* Canvas Zoom Controls */}
+        <div className="canvas-controls" role="group" aria-label="画布控制">
+          {/* Fit All Button */}
+          {onFitAll && (
+            <button
+              className="toolbar-button toolbar-fit-all"
+              onClick={onFitAll}
+              title="适应全部 (F)"
+            >
+              <span className="button-icon">⊞</span>
+              <span className="button-text">适应全部</span>
+            </button>
+          )}
+          
+          {/* Zoom Display and Reset */}
+          <div className="zoom-control">
+            <span className="zoom-level" title="当前缩放级别">
+              {zoomLevel}%
+            </span>
+            {onResetZoom && zoomLevel !== 100 && (
+              <button
+                className="zoom-reset-btn"
+                onClick={onResetZoom}
+                title="重置缩放 (Ctrl+0)"
+              >
+                重置
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Layout Toggle - hidden in free canvas mode but kept for compatibility */}
+        <div className="layout-toggle" role="group" aria-label="布局模式" style={{ display: 'none' }}>
           <button
             className={`layout-toggle-btn ${layoutMode === 'grid' ? 'active' : ''}`}
             onClick={() => handleLayoutToggle('grid')}

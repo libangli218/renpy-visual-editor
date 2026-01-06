@@ -40,22 +40,28 @@
 }
 
 /* ========================================
- * Canvas Area (Label Cards)
+ * Canvas Area (Free Canvas Mode)
  * ======================================== */
 
 .multi-label-view-canvas {
   flex: 1;
-  overflow: auto;
-  padding: 16px;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Free Canvas Mode - no padding, canvas handles its own layout */
+.multi-label-view.free-canvas-mode .multi-label-view-canvas {
+  padding: 0;
 }
 
 /* ========================================
- * Label Cards Grid
+ * Label Cards Grid (Legacy - kept for compatibility)
  * ======================================== */
 
 .label-cards-grid {
   display: grid;
   gap: 16px;
+  padding: 16px;
 }
 
 /* Grid Layout */
