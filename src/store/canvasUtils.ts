@@ -266,3 +266,149 @@ export function calculateFitTransform(
     scale,
   }
 }
+
+/**
+ * Calculate transform to center a specific label in the viewport
+ * 
+ * This function calculates the transform needed to pan the canvas
+ * so that a specific label is centered in the viewport.
+ * 
+ * @param labelBounds - The bounds of the label to center
+ * @param viewportWidth - Width of viewport
+ * @param viewportHeight - Height of viewport
+ * @param currentScale - Current zoom scale (preserved)
+ * @returns Transform that centers the label in viewport
+ * 
+ * Requirements: 5.1
+ */
+export function calculateCenterOnLabelTransform(
+  labelBounds: Rect,
+  viewportWidth: number,
+  viewportHeight: number,
+  currentScale: number
+): CanvasTransform {
+  // Calculate the center of the label
+  const labelCenter = getRectCenter(labelBounds)
+  
+  // Calculate offset to center the label in viewport
+  // The label center should appear at viewport center
+  const offsetX = viewportWidth / 2 - labelCenter.x * currentScale
+  const offsetY = viewportHeight / 2 - labelCenter.y * currentScale
+  
+  return {
+    offsetX,
+    offsetY,
+    scale: currentScale,
+  }
+}
+
+/**
+ * Calculate transform to fit all labels in viewport
+ * 
+ * This function calculates the optimal transform to display all labels
+ * within the viewport with appropriate padding.
+ * 
+ * @param labelBounds - Array of all label bounds
+ * @param viewportWidth - Width of viewport
+ * @param viewportHeight - Height of viewport
+ * @param padding - Padding around content (default 50px)
+ * @returns Transform that fits all labels in viewport, or default transform if no labels
+ * 
+ * Requirements: 5.3
+ */
+export function calculateFitAllTransform(
+  labelBounds: Rect[],
+  viewportWidth: number,
+  viewportHeight: number,
+  padding: number = 50
+): CanvasTransform {
+  // Handle empty case
+  if (labelBounds.length === 0) {
+    return {
+      offsetX: 0,
+      offsetY: 0,
+      scale: 1.0,
+    }
+  }
+  
+  // Calculate bounding box of all labels
+  const bounds = getBoundingBox(labelBounds)
+  if (!bounds) {
+    return {
+      offsetX: 0,
+      offsetY: 0,
+      scale: 1.0,
+    }
+  }
+  
+  // Use the existing calculateFitTransform function
+  return calculateFitTransform(bounds, viewportWidth, viewportHeight, padding)
+}
+
+/**
+ * Check if a label is visible within the current viewport
+ * 
+ * @param labelBounds - The bounds of the label to check
+ * @param viewportWidth - Width of viewport
+ * @param viewportHeight - Height of viewport
+ * @param transform - Current canvas transform
+ * @returns true if any part of the label is visible in viewport
+ */
+export function isLabelInViewport(
+  labelBounds: Rect,
+  viewportWidth: number,
+  viewportHeight: number,
+  transform: CanvasTransform
+): boolean {
+  // Convert label bounds to screen coordinates
+  const screenRect = canvasRectToScreen(labelBounds, transform)
+  
+  // Check if the screen rect intersects with viewport
+  const viewportRect: Rect = {
+    x: 0,
+    y: 0,
+    width: viewportWidth,
+    height: viewportHeight,
+  }
+  
+  return doRectsIntersect(screenRect, viewportRect)
+}
+
+/**
+ * Check if all labels are visible within the current viewport
+ * 
+ * @param labelBounds - Array of all label bounds
+ * @param viewportWidth - Width of viewport
+ * @param viewportHeight - Height of viewport
+ * @param transform - Current canvas transform
+ * @returns true if all labels are fully visible in viewport
+ * 
+ * Requirements: 5.3 (validation)
+ */
+export function areAllLabelsInViewport(
+  labelBounds: Rect[],
+  viewportWidth: number,
+  viewportHeight: number,
+  transform: CanvasTransform
+): boolean {
+  if (labelBounds.length === 0) {
+    return true
+  }
+  
+  // Get bounding box of all labels
+  const bounds = getBoundingBox(labelBounds)
+  if (!bounds) {
+    return true
+  }
+  
+  // Convert to screen coordinates
+  const screenRect = canvasRectToScreen(bounds, transform)
+  
+  // Check if the entire bounding box is within viewport
+  return (
+    screenRect.x >= 0 &&
+    screenRect.y >= 0 &&
+    screenRect.x + screenRect.width <= viewportWidth &&
+    screenRect.y + screenRect.height <= viewportHeight
+  )
+}

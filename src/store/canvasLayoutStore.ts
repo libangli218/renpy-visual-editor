@@ -92,6 +92,10 @@ export interface CanvasLayoutActions {
   resetZoom: () => void
   fitAll: (labelBounds: LabelBounds[]) => void
   
+  // Navigation actions
+  navigateToLabel: (labelBounds: LabelBounds, viewportWidth: number, viewportHeight: number) => void
+  fitAllWithViewport: (labelBounds: LabelBounds[], viewportWidth: number, viewportHeight: number, padding?: number) => void
+  
   // Label position actions
   setLabelPosition: (labelName: string, position: Point) => void
   setLabelPositions: (positions: Map<string, Point>) => void
@@ -265,6 +269,101 @@ export const useCanvasLayoutStore = create<CanvasLayoutStore>((set, get) => ({
     // Calculate scale to fit content with padding
     const scaleX = (viewportWidth - padding * 2) / contentWidth
     const scaleY = (viewportHeight - padding * 2) / contentHeight
+    const scale = clamp(Math.min(scaleX, scaleY), MIN_SCALE, MAX_SCALE)
+    
+    // Calculate offset to center content
+    const centerX = (minX + maxX) / 2
+    const centerY = (minY + maxY) / 2
+    const offsetX = viewportWidth / 2 - centerX * scale
+    const offsetY = viewportHeight / 2 - centerY * scale
+    
+    set({
+      transform: {
+        offsetX,
+        offsetY,
+        scale,
+      },
+    })
+  },
+  
+  /**
+   * Navigate to a specific label, centering it in the viewport
+   * Requirements: 5.1
+   */
+  navigateToLabel: (labelBounds, viewportWidth, viewportHeight) => {
+    const { transform } = get()
+    
+    // Calculate the center of the label
+    const labelCenterX = labelBounds.x + labelBounds.width / 2
+    const labelCenterY = labelBounds.y + labelBounds.height / 2
+    
+    // Calculate offset to center the label in viewport
+    const offsetX = viewportWidth / 2 - labelCenterX * transform.scale
+    const offsetY = viewportHeight / 2 - labelCenterY * transform.scale
+    
+    set({
+      transform: {
+        ...transform,
+        offsetX,
+        offsetY,
+      },
+    })
+  },
+  
+  /**
+   * Fit all labels in the viewport with actual viewport dimensions
+   * Requirements: 5.3
+   */
+  fitAllWithViewport: (labelBounds, viewportWidth, viewportHeight, padding = 50) => {
+    if (labelBounds.length === 0) {
+      // No labels, reset to default
+      set({
+        transform: {
+          offsetX: 0,
+          offsetY: 0,
+          scale: DEFAULT_SCALE,
+        },
+      })
+      return
+    }
+    
+    // Calculate bounding box of all labels
+    let minX = Infinity
+    let minY = Infinity
+    let maxX = -Infinity
+    let maxY = -Infinity
+    
+    for (const label of labelBounds) {
+      minX = Math.min(minX, label.x)
+      minY = Math.min(minY, label.y)
+      maxX = Math.max(maxX, label.x + label.width)
+      maxY = Math.max(maxY, label.y + label.height)
+    }
+    
+    const contentWidth = maxX - minX
+    const contentHeight = maxY - minY
+    
+    // Handle edge case where content has zero dimensions
+    if (contentWidth <= 0 || contentHeight <= 0) {
+      // Center on the single point
+      const centerX = (minX + maxX) / 2
+      const centerY = (minY + maxY) / 2
+      set({
+        transform: {
+          offsetX: viewportWidth / 2 - centerX,
+          offsetY: viewportHeight / 2 - centerY,
+          scale: DEFAULT_SCALE,
+        },
+      })
+      return
+    }
+    
+    // Calculate scale to fit content with padding
+    const availableWidth = viewportWidth - padding * 2
+    const availableHeight = viewportHeight - padding * 2
+    
+    const scaleX = availableWidth / contentWidth
+    const scaleY = availableHeight / contentHeight
     const scale = clamp(Math.min(scaleX, scaleY), MIN_SCALE, MAX_SCALE)
     
     // Calculate offset to center content

@@ -51,6 +51,7 @@ export * from './DraggableLabelCard'
 
 // Free Canvas Layout
 export * from './FreeCanvas'
+export type { FreeCanvasHandle } from './FreeCanvas'
 export * from './MiniMap'
 export * from './SnapGuides'
 

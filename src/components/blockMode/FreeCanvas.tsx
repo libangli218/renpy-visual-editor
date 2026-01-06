@@ -5,10 +5,10 @@
  * Core canvas component that handles pan, zoom, and event distribution.
  * Uses CSS transform for performance (no reflow, only repaint).
  * 
- * Requirements: 1.1, 1.4, 2.1, 2.2, 2.3, 2.4, 3.1, 3.2, 3.3, 3.4, 3.5, 5.4, 7.1, 7.4, 8.1, 8.2, 8.5
+ * Requirements: 1.1, 1.4, 1.5, 2.1, 2.2, 2.3, 2.4, 3.1, 3.2, 3.3, 3.4, 3.5, 5.4, 7.1, 7.4, 8.1, 8.2, 8.5
  */
 
-import React, { useCallback, useRef, useEffect, useMemo, useState } from 'react'
+import React, { useCallback, useRef, useEffect, useMemo, useState, forwardRef, useImperativeHandle } from 'react'
 import { 
   CanvasTransform, 
   Point,
@@ -60,6 +60,23 @@ export interface FreeCanvasProps {
   onSnapDisabledChange?: (disabled: boolean) => void
   /** Callback when selection should be cleared */
   onClearSelection?: () => void
+  /** Callback when fit all is triggered (F key or button) */
+  onFitAll?: () => void
+  /** Ref to expose navigation methods */
+  canvasRef?: React.RefObject<FreeCanvasHandle>
+}
+
+/**
+ * Handle interface for FreeCanvas imperative methods
+ * Used for programmatic navigation (e.g., search result navigation)
+ */
+export interface FreeCanvasHandle {
+  /** Navigate to center a specific label in the viewport */
+  navigateToLabel: (labelName: string) => void
+  /** Fit all labels in the viewport */
+  fitAll: () => void
+  /** Get the current viewport dimensions */
+  getViewportSize: () => { width: number; height: number } | null
 }
 
 /**
@@ -68,6 +85,7 @@ export interface FreeCanvasProps {
  * Implements Requirements:
  * - 1.1: Display all LabelCards on infinite canvas
  * - 1.4: Support arbitrary canvas size (infinite canvas concept)
+ * - 1.5: Double-click on blank area creates new Label at that position
  * - 2.1: Middle mouse button pan
  * - 2.2: Space + left mouse button pan
  * - 2.3: All LabelCards move together maintaining relative positions
@@ -77,6 +95,8 @@ export interface FreeCanvasProps {
  * - 3.3: Zoom range limited to 10%-400%
  * - 3.4: Reset zoom button (handled externally)
  * - 3.5: Ctrl+0 resets zoom to 100%
+ * - 5.1: Navigate to label when selected from search
+ * - 5.3: Fit all labels in view
  * - 5.4: F key fits all labels in view
  * - 7.1: Display snap guide alignment lines
  * - 7.4: Alt key disables snapping
@@ -84,7 +104,7 @@ export interface FreeCanvasProps {
  * - 8.2: Select labels within selection box
  * - 8.5: Escape key clears selection
  */
-export const FreeCanvas: React.FC<FreeCanvasProps> = ({
+export const FreeCanvas = forwardRef<FreeCanvasHandle, FreeCanvasProps>(({
   children,
   transform,
   onTransformChange,
@@ -98,7 +118,8 @@ export const FreeCanvas: React.FC<FreeCanvasProps> = ({
   snapDisabled = false,
   onSnapDisabledChange,
   onClearSelection,
-}) => {
+  onFitAll,
+}, ref) => {
   // Refs
   const containerRef = useRef<HTMLDivElement>(null)
   const lastMousePosRef = useRef<Point>({ x: 0, y: 0 })
@@ -112,6 +133,78 @@ export const FreeCanvas: React.FC<FreeCanvasProps> = ({
 
   // Store actions
   const { setIsSpacePressed, clearSelection } = useCanvasLayoutStore()
+
+  /**
+   * Get viewport dimensions
+   */
+  const getViewportSize = useCallback(() => {
+    const rect = containerRef.current?.getBoundingClientRect()
+    if (!rect) return null
+    return { width: rect.width, height: rect.height }
+  }, [])
+
+  /**
+   * Navigate to center a specific label in the viewport
+   * Requirements: 5.1
+   */
+  const navigateToLabel = useCallback((labelName: string) => {
+    const label = labelBounds.find(l => l.name === labelName)
+    if (!label) return
+
+    const viewport = getViewportSize()
+    if (!viewport) return
+
+    // Calculate the center of the label
+    const labelCenterX = label.x + label.width / 2
+    const labelCenterY = label.y + label.height / 2
+
+    // Calculate offset to center the label in viewport
+    const offsetX = viewport.width / 2 - labelCenterX * transform.scale
+    const offsetY = viewport.height / 2 - labelCenterY * transform.scale
+
+    onTransformChange({
+      ...transform,
+      offsetX,
+      offsetY,
+    })
+  }, [labelBounds, transform, onTransformChange, getViewportSize])
+
+  /**
+   * Fit all labels in view
+   * Requirements: 5.3
+   */
+  const handleFitAll = useCallback(() => {
+    if (labelBounds.length === 0) {
+      // No labels, reset to default
+      onTransformChange({
+        offsetX: 0,
+        offsetY: 0,
+        scale: 1.0,
+      })
+      return
+    }
+
+    const rect = containerRef.current?.getBoundingClientRect()
+    if (!rect) return
+
+    // Calculate bounding box of all labels
+    const bounds = getBoundingBox(labelBounds)
+    if (!bounds) return
+
+    // Calculate transform to fit content
+    const newTransform = calculateFitTransform(bounds, rect.width, rect.height, 50)
+    onTransformChange(newTransform)
+    
+    // Notify parent if callback provided
+    onFitAll?.()
+  }, [labelBounds, onTransformChange, onFitAll])
+
+  // Expose imperative methods via ref
+  useImperativeHandle(ref, () => ({
+    navigateToLabel,
+    fitAll: handleFitAll,
+    getViewportSize,
+  }), [navigateToLabel, handleFitAll, getViewportSize])
 
   /**
    * Handle mouse wheel for zooming
@@ -255,12 +348,19 @@ export const FreeCanvas: React.FC<FreeCanvasProps> = ({
 
   /**
    * Handle double click on canvas
+   * Implements Requirement 1.5: Double-click on blank area creates new Label
    */
   const handleDoubleClick = useCallback((e: React.MouseEvent) => {
     if (!onDoubleClickCanvas) return
     
-    // Only trigger if clicking on the canvas itself, not on children
-    if (e.target !== containerRef.current && e.target !== containerRef.current?.querySelector('.free-canvas-viewport')) {
+    // Only trigger if clicking on the canvas blank area, not on children (LabelCards)
+    const target = e.target as HTMLElement
+    const isCanvasBlankArea = 
+      target === containerRef.current || 
+      target.classList.contains('free-canvas-viewport') ||
+      target.classList.contains('free-canvas-grid')
+    
+    if (!isCanvasBlankArea) {
       return
     }
 
@@ -363,33 +463,7 @@ export const FreeCanvas: React.FC<FreeCanvasProps> = ({
       window.removeEventListener('keydown', handleKeyDown)
       window.removeEventListener('keyup', handleKeyUp)
     }
-  }, [transform, onTransformChange, isPanning, setIsPanning, setIsSpacePressed, labelBounds, onSnapDisabledChange, isSelecting, clearSelection, onClearSelection])
-
-  /**
-   * Fit all labels in view
-   */
-  const handleFitAll = useCallback(() => {
-    if (labelBounds.length === 0) {
-      // No labels, reset to default
-      onTransformChange({
-        offsetX: 0,
-        offsetY: 0,
-        scale: 1.0,
-      })
-      return
-    }
-
-    const rect = containerRef.current?.getBoundingClientRect()
-    if (!rect) return
-
-    // Calculate bounding box of all labels
-    const bounds = getBoundingBox(labelBounds)
-    if (!bounds) return
-
-    // Calculate transform to fit content
-    const newTransform = calculateFitTransform(bounds, rect.width, rect.height, 50)
-    onTransformChange(newTransform)
-  }, [labelBounds, onTransformChange])
+  }, [transform, onTransformChange, isPanning, setIsPanning, setIsSpacePressed, labelBounds, onSnapDisabledChange, isSelecting, clearSelection, onClearSelection, handleFitAll])
 
   // Build viewport transform style
   const viewportStyle = useMemo(() => ({
@@ -452,7 +526,7 @@ export const FreeCanvas: React.FC<FreeCanvasProps> = ({
       <div className="free-canvas-grid" />
     </div>
   )
-}
+})
 
 // Display name for debugging
 FreeCanvas.displayName = 'FreeCanvas'
