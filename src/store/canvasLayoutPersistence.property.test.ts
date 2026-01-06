@@ -19,7 +19,7 @@ import {
   CanvasLayoutFileSystem,
   CANVAS_LAYOUT_CONFIG_VERSION,
 } from './canvasLayoutPersistence'
-import { Point, CanvasTransform, MIN_SCALE, MAX_SCALE } from './canvasLayoutStore'
+import { MIN_SCALE, MAX_SCALE } from './canvasLayoutStore'
 
 /**
  * Create an in-memory file system for testing

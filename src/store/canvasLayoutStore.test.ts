@@ -1,7 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import {
   useCanvasLayoutStore,
-  CanvasTransform,
   Point,
   MIN_SCALE,
   MAX_SCALE,

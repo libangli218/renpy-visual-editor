@@ -9,7 +9,7 @@
  * Requirements: 8.1, 8.2
  */
 
-import { describe, it, expect, beforeEach } from 'vitest'
+import { describe, it, expect } from 'vitest'
 import * as fc from 'fast-check'
 import { 
   rectsIntersect, 
@@ -18,7 +18,7 @@ import {
   calculateRelativePositions,
   applyRelativePositions,
 } from './selectionUtils'
-import { Rect, LabelBounds, Point } from './canvasLayoutStore'
+import { Rect, Point } from './canvasLayoutStore'
 
 /**
  * Arbitrary for a valid rectangle
@@ -260,7 +260,7 @@ describe('Multi-Drag Relative Position Correctness', () => {
         fc.array(fc.string({ minLength: 1, maxLength: 10 }), { minLength: 1, maxLength: 10 }),
         pointArb,
         pointArb,
-        (labelNames, referencePoint, newReferencePoint) => {
+        (labelNames, referencePoint, _newReferencePoint) => {
           // Create unique label names
           const uniqueNames = [...new Set(labelNames)]
           if (uniqueNames.length === 0) return
