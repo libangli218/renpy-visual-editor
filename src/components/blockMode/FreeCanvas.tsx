@@ -233,6 +233,9 @@ export const FreeCanvas = forwardRef<FreeCanvasHandle, FreeCanvasProps>(({
    * Handle mouse down for panning or box selection
    */
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
+    // Focus the canvas to receive keyboard events
+    containerRef.current?.focus()
+
     // Middle mouse button (button 1) or Space + Left click (button 0)
     if (e.button === 1 || (e.button === 0 && isSpacePressedRef.current)) {
       e.preventDefault()
@@ -406,8 +409,12 @@ export const FreeCanvas = forwardRef<FreeCanvasHandle, FreeCanvasProps>(({
         onClearSelection?.()
       }
 
-      // Home key - return to origin
+      // Home key - return to origin (Requirements: 2.4)
       if (e.code === 'Home') {
+        // Don't trigger if user is typing in an input
+        if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+          return
+        }
         e.preventDefault()
         onTransformChange({
           offsetX: 0,
@@ -416,8 +423,12 @@ export const FreeCanvas = forwardRef<FreeCanvasHandle, FreeCanvasProps>(({
         })
       }
 
-      // Ctrl+0 - reset zoom to 100%
+      // Ctrl+0 - reset zoom to 100% (Requirements: 3.5)
       if (e.code === 'Digit0' && (e.ctrlKey || e.metaKey)) {
+        // Don't trigger if user is typing in an input
+        if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+          return
+        }
         e.preventDefault()
         const rect = containerRef.current?.getBoundingClientRect()
         if (rect) {
@@ -492,6 +503,7 @@ export const FreeCanvas = forwardRef<FreeCanvasHandle, FreeCanvasProps>(({
       ref={containerRef}
       className={containerClasses}
       style={{ cursor: cursorStyle }}
+      tabIndex={0}
       onWheel={handleWheel}
       onMouseDown={handleMouseDown}
       onMouseMove={handleMouseMove}
