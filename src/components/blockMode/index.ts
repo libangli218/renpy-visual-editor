@@ -51,6 +51,7 @@ export * from './DraggableLabelCard'
 
 // Free Canvas Layout
 export * from './FreeCanvas'
+export * from './MiniMap'
 
 // Multi-Label View Components
 export * from './MultiLabelToolbar'

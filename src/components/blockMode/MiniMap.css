@@ -1,0 +1,162 @@
+/**
+ * MiniMap Component Styles
+ * 小地图组件样式
+ * 
+ * Requirements: 6.1, 6.2, 6.3
+ */
+
+/* ========================================
+ * MiniMap Container
+ * ======================================== */
+
+.minimap {
+  position: absolute;
+  bottom: 16px;
+  right: 16px;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  z-index: 100;
+  cursor: pointer;
+  transition: box-shadow 0.2s ease;
+}
+
+.minimap:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.minimap.dragging {
+  cursor: grabbing;
+}
+
+/* ========================================
+ * Background
+ * Semi-transparent background
+ * ======================================== */
+
+.minimap-background {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(4px);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+}
+
+/* ========================================
+ * Labels Container
+ * ======================================== */
+
+.minimap-labels {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+}
+
+/* ========================================
+ * Label Rectangles
+ * Small rectangles representing labels
+ * ======================================== */
+
+.minimap-label {
+  position: absolute;
+  background-color: var(--minimap-label-color, #6366f1);
+  border-radius: 2px;
+  opacity: 0.8;
+  transition: opacity 0.15s ease;
+}
+
+.minimap-label:hover {
+  opacity: 1;
+}
+
+/* ========================================
+ * Viewport Rectangle
+ * Dashed rectangle showing current view
+ * ======================================== */
+
+.minimap-viewport {
+  position: absolute;
+  border: 2px dashed var(--minimap-viewport-color, #2196F3);
+  background-color: rgba(33, 150, 243, 0.1);
+  border-radius: 2px;
+  cursor: grab;
+  transition: background-color 0.15s ease;
+}
+
+.minimap-viewport:hover {
+  background-color: rgba(33, 150, 243, 0.2);
+}
+
+.minimap.dragging .minimap-viewport {
+  cursor: grabbing;
+  background-color: rgba(33, 150, 243, 0.25);
+  border-style: solid;
+}
+
+/* ========================================
+ * Dark Mode Support
+ * ======================================== */
+
+@media (prefers-color-scheme: dark) {
+  .minimap-background {
+    background-color: rgba(30, 30, 30, 0.9);
+    border-color: rgba(255, 255, 255, 0.1);
+  }
+  
+  .minimap-label {
+    background-color: var(--minimap-label-color-dark, #818cf8);
+  }
+  
+  .minimap-viewport {
+    border-color: var(--minimap-viewport-color-dark, #60a5fa);
+    background-color: rgba(96, 165, 250, 0.15);
+  }
+  
+  .minimap-viewport:hover {
+    background-color: rgba(96, 165, 250, 0.25);
+  }
+  
+  .minimap.dragging .minimap-viewport {
+    background-color: rgba(96, 165, 250, 0.3);
+  }
+}
+
+/* ========================================
+ * Reduced Motion
+ * ======================================== */
+
+@media (prefers-reduced-motion: reduce) {
+  .minimap,
+  .minimap-label,
+  .minimap-viewport {
+    transition: none;
+  }
+}
+
+/* ========================================
+ * High Contrast Mode
+ * ======================================== */
+
+@media (prefers-contrast: high) {
+  .minimap-background {
+    background-color: white;
+    border: 2px solid black;
+  }
+  
+  .minimap-label {
+    background-color: #1e40af;
+    opacity: 1;
+  }
+  
+  .minimap-viewport {
+    border-width: 3px;
+    border-color: #dc2626;
+  }
+}
