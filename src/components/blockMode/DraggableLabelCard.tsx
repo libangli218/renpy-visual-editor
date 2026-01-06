@@ -261,17 +261,20 @@ export const DraggableLabelCard: React.FC<DraggableLabelCardProps> = ({
   }, [])
 
   // Build style for absolute positioning
+  // Dan Abramov optimization: Use transform instead of left/top for better performance
+  // transform doesn't trigger layout, only composite - much faster for animations
   const cardStyle = useMemo(() => ({
     position: 'absolute' as const,
-    left: `${position.x}px`,
-    top: `${position.y}px`,
+    left: 0,
+    top: 0,
+    transform: `translate(${position.x}px, ${position.y}px)${isDragging ? ' scale(1.02)' : ''}`,
     width: `${cardWidth}px`,
     // Let height be auto to fit content, only set minHeight when expanded
     minHeight: labelCardProps.collapsed ? 'auto' : undefined,
-    // Use transform for better performance during drag
-    transform: isDragging ? 'translate(0, 0)' : undefined,
     // Prevent text selection during drag
     userSelect: isDragging ? 'none' as const : undefined,
+    // Enable GPU acceleration for smoother dragging
+    willChange: isDragging ? 'transform' : undefined,
   }), [position, cardWidth, labelCardProps.collapsed, isDragging])
 
   // Build class names

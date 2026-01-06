@@ -50,8 +50,7 @@
   cursor: grabbing;
   /* Disable transitions during drag for responsiveness */
   transition: none;
-  /* Slight scale up for visual feedback */
-  transform: scale(1.02);
+  /* Scale is now handled in JS transform for better performance */
 }
 
 .draggable-label-card.dragging .label-card {
@@ -86,8 +85,7 @@
 .draggable-label-card.selected {
   /* Selection highlight */
   z-index: 10;
-  /* Animated selection appearance */
-  animation: selectionPulse 0.3s ease-out;
+  /* Note: Removed selectionPulse animation as it conflicts with transform positioning */
 }
 
 .draggable-label-card.selected .label-card {

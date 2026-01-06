@@ -340,8 +340,15 @@ export const MultiLabelView: React.FC<MultiLabelViewProps> = ({
     }
   }, [selectLabel, selectLabels, selectedLabels])
 
+  // Track pending RAF for multi-drag throttling (Dan Abramov style optimization)
+  const multiDragRAFRef = useRef<number | null>(null)
+  const pendingDeltaRef = useRef<Point | null>(null)
+
   // Handle multi-drag (drag all selected labels together)
   // Requirements: 8.4
+  // Performance optimization inspired by Dan Abramov:
+  // - Use requestAnimationFrame to throttle updates
+  // - Batch position updates to reduce re-renders
   const handleMultiDrag = useCallback((deltaX: number, deltaY: number) => {
     if (selectedLabels.size <= 1) return
     
@@ -356,26 +363,44 @@ export const MultiLabelView: React.FC<MultiLabelViewProps> = ({
       }
     }
     
-    // Calculate new positions based on initial positions + delta
-    // (not current positions, since delta is cumulative from drag start)
-    const initialPositions = multiDragInitialPositionsRef.current
-    const newPositions = new Map(labelPositions)
+    // Store pending delta for RAF callback
+    pendingDeltaRef.current = { x: deltaX, y: deltaY }
     
-    for (const labelName of selectedLabels) {
-      const initialPos = initialPositions.get(labelName)
-      if (initialPos) {
-        newPositions.set(labelName, {
-          x: initialPos.x + deltaX,
-          y: initialPos.y + deltaY,
-        })
-      }
+    // Throttle updates using requestAnimationFrame
+    if (multiDragRAFRef.current === null) {
+      multiDragRAFRef.current = requestAnimationFrame(() => {
+        multiDragRAFRef.current = null
+        
+        const delta = pendingDeltaRef.current
+        const initialPositions = multiDragInitialPositionsRef.current
+        if (!delta || !initialPositions) return
+        
+        // Calculate new positions based on initial positions + delta
+        const newPositions = new Map(labelPositions)
+        
+        for (const labelName of selectedLabels) {
+          const initialPos = initialPositions.get(labelName)
+          if (initialPos) {
+            newPositions.set(labelName, {
+              x: initialPos.x + delta.x,
+              y: initialPos.y + delta.y,
+            })
+          }
+        }
+        
+        setLabelPositions(newPositions)
+      })
     }
-    
-    setLabelPositions(newPositions)
   }, [selectedLabels, labelPositions, setLabelPositions])
 
   // Handle drag end - clear multi-drag state and save
   const handleDragEnd = useCallback(() => {
+    // Cancel any pending RAF
+    if (multiDragRAFRef.current !== null) {
+      cancelAnimationFrame(multiDragRAFRef.current)
+      multiDragRAFRef.current = null
+    }
+    pendingDeltaRef.current = null
     multiDragInitialPositionsRef.current = null
     saveLayout()
   }, [saveLayout])
