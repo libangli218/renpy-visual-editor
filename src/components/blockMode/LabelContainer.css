@@ -69,7 +69,7 @@
   flex: 1;
   padding: 12px;
   overflow: visible;
-  position: relative;
+  position: relative; /* Required for absolute positioning of drop-indicator */
 }
 
 .label-container.drag-over .label-container-content {

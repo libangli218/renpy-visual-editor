@@ -48,6 +48,8 @@ export interface LabelContainerProps {
   className?: string
   /** Selected block ID */
   selectedBlockId?: string | null
+  /** Canvas scale factor for correct drop indicator positioning */
+  canvasScale?: number
 }
 
 /**
@@ -82,6 +84,7 @@ export const LabelContainer: React.FC<LabelContainerProps> = memo(({
   readOnly = false,
   className = '',
   selectedBlockId,
+  canvasScale = 1,
 }) => {
   const [isDragOver, setIsDragOver] = useState(false)
   const [dropPosition, setDropPosition] = useState<DropPosition | null>(null)
@@ -116,13 +119,20 @@ export const LabelContainer: React.FC<LabelContainerProps> = memo(({
       return 0
     }
 
-    // Only select direct child blocks, not nested ones
-    // Use :scope > to select only direct children
-    const blockElements = contentRef.current.querySelectorAll(':scope > [data-block-id]')
+    // Get direct child elements with data-block-id attribute
+    // Use Array.from to convert HTMLCollection to array for filtering
+    const allChildren = Array.from(contentRef.current.children)
+    const blockElements = allChildren.filter(el => el.hasAttribute('data-block-id'))
+    
     const containerRect = contentRef.current.getBoundingClientRect()
+    
+    console.log('[calculateDropIndex] clientY:', clientY)
+    console.log('[calculateDropIndex] containerRect.top:', containerRect.top)
+    console.log('[calculateDropIndex] blockElements count:', blockElements.length)
     
     // If above all blocks, insert at beginning
     if (clientY < containerRect.top) {
+      console.log('[calculateDropIndex] above all blocks, returning 0')
       return 0
     }
 
@@ -130,53 +140,98 @@ export const LabelContainer: React.FC<LabelContainerProps> = memo(({
       const blockRect = blockElements[i].getBoundingClientRect()
       const blockMiddle = blockRect.top + blockRect.height / 2
 
+      console.log(`[calculateDropIndex] block ${i}: top=${blockRect.top}, bottom=${blockRect.bottom}, middle=${blockMiddle}`)
+      
       if (clientY < blockMiddle) {
+        console.log(`[calculateDropIndex] clientY < blockMiddle, returning ${i}`)
         return i
       }
     }
 
     // If below all blocks, insert at end
+    console.log(`[calculateDropIndex] below all blocks, returning ${children.length}`)
     return children.length
   }, [children.length])
 
   /**
    * Get Y position for drop indicator
    * Only considers direct children, not nested blocks
+   * 
+   * The drop indicator should appear BETWEEN blocks, not at block edges.
+   * Since blocks have margin: 4px 0, there's an 8px gap between blocks.
+   * We position the indicator at the midpoint of this gap.
+   * 
+   * IMPORTANT: When the canvas is scaled, getBoundingClientRect() returns
+   * screen coordinates (already transformed), but CSS top/left values are
+   * applied BEFORE the transform. So we need to divide by scale to compensate.
    */
   const getDropIndicatorY = useCallback((index: number): number => {
     if (!contentRef.current) {
       return 0
     }
 
-    // Only select direct child blocks, not nested ones
-    const blockElements = contentRef.current.querySelectorAll(':scope > [data-block-id]')
+    // Get direct child elements with data-block-id attribute
+    // Use Array.from to convert HTMLCollection to array for filtering
+    const allChildren = Array.from(contentRef.current.children)
+    const blockElements = allChildren.filter(el => el.hasAttribute('data-block-id'))
+    
+    // DEBUG: Log what elements we're finding
+    console.log('[DropIndicator] allChildren count:', allChildren.length)
+    console.log('[DropIndicator] blockElements count:', blockElements.length)
+    console.log('[DropIndicator] canvasScale:', canvasScale)
+    
     const containerRect = contentRef.current.getBoundingClientRect()
     const scrollTop = contentRef.current.scrollTop
     
+    console.log('[DropIndicator] containerRect:', { top: containerRect.top, bottom: containerRect.bottom })
+    console.log('[DropIndicator] target index:', index)
+    
     if (blockElements.length === 0) {
-      // When empty, position at the top of the content area
-      return 0
+      // When empty, position at the top of the content area (with some padding)
+      return 12 // Match the container padding
+    }
+
+    // Helper function to convert screen Y to CSS Y (accounting for scale)
+    const screenToCssY = (screenY: number): number => {
+      // Screen coordinates are already scaled, so divide by scale to get CSS value
+      return screenY / canvasScale
     }
 
     if (index === 0) {
       const firstBlock = blockElements[0]
       const firstRect = firstBlock.getBoundingClientRect()
-      // Position above the first block, accounting for scroll
-      return firstRect.top - containerRect.top + scrollTop
+      // Position above the first block, in the gap between container top and block
+      const blockTop = (firstRect.top - containerRect.top) / canvasScale + scrollTop
+      console.log('[DropIndicator] index=0, blockTop:', blockTop, 'result:', blockTop - 4)
+      return blockTop - 4 // Position in the margin gap above first block
     }
 
     if (index >= blockElements.length) {
       const lastBlock = blockElements[blockElements.length - 1]
       const lastRect = lastBlock.getBoundingClientRect()
-      // Position below the last block, accounting for scroll
-      return lastRect.bottom - containerRect.top + scrollTop
+      // Position below the last block, in the gap after it
+      const blockBottom = (lastRect.bottom - containerRect.top) / canvasScale + scrollTop
+      console.log('[DropIndicator] index>=length, blockBottom:', blockBottom, 'result:', blockBottom + 4)
+      return blockBottom + 4 // Position in the margin gap below last block
     }
 
-    const targetBlock = blockElements[index]
-    const targetRect = targetBlock.getBoundingClientRect()
-    // Position above the target block, accounting for scroll
-    return targetRect.top - containerRect.top + scrollTop
-  }, [])
+    // Position between two blocks
+    const prevBlock = blockElements[index - 1]
+    const nextBlock = blockElements[index]
+    const prevRect = prevBlock.getBoundingClientRect()
+    const nextRect = nextBlock.getBoundingClientRect()
+    
+    // Calculate the midpoint between the bottom of prev block and top of next block
+    // Divide by scale to convert from screen coordinates to CSS coordinates
+    const prevBottom = (prevRect.bottom - containerRect.top) / canvasScale + scrollTop
+    const nextTop = (nextRect.top - containerRect.top) / canvasScale + scrollTop
+    
+    const result = (prevBottom + nextTop) / 2
+    console.log('[DropIndicator] between blocks, prevBottom:', prevBottom, 'nextTop:', nextTop, 'result:', result)
+    
+    // Return the midpoint of the gap between blocks
+    return result
+  }, [canvasScale])
 
   /**
    * Handle drag start on a child block

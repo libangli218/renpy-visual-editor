@@ -1110,6 +1110,7 @@ export const MultiLabelView: React.FC<MultiLabelViewProps> = ({
                           handleBlockMove(labelData.name, labelData.blockTree, blockId, index),
                         renderBlock: createRenderBlock(labelData.name, labelData.blockTree),
                         readOnly,
+                        canvasScale: transform.scale,
                       }}
                     />
                   )
