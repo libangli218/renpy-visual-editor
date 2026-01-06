@@ -170,9 +170,7 @@
 
 .label-card-content {
   flex: 1;
-  min-height: 200px;
-  max-height: 500px;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .label-card-content .label-container {
@@ -288,10 +286,6 @@
 
   .label-card-title .label-name {
     font-size: 13px;
-  }
-
-  .label-card-content {
-    max-height: 400px;
   }
 
   .label-card-delete-dialog {

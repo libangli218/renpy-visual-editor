@@ -211,20 +211,33 @@ export const MultiLabelView: React.FC<MultiLabelViewProps> = ({
     }
   }, [projectPath, loadLayout])
 
+  // Estimate card height based on block count
+  // Each block is approximately 80-120px, header is ~50px
+  const estimateCardHeight = useCallback((blockCount: number, isCollapsed: boolean): number => {
+    if (isCollapsed) {
+      return 80 // Collapsed height
+    }
+    // Header (~50px) + blocks (average ~100px each) + padding (~20px)
+    const estimatedHeight = 70 + blockCount * 100
+    // Minimum height for empty labels
+    return Math.max(150, estimatedHeight)
+  }, [])
+
   // Calculate label bounds for MiniMap and selection
   const labelBounds: LabelBounds[] = useMemo(() => {
     return filteredLabels.map(label => {
       const position = labelPositions.get(label.name) || { x: 0, y: 0 }
       const isCollapsed = collapsedLabels.has(label.name)
+      const blockCount = label.blockTree.children?.length ?? 0
       return {
         name: label.name,
         x: position.x,
         y: position.y,
         width: DEFAULT_CARD_WIDTH,
-        height: isCollapsed ? 80 : DEFAULT_CARD_HEIGHT,
+        height: estimateCardHeight(blockCount, isCollapsed),
       }
     })
-  }, [filteredLabels, labelPositions, collapsedLabels])
+  }, [filteredLabels, labelPositions, collapsedLabels, estimateCardHeight])
 
   // Calculate viewport bounds for MiniMap
   const viewportBounds: Rect = useMemo(() => {

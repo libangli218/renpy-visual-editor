@@ -227,12 +227,13 @@ export const DraggableLabelCard: React.FC<DraggableLabelCardProps> = ({
     left: `${position.x}px`,
     top: `${position.y}px`,
     width: `${cardWidth}px`,
-    minHeight: labelCardProps.collapsed ? 'auto' : `${cardHeight}px`,
+    // Let height be auto to fit content, only set minHeight when expanded
+    minHeight: labelCardProps.collapsed ? 'auto' : undefined,
     // Use transform for better performance during drag
     transform: isDragging ? 'translate(0, 0)' : undefined,
     // Prevent text selection during drag
     userSelect: isDragging ? 'none' as const : undefined,
-  }), [position, cardWidth, cardHeight, labelCardProps.collapsed, isDragging])
+  }), [position, cardWidth, labelCardProps.collapsed, isDragging])
 
   // Build class names
   const wrapperClasses = useMemo(() => [

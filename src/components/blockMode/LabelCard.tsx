@@ -9,6 +9,7 @@
  */
 
 import React, { useCallback, useState, memo, useMemo } from 'react'
+import { createPortal } from 'react-dom'
 import { LabelContainer, LabelContainerProps } from './LabelContainer'
 import { Block } from './types'
 import './LabelCard.css'
@@ -171,8 +172,8 @@ export const LabelCard: React.FC<LabelCardProps> = memo(({
         </div>
       )}
 
-      {/* Delete Confirmation Dialog */}
-      {showDeleteConfirm && (
+      {/* Delete Confirmation Dialog - Rendered via Portal to avoid z-index issues */}
+      {showDeleteConfirm && createPortal(
         <div className="label-card-delete-dialog-overlay" onClick={handleCancelDelete}>
           <div 
             className="label-card-delete-dialog"
@@ -204,7 +205,8 @@ export const LabelCard: React.FC<LabelCardProps> = memo(({
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   )
