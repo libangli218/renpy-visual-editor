@@ -8,7 +8,7 @@
  */
 
 import { useEditorStore } from '../store/editorStore'
-import { projectManager } from '../project/ProjectManager'
+import { projectManager, electronFileSystem } from '../project/ProjectManager'
 import { 
   launchGame, 
   stopGame, 
@@ -16,6 +16,8 @@ import {
   getSdkPath,
   isGameRunning 
 } from '../project/GameLauncher'
+import { findDefaultFile } from '../utils/FileClassifier'
+import { useSettingsStore } from '../settings/settingsStore'
 import type { EditorMode } from '../types/editor'
 
 // ============================================================================
@@ -134,6 +136,7 @@ async function handleOpenRecentProject(projectPath: string): Promise<void> {
 
 /**
  * Open a project by path and update stores
+ * Reuses the same logic as LeftPanel.handleOpenProject
  */
 async function openProjectByPath(projectPath: string): Promise<void> {
   const result = await projectManager.openProject(projectPath)
@@ -143,19 +146,38 @@ async function openProjectByPath(projectPath: string): Promise<void> {
     
     // Update editor store with project info
     editorStore.setProjectPath(projectPath)
-    editorStore.setModified(false)
+    
+    // Find the best default file to open (prioritizes script.rpy, then story scripts)
+    // Implements Requirements 1.4, 1.5
+    const defaultFilePath = findDefaultFile(result.project.scripts)
+    if (defaultFilePath) {
+      // Set current file first so AST changes can be tracked
+      editorStore.setCurrentFile(defaultFilePath)
+      const defaultScript = result.project.scripts.get(defaultFilePath)
+      if (defaultScript) {
+        editorStore.setAst(defaultScript)
+      }
+    }
+    
+    // Reset history after loading project to prevent undo from going back to empty state
     editorStore.resetHistory()
     
-    // Get the first script file and set it as current
-    const scriptFiles = projectManager.getScriptFiles()
-    if (scriptFiles.length > 0) {
-      const firstScript = scriptFiles[0]
-      editorStore.setCurrentFile(firstScript)
-      
-      const ast = projectManager.getScript(firstScript)
-      if (ast) {
-        editorStore.setAst(ast)
-      }
+    // Clear modified scripts since we just loaded the project
+    projectManager.clearModifiedScripts()
+    
+    // Load settings from gui.rpy and options.rpy
+    // Implements Requirement 9.1
+    const settingsFileSystem = {
+      readFile: (path: string) => electronFileSystem.readFile(path),
+      writeFile: (path: string, content: string) => electronFileSystem.writeFile(path, content),
+      exists: (path: string) => electronFileSystem.exists(path),
+    }
+    
+    try {
+      await useSettingsStore.getState().loadSettings(projectPath, settingsFileSystem)
+    } catch (settingsError) {
+      console.error('Failed to load settings:', settingsError)
+      // Don't fail project open if settings fail to load
     }
     
     // Add to recent projects

@@ -157,18 +157,18 @@ export const MainLayout: React.FC = () => {
       window.removeEventListener('editor:save', handleSaveEvent)
     }
   }, [handleSave])
-
   /**
    * Register menu event handlers
    * Connects menu actions to the appropriate stores and UI callbacks
    * Requirements: 1.2, 1.3, 2.2, 2.3, 3.2, 4.2, 4.3, 4.4
+   * 
+   * Note: onOpenProjectDialog is NOT set here - menuEventHandler.ts
+   * will use its fallback logic to directly open the directory picker
+   * and call openProjectByPath(), which is the designed behavior.
    */
   useEffect(() => {
     const menuCallbacks: MenuEventCallbacks = {
-      onOpenProjectDialog: () => {
-        // Dispatch event to open project dialog
-        window.dispatchEvent(new CustomEvent('menu:openProject'))
-      },
+      // onOpenProjectDialog not set - uses fallback in menuEventHandler.ts
       onNewProjectDialog: () => {
         // Dispatch event to open new project dialog
         window.dispatchEvent(new CustomEvent('menu:newProject'))
