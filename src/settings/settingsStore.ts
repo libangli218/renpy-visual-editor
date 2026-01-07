@@ -51,6 +51,7 @@ export interface SettingsActions {
   updateProjectSetting: <K extends keyof ProjectSettings>(key: K, value: ProjectSettings[K]) => void
   saveSettings: (projectPath: string, fs: SettingsFileSystem) => Promise<boolean>
   resetSettings: () => void
+  resetToDefaults: () => void  // Reset to Ren'Py default values
 }
 
 /**
@@ -310,6 +311,28 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
         ...project,
         settings: projectSettings,
         modified: false,
+      },
+      error: null,
+    })
+  },
+
+  /**
+   * Reset settings to Ren'Py default values
+   * Marks settings as modified so they can be saved
+   */
+  resetToDefaults: () => {
+    const { gui, project } = get()
+
+    set({
+      gui: {
+        ...gui,
+        settings: { ...DEFAULT_GUI_SETTINGS },
+        modified: true,
+      },
+      project: {
+        ...project,
+        settings: { ...DEFAULT_PROJECT_SETTINGS },
+        modified: true,
       },
       error: null,
     })

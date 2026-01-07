@@ -27,7 +27,7 @@ export const SettingsSection: React.FC<SettingsSectionProps> = ({
   expanded,
   onToggle,
 }) => {
-  const { gui, project, isLoading, error } = useSettingsStore()
+  const { gui, project, isLoading, error, resetToDefaults } = useSettingsStore()
   const { projectPath } = useEditorStore()
   
   // Track which sub-sections are expanded
@@ -84,6 +84,22 @@ export const SettingsSection: React.FC<SettingsSectionProps> = ({
 
           {!isLoading && !error && (
             <>
+              {/* Reset to Defaults Button */}
+              <div className="settings-actions">
+                <button
+                  className="settings-reset-button"
+                  onClick={() => {
+                    if (window.confirm('确定要恢复所有设置为默认值吗？')) {
+                      resetToDefaults()
+                    }
+                  }}
+                  title="恢复默认设置"
+                  data-testid="reset-to-defaults-button"
+                >
+                  恢复默认
+                </button>
+              </div>
+
               {/* 外观 (Appearance) Sub-section */}
               <div className="settings-subsection">
                 <button

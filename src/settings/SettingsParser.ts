@@ -60,21 +60,21 @@ export interface ProjectSettings {
 }
 
 // ============================================================================
-// Default Values
+// Default Values (based on Ren'Py 8.x default gui.rpy at 1920x1080)
 // ============================================================================
 
 export const DEFAULT_GUI_SETTINGS: GuiSettings = {
-  accentColor: '#cc6600',
-  idleColor: '#555555',
-  hoverColor: '#e0a366',
+  accentColor: '#0099cc',
+  idleColor: '#888888',
+  hoverColor: '#33add6',
   selectedColor: '#ffffff',
   textColor: '#ffffff',
-  textSize: 22,
-  nameTextSize: 30,
-  interfaceTextSize: 24,
-  textboxHeight: 185,
+  textSize: 33,
+  nameTextSize: 45,
+  interfaceTextSize: 33,
+  textboxHeight: 278,
   textboxYalign: 1.0,
-  dialogueWidth: 744,
+  dialogueWidth: 1116,
 }
 
 export const DEFAULT_PROJECT_SETTINGS: ProjectSettings = {
