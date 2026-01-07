@@ -9,14 +9,15 @@
 
 import { Menu, BrowserWindow, ipcMain, MenuItemConstructorOptions } from 'electron'
 import { getRecentProjects, addRecentProject, clearRecentProjects } from './appConfig'
+import type { MenuState } from './menuManager.pure'
 import { 
-  MenuState, 
   defaultMenuState, 
   shouldEnableMenuItem 
 } from './menuManager.pure'
 
 // Re-export types and functions for external use
-export { MenuState, defaultMenuState, shouldEnableMenuItem }
+export type { MenuState }
+export { defaultMenuState, shouldEnableMenuItem }
 
 /**
  * Menu Manager class

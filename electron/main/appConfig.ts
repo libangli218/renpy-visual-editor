@@ -8,8 +8,8 @@
  */
 
 import Store from 'electron-store'
+import type { AppConfigSchema } from './appConfig.pure'
 import {
-  AppConfigSchema,
   MAX_RECENT_PROJECTS,
   defaults,
   addRecentProjectPure,
@@ -17,7 +17,8 @@ import {
 } from './appConfig.pure'
 
 // Re-export types and constants
-export { AppConfigSchema, MAX_RECENT_PROJECTS, addRecentProjectPure, removeRecentProjectPure }
+export type { AppConfigSchema }
+export { MAX_RECENT_PROJECTS, addRecentProjectPure, removeRecentProjectPure }
 
 /**
  * Electron store instance for persistent configuration
