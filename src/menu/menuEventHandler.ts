@@ -222,10 +222,15 @@ function handleSetViewMode(mode: string): void {
  * Requirement: 3.4
  */
 function handleTogglePreviewPanel(): void {
+  const editorStore = useEditorStore.getState()
+  editorStore.togglePreviewPanel()
+  
+  // Also call callback if provided for UI-specific handling
   if (callbacks.onTogglePreviewPanel) {
     callbacks.onTogglePreviewPanel()
   }
-  // State sync will be handled by the callback
+  
+  syncMenuState()
 }
 
 /**
@@ -233,10 +238,15 @@ function handleTogglePreviewPanel(): void {
  * Requirement: 3.4
  */
 function handleTogglePropertiesPanel(): void {
+  const editorStore = useEditorStore.getState()
+  editorStore.togglePropertiesPanel()
+  
+  // Also call callback if provided for UI-specific handling
   if (callbacks.onTogglePropertiesPanel) {
     callbacks.onTogglePropertiesPanel()
   }
-  // State sync will be handled by the callback
+  
+  syncMenuState()
 }
 
 /**
@@ -455,9 +465,9 @@ export async function syncMenuState(): Promise<void> {
     canUndo: editorStore.canUndo,
     canRedo: editorStore.canRedo,
     currentMode: editorStore.mode as 'story' | 'multi-label',
-    // These will be updated by the UI components via callbacks
-    previewVisible: true,
-    propertiesVisible: true,
+    // Get panel visibility from EditorStore (Requirements 3.4, 3.5)
+    previewVisible: editorStore.previewVisible,
+    propertiesVisible: editorStore.propertiesVisible,
   }
   
   api.updateMenuState(state)
@@ -495,7 +505,7 @@ export async function getCurrentMenuState(): Promise<MenuState> {
     canUndo: editorStore.canUndo,
     canRedo: editorStore.canRedo,
     currentMode: editorStore.mode as 'story' | 'multi-label',
-    previewVisible: true,
-    propertiesVisible: true,
+    previewVisible: editorStore.previewVisible,
+    propertiesVisible: editorStore.propertiesVisible,
   }
 }

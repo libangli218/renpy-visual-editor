@@ -56,6 +56,10 @@ export interface EditorStore {
   // Block mode state
   currentBlockLabel: string | null
   
+  // Panel visibility state (Requirements 3.4, 3.5)
+  previewVisible: boolean
+  propertiesVisible: boolean
+  
   // History state (read-only from store perspective)
   canUndo: boolean
   canRedo: boolean
@@ -73,6 +77,12 @@ export interface EditorStore {
   // Block mode actions
   enterBlockMode: (labelName: string) => void
   exitBlockMode: () => void
+  
+  // Panel visibility actions (Requirements 3.4, 3.5)
+  togglePreviewPanel: () => void
+  togglePropertiesPanel: () => void
+  setPreviewVisible: (visible: boolean) => void
+  setPropertiesVisible: (visible: boolean) => void
   
   // History actions
   undo: () => void
@@ -127,6 +137,9 @@ export const useEditorStore = create<EditorStore>((set, get) => {
     currentBlockLabel: null,
     ast: null,
     astVersion: 0,
+    // Panel visibility - default to visible (Requirements 3.4, 3.5)
+    previewVisible: true,
+    propertiesVisible: true,
     canUndo: false,
     canRedo: false,
     
@@ -206,6 +219,25 @@ export const useEditorStore = create<EditorStore>((set, get) => {
       })
     },
     
+    // Panel visibility actions (Requirements 3.4, 3.5)
+    togglePreviewPanel: () => {
+      const state = get()
+      set({ previewVisible: !state.previewVisible })
+    },
+    
+    togglePropertiesPanel: () => {
+      const state = get()
+      set({ propertiesVisible: !state.propertiesVisible })
+    },
+    
+    setPreviewVisible: (visible) => {
+      set({ previewVisible: visible })
+    },
+    
+    setPropertiesVisible: (visible) => {
+      set({ propertiesVisible: visible })
+    },
+    
     // History actions
     undo: () => {
       const previousState = historyManager.undo()
@@ -256,6 +288,21 @@ export const useEditorStore = create<EditorStore>((set, get) => {
       set({
         canUndo: false,
         canRedo: false,
+      })
+    },
+    
+    // Block mode actions
+    enterBlockMode: (labelName) => {
+      set({ 
+        mode: 'block',
+        currentBlockLabel: labelName 
+      })
+    },
+    
+    exitBlockMode: () => {
+      set({ 
+        mode: 'multi-label',
+        currentBlockLabel: null 
       })
     },
     
