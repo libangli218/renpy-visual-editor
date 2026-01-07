@@ -7,6 +7,9 @@
 export { SettingsSection } from './SettingsSection'
 export type { SettingsSectionProps } from './SettingsSection'
 
+export { SettingsDialog } from './SettingsDialog'
+export type { SettingsDialogProps } from './SettingsDialog'
+
 export { ColorSettingsGroup } from './ColorSettingsGroup'
 export { ColorPreview } from './ColorPreview'
 export type { ColorPreviewProps } from './ColorPreview'

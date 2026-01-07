@@ -1,0 +1,382 @@
+/**
+ * Settings Dialog Styles
+ * 
+ * Modal dialog styling for project settings.
+ * Follows Figma-style design patterns.
+ */
+
+/* ============================================
+   Modal Overlay
+   ============================================ */
+
+.settings-dialog-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: overlayFadeIn 0.15s ease-out;
+}
+
+@keyframes overlayFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* ============================================
+   Dialog Container
+   ============================================ */
+
+.settings-dialog {
+  background-color: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  width: 90%;
+  max-width: 600px;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  animation: dialogSlideIn 0.2s ease-out;
+}
+
+@keyframes dialogSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* ============================================
+   Dialog Header
+   ============================================ */
+
+.settings-dialog-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--spacing-md) var(--spacing-lg);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.settings-dialog-title {
+  font-size: var(--font-lg);
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.settings-dialog-close {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  font-size: 20px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.settings-dialog-close:hover {
+  background-color: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+
+.settings-dialog-close:active {
+  background-color: var(--bg-secondary);
+}
+
+/* ============================================
+   Tab Navigation
+   ============================================ */
+
+.settings-dialog-tabs {
+  display: flex;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-sm) var(--spacing-lg);
+  border-bottom: 1px solid var(--border-subtle);
+  background-color: var(--bg-secondary);
+}
+
+.settings-dialog-tab {
+  padding: var(--spacing-sm) var(--spacing-md);
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  font-size: var(--font-sm);
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  position: relative;
+}
+
+.settings-dialog-tab:hover {
+  color: var(--text-primary);
+  background-color: var(--bg-tertiary);
+}
+
+.settings-dialog-tab.active {
+  color: var(--accent-primary);
+  background-color: var(--bg-primary);
+}
+
+.settings-dialog-tab.active::after {
+  content: '';
+  position: absolute;
+  bottom: -9px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background-color: var(--accent-primary);
+}
+
+/* ============================================
+   Dialog Content
+   ============================================ */
+
+.settings-dialog-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--spacing-lg);
+  min-height: 300px;
+}
+
+.settings-dialog-loading,
+.settings-dialog-error {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 200px;
+  color: var(--text-muted);
+  font-size: var(--font-sm);
+}
+
+.settings-dialog-error {
+  color: var(--error);
+}
+
+/* Tab Panels */
+.settings-dialog-panel {
+  display: none;
+}
+
+.settings-dialog-panel.active {
+  display: block;
+  animation: panelFadeIn 0.15s ease-out;
+}
+
+@keyframes panelFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.settings-dialog-groups {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg);
+}
+
+/* ============================================
+   Dialog Footer
+   ============================================ */
+
+.settings-dialog-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--spacing-md) var(--spacing-lg);
+  border-top: 1px solid var(--border-subtle);
+  background-color: var(--bg-secondary);
+}
+
+.settings-dialog-footer-right {
+  display: flex;
+  gap: var(--spacing-sm);
+}
+
+/* ============================================
+   Buttons
+   ============================================ */
+
+.settings-dialog-btn {
+  padding: var(--spacing-sm) var(--spacing-md);
+  font-size: var(--font-sm);
+  font-weight: 500;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  border: 1px solid transparent;
+}
+
+.settings-dialog-btn-primary {
+  background-color: var(--accent-primary);
+  color: white;
+  border-color: var(--accent-primary);
+}
+
+.settings-dialog-btn-primary:hover {
+  background-color: var(--accent-hover);
+  border-color: var(--accent-hover);
+}
+
+.settings-dialog-btn-primary:active {
+  background-color: var(--accent-active);
+}
+
+.settings-dialog-btn-secondary {
+  background-color: transparent;
+  color: var(--text-secondary);
+  border-color: var(--border-color);
+}
+
+.settings-dialog-btn-secondary:hover {
+  background-color: var(--bg-tertiary);
+  color: var(--text-primary);
+  border-color: var(--border-hover);
+}
+
+.settings-dialog-btn-secondary:active {
+  background-color: var(--bg-secondary);
+}
+
+.settings-dialog-btn-danger {
+  background-color: var(--error);
+  color: white;
+  border-color: var(--error);
+}
+
+.settings-dialog-btn-danger:hover {
+  background-color: #c0392b;
+  border-color: #c0392b;
+}
+
+.settings-dialog-btn-danger:active {
+  background-color: #a93226;
+}
+
+/* ============================================
+   Confirmation Dialog
+   ============================================ */
+
+.settings-confirm-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1001;
+  animation: overlayFadeIn 0.1s ease-out;
+}
+
+.settings-confirm-dialog {
+  background-color: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+  padding: var(--spacing-lg);
+  width: 90%;
+  max-width: 400px;
+  animation: dialogSlideIn 0.15s ease-out;
+}
+
+.settings-confirm-title {
+  font-size: var(--font-md);
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 var(--spacing-sm) 0;
+}
+
+.settings-confirm-message {
+  font-size: var(--font-sm);
+  color: var(--text-secondary);
+  margin: 0 0 var(--spacing-lg) 0;
+  line-height: 1.5;
+}
+
+.settings-confirm-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--spacing-sm);
+}
+
+/* ============================================
+   Scrollbar Styling
+   ============================================ */
+
+.settings-dialog-content::-webkit-scrollbar {
+  width: 8px;
+}
+
+.settings-dialog-content::-webkit-scrollbar-track {
+  background: var(--bg-secondary);
+  border-radius: 4px;
+}
+
+.settings-dialog-content::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: 4px;
+}
+
+.settings-dialog-content::-webkit-scrollbar-thumb:hover {
+  background: var(--border-hover);
+}
+
+/* ============================================
+   Responsive Adjustments
+   ============================================ */
+
+@media (max-width: 640px) {
+  .settings-dialog {
+    width: 95%;
+    max-height: 90vh;
+  }
+
+  .settings-dialog-header,
+  .settings-dialog-footer {
+    padding: var(--spacing-sm) var(--spacing-md);
+  }
+
+  .settings-dialog-content {
+    padding: var(--spacing-md);
+  }
+
+  .settings-dialog-tabs {
+    padding: var(--spacing-xs) var(--spacing-md);
+  }
+
+  .settings-dialog-footer {
+    flex-direction: column;
+    gap: var(--spacing-sm);
+  }
+
+  .settings-dialog-footer-right {
+    width: 100%;
+    justify-content: flex-end;
+  }
+}
