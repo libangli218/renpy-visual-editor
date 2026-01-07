@@ -8,7 +8,8 @@
  */
 
 import { Menu, BrowserWindow, ipcMain, MenuItemConstructorOptions } from 'electron'
-import { getRecentProjects, addRecentProject, clearRecentProjects } from './appConfig'
+import { existsSync } from 'fs'
+import { getRecentProjects, addRecentProject, clearRecentProjects, removeRecentProject } from './appConfig'
 import type { MenuState } from './menuManager.pure'
 import { 
   defaultMenuState, 
@@ -71,11 +72,29 @@ export class MenuManager {
 
   /**
    * Build the recent projects submenu
+   * Filters out projects that no longer exist on disk
    */
   private buildRecentProjectsSubmenu(): MenuItemConstructorOptions[] {
     const recentProjects = getRecentProjects()
     
-    if (recentProjects.length === 0) {
+    // Filter out projects that no longer exist
+    const existingProjects: string[] = []
+    const removedProjects: string[] = []
+    
+    for (const projectPath of recentProjects) {
+      if (existsSync(projectPath)) {
+        existingProjects.push(projectPath)
+      } else {
+        removedProjects.push(projectPath)
+      }
+    }
+    
+    // Remove non-existing projects from the stored list
+    for (const projectPath of removedProjects) {
+      removeRecentProject(projectPath)
+    }
+    
+    if (existingProjects.length === 0) {
       return [
         {
           label: 'No Recent Projects',
@@ -84,7 +103,7 @@ export class MenuManager {
       ]
     }
 
-    const items: MenuItemConstructorOptions[] = recentProjects.map((projectPath) => ({
+    const items: MenuItemConstructorOptions[] = existingProjects.map((projectPath) => ({
       label: projectPath,
       click: () => this.sendMenuAction('openRecentProject', projectPath)
     }))
