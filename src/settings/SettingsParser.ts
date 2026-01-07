@@ -340,6 +340,17 @@ function formatNumberValue(value: number): string {
 }
 
 /**
+ * Format a float value for Ren'Py (always with decimal point)
+ */
+function formatFloatValue(value: number): string {
+  // Always include decimal point for float values
+  if (Number.isInteger(value)) {
+    return value.toFixed(1)
+  }
+  return value.toString()
+}
+
+/**
  * Convert GuiSettings to Map of variable -> formatted value
  */
 export function fromGuiSettings(settings: GuiSettings): Map<string, string> {
@@ -359,7 +370,7 @@ export function fromGuiSettings(settings: GuiSettings): Map<string, string> {
   
   // Dialogue box
   updates.set(GUI_VARIABLE_MAP.textboxHeight, formatNumberValue(settings.textboxHeight))
-  updates.set(GUI_VARIABLE_MAP.textboxYalign, formatNumberValue(settings.textboxYalign))
+  updates.set(GUI_VARIABLE_MAP.textboxYalign, formatFloatValue(settings.textboxYalign))
   updates.set(GUI_VARIABLE_MAP.dialogueWidth, formatNumberValue(settings.dialogueWidth))
   
   return updates
