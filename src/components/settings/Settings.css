@@ -454,3 +454,61 @@
   outline: none;
   border-color: var(--accent-primary);
 }
+
+/* ============================================
+   Animations
+   ============================================ */
+
+@keyframes sectionExpand {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ============================================
+   Responsive Adjustments
+   ============================================ */
+
+/* Ensure inputs don't overflow on narrow panels */
+.settings-subsection-content input[type="number"],
+.settings-subsection-content input[type="text"],
+.settings-subsection-content select {
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+/* Firefox slider thumb styling */
+.font-slider::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  background: var(--accent-primary);
+  border-radius: 50%;
+  cursor: pointer;
+  border: none;
+}
+
+.font-slider::-moz-range-track {
+  background: var(--bg-tertiary);
+  height: 4px;
+  border-radius: 2px;
+}
+
+/* Remove number input spinners for cleaner look */
+.font-number-input::-webkit-outer-spin-button,
+.font-number-input::-webkit-inner-spin-button,
+.dialogue-number-input::-webkit-outer-spin-button,
+.dialogue-number-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  appearance: none;
+  margin: 0;
+}
+
+.font-number-input[type="number"],
+.dialogue-number-input[type="number"] {
+  -moz-appearance: textfield;
+}
