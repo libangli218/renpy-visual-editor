@@ -1,6 +1,7 @@
 import { app, BrowserWindow, ipcMain, dialog, protocol, net } from 'electron'
 import { join } from 'path'
 import { pathToFileURL } from 'url'
+import { MenuManager } from './menuManager'
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (require('electron-squirrel-startup')) {
@@ -22,6 +23,7 @@ protocol.registerSchemesAsPrivileged([
 ])
 
 let mainWindow: BrowserWindow | null = null
+let menuManager: MenuManager | null = null
 
 const createWindow = () => {
   mainWindow = new BrowserWindow({
@@ -53,7 +55,12 @@ const createWindow = () => {
 
   mainWindow.on('closed', () => {
     mainWindow = null
+    menuManager = null
   })
+
+  // Create MenuManager after window is ready
+  // Requirements: 8.1, 8.2, 8.3 - Menu state management
+  menuManager = new MenuManager(mainWindow)
 }
 
 // This method will be called when Electron has finished initialization

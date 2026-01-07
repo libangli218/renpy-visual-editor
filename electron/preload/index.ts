@@ -1,5 +1,22 @@
 import { contextBridge, ipcRenderer } from 'electron'
 
+// Menu action event type
+interface MenuActionEvent {
+  action: string
+  payload?: unknown
+}
+
+// Menu state type for synchronization
+interface MenuState {
+  projectOpen: boolean
+  gameRunning: boolean
+  canUndo: boolean
+  canRedo: boolean
+  currentMode: 'story' | 'multi-label'
+  previewVisible: boolean
+  propertiesVisible: boolean
+}
+
 // Expose protected methods that allow the renderer process to use
 // the ipcRenderer without exposing the entire object
 contextBridge.exposeInMainWorld('electronAPI', {
@@ -35,10 +52,50 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.removeAllListeners('game:error')
     ipcRenderer.removeAllListeners('game:exit')
   },
+
+  // Menu operations - Requirements: Design - IPC communication
+  // Listen for menu actions from main process
+  onMenuAction: (callback: (event: MenuActionEvent) => void) => {
+    ipcRenderer.on('menu:action', (_event, data) => callback(data))
+  },
+  
+  // Remove menu action listener
+  removeMenuActionListener: () => {
+    ipcRenderer.removeAllListeners('menu:action')
+  },
+  
+  // Update menu state from renderer to main process
+  updateMenuState: (state: Partial<MenuState>) => {
+    ipcRenderer.send('menu:updateState', state)
+  },
+  
+  // Get recent projects list
+  getRecentProjects: () => ipcRenderer.invoke('menu:getRecentProjects'),
+  
+  // Add a project to recent projects
+  addRecentProject: (projectPath: string) => ipcRenderer.invoke('menu:addRecentProject', projectPath),
+  
+  // Clear recent projects
+  clearRecentProjects: () => ipcRenderer.invoke('menu:clearRecentProjects'),
 })
 
 // Type definitions for the exposed API
 declare global {
+  interface MenuActionEvent {
+    action: string
+    payload?: unknown
+  }
+
+  interface MenuState {
+    projectOpen: boolean
+    gameRunning: boolean
+    canUndo: boolean
+    canRedo: boolean
+    currentMode: 'story' | 'multi-label'
+    previewVisible: boolean
+    propertiesVisible: boolean
+  }
+
   interface Window {
     electronAPI: {
       readFile: (path: string) => Promise<string>
@@ -59,6 +116,13 @@ declare global {
       onGameError: (callback: (error: string) => void) => void
       onGameExit: (callback: (code: number | null) => void) => void
       removeGameListeners: () => void
+      // Menu operations
+      onMenuAction: (callback: (event: MenuActionEvent) => void) => void
+      removeMenuActionListener: () => void
+      updateMenuState: (state: Partial<MenuState>) => void
+      getRecentProjects: () => Promise<string[]>
+      addRecentProject: (projectPath: string) => Promise<void>
+      clearRecentProjects: () => Promise<void>
     }
   }
 }
