@@ -6,6 +6,12 @@ import { Header } from './Header'
 import { projectManager, electronFileSystem } from '../../project/ProjectManager'
 import { useEditorStore } from '../../store/editorStore'
 import { useSettingsStore } from '../../settings/settingsStore'
+import { 
+  registerMenuEventHandlers, 
+  unregisterMenuEventHandlers,
+  syncMenuState,
+  type MenuEventCallbacks 
+} from '../../menu'
 import './MainLayout.css'
 
 /**
@@ -23,7 +29,7 @@ export const MainLayout: React.FC = () => {
   const [saveMessage, setSaveMessage] = useState<string>('')
   
   // Track AST changes to mark scripts as modified
-  const { ast, currentFile, modified, projectPath } = useEditorStore()
+  const { ast, currentFile, modified, projectPath, canUndo, canRedo, mode } = useEditorStore()
   const previousAstRef = useRef(ast)
   const isInitialLoadRef = useRef(true)
 
@@ -149,6 +155,60 @@ export const MainLayout: React.FC = () => {
       window.removeEventListener('editor:save', handleSaveEvent)
     }
   }, [handleSave])
+
+  /**
+   * Register menu event handlers
+   * Connects menu actions to the appropriate stores and UI callbacks
+   * Requirements: 1.2, 1.3, 2.2, 2.3, 3.2, 4.2, 4.3, 4.4
+   */
+  useEffect(() => {
+    const menuCallbacks: MenuEventCallbacks = {
+      onOpenProjectDialog: () => {
+        // Dispatch event to open project dialog
+        window.dispatchEvent(new CustomEvent('menu:openProject'))
+      },
+      onNewProjectDialog: () => {
+        // Dispatch event to open new project dialog
+        window.dispatchEvent(new CustomEvent('menu:newProject'))
+      },
+      onOpenSettingsDialog: () => {
+        // Dispatch event to open settings dialog
+        window.dispatchEvent(new CustomEvent('menu:openSettings'))
+      },
+      onShowKeyboardShortcuts: () => {
+        // Dispatch event to show keyboard shortcuts
+        window.dispatchEvent(new CustomEvent('menu:showKeyboardShortcuts'))
+      },
+      onShowAbout: () => {
+        // Dispatch event to show about dialog
+        window.dispatchEvent(new CustomEvent('menu:showAbout'))
+      },
+      onTogglePreviewPanel: () => {
+        // Dispatch event to toggle preview panel
+        window.dispatchEvent(new CustomEvent('menu:togglePreviewPanel'))
+      },
+      onTogglePropertiesPanel: () => {
+        // Dispatch event to toggle properties panel
+        window.dispatchEvent(new CustomEvent('menu:togglePropertiesPanel'))
+      },
+    }
+
+    registerMenuEventHandlers(menuCallbacks)
+
+    // Initial sync of menu state
+    syncMenuState()
+
+    return () => {
+      unregisterMenuEventHandlers()
+    }
+  }, [])
+
+  /**
+   * Sync menu state when relevant store values change
+   */
+  useEffect(() => {
+    syncMenuState()
+  }, [projectPath, modified, canUndo, canRedo, mode])
 
   return (
     <div className="main-layout">
