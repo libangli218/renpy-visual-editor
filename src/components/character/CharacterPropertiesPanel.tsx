@@ -17,6 +17,7 @@ import {
   LayeredImageDef,
 } from './types'
 import { LayeredImageEditor } from './LayeredImageEditor'
+import { FigmaColorPicker } from '../common'
 import './CharacterPropertiesPanel.css'
 
 interface CharacterPropertiesPanelProps {
@@ -172,45 +173,25 @@ export const CharacterPropertiesPanel: React.FC<CharacterPropertiesPanelProps> =
   }
 
   const renderColorField = () => {
-    const isEditing = editingField === 'color'
     const colorValue = selectedCharacter.color || '#ffffff'
+
+    const handleColorChange = (newColor: string) => {
+      updateCharacter(selectedCharacter.id, {
+        name: selectedCharacter.name,
+        displayName: selectedCharacter.displayName,
+        color: newColor,
+        imagePrefix: selectedCharacter.imagePrefix || '',
+        kind: selectedCharacter.kind || '',
+      })
+    }
 
     return (
       <div className="property-item">
-        <label>Color</label>
-        {isEditing ? (
-          <div className="property-edit-container color-edit">
-            <input
-              type="color"
-              value={editValue || '#ffffff'}
-              onChange={(e) => setEditValue(e.target.value)}
-              className="color-picker-small"
-            />
-            <input
-              type="text"
-              value={editValue}
-              onChange={(e) => setEditValue(e.target.value)}
-              onKeyDown={(e) => handleKeyDown(e, 'color')}
-              onBlur={() => saveField('color')}
-              placeholder="#ffffff"
-              autoFocus
-              className={`color-text-small ${error ? 'error' : ''}`}
-            />
-            {error && <span className="property-error">{error}</span>}
-          </div>
-        ) : (
-          <div
-            className="property-value editable color-value"
-            onClick={() => startEditing('color', colorValue)}
-            title="Click to edit"
-          >
-            <span
-              className="color-swatch"
-              style={{ backgroundColor: colorValue }}
-            />
-            <span className="color-hex">{colorValue}</span>
-          </div>
-        )}
+        <FigmaColorPicker
+          label="Color"
+          color={colorValue}
+          onChange={handleColorChange}
+        />
       </div>
     )
   }

@@ -284,6 +284,7 @@ export const useCharacterStore = create<CharacterStore>((set, get) => ({
 
   // Extract characters from AST (define statements with Character())
   extractCharactersFromAST: (ast) => {
+    const existingCharacters = get().characters
     const characters: Character[] = []
 
     const processNode = (node: ASTNode) => {
@@ -293,13 +294,17 @@ export const useCharacterStore = create<CharacterStore>((set, get) => ({
         if (defineNode.value.startsWith('Character(')) {
           const parsed = parseCharacterValue(defineNode.value)
           if (parsed) {
+            // Try to find existing character by name to preserve ID
+            const existingChar = existingCharacters.find(c => c.name === defineNode.name)
             characters.push({
-              id: generateCharacterId(),
+              id: existingChar?.id || generateCharacterId(),
               name: defineNode.name,
               displayName: parsed.displayName || defineNode.name,
               color: parsed.color,
               imagePrefix: parsed.imagePrefix,
               kind: parsed.kind,
+              // Preserve layers from existing character
+              layers: existingChar?.layers,
             })
           }
         }
