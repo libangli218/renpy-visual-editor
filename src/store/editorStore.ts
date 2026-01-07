@@ -53,6 +53,9 @@ export interface EditorStore {
   selectedNodeId: string | null
   selectedBlockId: string | null
   
+  // Block mode state
+  currentBlockLabel: string | null
+  
   // History state (read-only from store perspective)
   canUndo: boolean
   canRedo: boolean
@@ -66,6 +69,10 @@ export interface EditorStore {
   setSelectedNodeId: (id: string | null) => void
   setSelectedBlockId: (id: string | null) => void
   setAst: (ast: RenpyScript | null) => void
+  
+  // Block mode actions
+  enterBlockMode: (labelName: string) => void
+  exitBlockMode: () => void
   
   // History actions
   undo: () => void
@@ -87,6 +94,7 @@ function createStateSnapshot(state: Partial<EditorStore>): EditorState {
     modified: state.modified ?? false,
     selectedNodeId: state.selectedNodeId ?? null,
     selectedBlockId: state.selectedBlockId ?? null,
+    currentBlockLabel: state.currentBlockLabel ?? null,
     // Deep copy AST to prevent mutations from affecting history
     ast: state.ast ? JSON.parse(JSON.stringify(state.ast)) : null,
   }
@@ -102,6 +110,7 @@ export const useEditorStore = create<EditorStore>((set, get) => {
     modified: false,
     selectedNodeId: null,
     selectedBlockId: null,
+    currentBlockLabel: null,
     ast: null,
   }
   historyManager.initialize(initialState)
@@ -115,6 +124,7 @@ export const useEditorStore = create<EditorStore>((set, get) => {
     modified: false,
     selectedNodeId: null,
     selectedBlockId: null,
+    currentBlockLabel: null,
     ast: null,
     astVersion: 0,
     canUndo: false,
