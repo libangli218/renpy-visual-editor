@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { useEditorStore } from '../../store/editorStore'
 import { projectManager } from '../../project/ProjectManager'
 import { resourceManager } from '../../resource/ResourceManager'
@@ -12,7 +12,7 @@ import { NewProjectWizard, ProjectConfig } from '../project'
 import { findDefaultFile } from '../../utils/FileClassifier'
 
 /**
- * LeftPanel component - Project browser panel
+ * LeftPanel component - Project browser panel (Figma-style collapsible)
  * Implements Requirements 1.3: Display project structure
  * Implements Requirements 7.1: Display all defined characters
  * 
@@ -40,6 +40,9 @@ const sections: SectionConfig[] = [
   { id: 'variables', label: 'Variables', icon: '📊' },
 ]
 
+// Storage key for panel collapsed state
+const PANEL_COLLAPSED_KEY = 'left-panel-collapsed'
+
 export const LeftPanel: React.FC = () => {
   const { projectPath, setProjectPath, setAst, setCurrentFile, resetHistory, ast } = useEditorStore()
   const [expandedSections, setExpandedSections] = useState<Set<PanelSection>>(
@@ -48,6 +51,12 @@ export const LeftPanel: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [showNewProjectDialog, setShowNewProjectDialog] = useState(false)
+  
+  // Panel collapsed state
+  const [isCollapsed, setIsCollapsed] = useState(() => {
+    const stored = localStorage.getItem(PANEL_COLLAPSED_KEY)
+    return stored === 'true'
+  })
   
   // Resource state
   const [backgrounds, setBackgrounds] = useState<string[]>([])
@@ -67,6 +76,16 @@ export const LeftPanel: React.FC = () => {
     deleteCharacter,
     extractCharactersFromAST,
   } = useCharacterStore()
+
+  // Save collapsed state
+  useEffect(() => {
+    localStorage.setItem(PANEL_COLLAPSED_KEY, String(isCollapsed))
+  }, [isCollapsed])
+
+  // Toggle panel collapse
+  const toggleCollapse = useCallback(() => {
+    setIsCollapsed(prev => !prev)
+  }, [])
 
   // Extract characters from AST when AST changes
   useEffect(() => {
@@ -307,53 +326,114 @@ export const LeftPanel: React.FC = () => {
   }
 
   return (
-    <aside className="left-panel" aria-label="Project browser">
-      <div className="panel-header">
-        <h2>Project</h2>
+    <aside 
+      className={`left-panel ${isCollapsed ? 'collapsed' : ''}`} 
+      aria-label="Project browser"
+    >
+      {/* Panel Header */}
+      <div 
+        className="panel-header"
+        onDoubleClick={toggleCollapse}
+      >
+        {!isCollapsed && <h2>Project</h2>}
+        <button
+          className="panel-collapse-btn"
+          onClick={toggleCollapse}
+          title={isCollapsed ? '展开面板' : '折叠面板'}
+          aria-expanded={!isCollapsed}
+        >
+          {isCollapsed ? '»' : '«'}
+        </button>
       </div>
       
-      {!projectPath ? (
-        <div className="panel-empty">
-          <p>No project open</p>
-          {error && <p className="error-message" style={{ color: 'red', fontSize: '12px' }}>{error}</p>}
-          <button 
-            className="btn-primary" 
-            onClick={handleOpenProject}
-            disabled={isLoading}
-          >
-            {isLoading ? 'Loading...' : 'Open Project'}
-          </button>
-          <button 
-            className="btn-secondary" 
-            onClick={handleNewProject}
-            disabled={isLoading}
-          >
-            {isLoading ? 'Loading...' : 'New Project'}
-          </button>
+      {/* Collapsed View - Show icons only */}
+      {isCollapsed ? (
+        <div className="panel-collapsed-content">
+          {projectPath && sections.map(({ id, icon, label }) => (
+            <button
+              key={id}
+              className="collapsed-section-btn"
+              onClick={() => {
+                setIsCollapsed(false)
+                setExpandedSections(prev => new Set([...prev, id]))
+              }}
+              title={label}
+            >
+              {icon}
+            </button>
+          ))}
+          {!projectPath && (
+            <>
+              <button
+                className="collapsed-section-btn"
+                onClick={() => {
+                  setIsCollapsed(false)
+                  handleOpenProject()
+                }}
+                title="打开项目"
+              >
+                📂
+              </button>
+              <button
+                className="collapsed-section-btn"
+                onClick={() => {
+                  setIsCollapsed(false)
+                  handleNewProject()
+                }}
+                title="新建项目"
+              >
+                ➕
+              </button>
+            </>
+          )}
         </div>
       ) : (
-        <div className="panel-content">
-          {sections.map(({ id, label, icon }) => (
-            <div key={id} className="panel-section">
-              <button
-                className="section-header"
-                onClick={() => toggleSection(id)}
-                aria-expanded={expandedSections.has(id)}
+        /* Expanded View */
+        <>
+          {!projectPath ? (
+            <div className="panel-empty">
+              <p>No project open</p>
+              {error && <p className="error-message" style={{ color: 'var(--error)', fontSize: '11px' }}>{error}</p>}
+              <button 
+                className="btn-primary" 
+                onClick={handleOpenProject}
+                disabled={isLoading}
               >
-                <span className="section-icon">{icon}</span>
-                <span className="section-label">{label}</span>
-                <span className="section-toggle">
-                  {expandedSections.has(id) ? '▼' : '▶'}
-                </span>
+                {isLoading ? 'Loading...' : 'Open Project'}
               </button>
-              {expandedSections.has(id) && (
-                <div className="section-content">
-                  {renderSectionContent(id)}
-                </div>
-              )}
+              <button 
+                className="btn-secondary" 
+                onClick={handleNewProject}
+                disabled={isLoading}
+              >
+                {isLoading ? 'Loading...' : 'New Project'}
+              </button>
             </div>
-          ))}
-        </div>
+          ) : (
+            <div className="panel-content">
+              {sections.map(({ id, label, icon }) => (
+                <div key={id} className="panel-section">
+                  <button
+                    className="section-header"
+                    onClick={() => toggleSection(id)}
+                    aria-expanded={expandedSections.has(id)}
+                  >
+                    <span className="section-toggle">
+                      {expandedSections.has(id) ? '▾' : '▸'}
+                    </span>
+                    <span className="section-icon">{icon}</span>
+                    <span className="section-label">{label}</span>
+                  </button>
+                  {expandedSections.has(id) && (
+                    <div className="section-content">
+                      {renderSectionContent(id)}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </>
       )}
 
       {/* Character Dialog */}

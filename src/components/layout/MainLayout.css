@@ -1,22 +1,27 @@
-/* Main Layout Styles */
+/* ============================================
+   Figma-Style Main Layout
+   ============================================ */
 
 .main-layout {
   display: flex;
   flex-direction: column;
   height: 100vh;
-  background-color: var(--bg-primary);
+  background-color: var(--bg-canvas);
 }
 
-/* Header Styles */
+/* ============================================
+   Header / Toolbar - Figma Style
+   ============================================ */
 .app-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0.5rem 1rem;
+  padding: 0 var(--spacing-md);
   background-color: var(--bg-secondary);
-  border-bottom: 1px solid var(--border-color);
+  border-bottom: 1px solid var(--border-subtle);
+  height: var(--toolbar-height);
   -webkit-app-region: drag;
-  min-height: 48px;
+  gap: var(--spacing-lg);
 }
 
 .header-left,
@@ -28,103 +33,204 @@
 }
 
 .header-left {
-  flex: 1;
+  flex: 0 0 auto;
+  gap: var(--spacing-md);
 }
 
 .header-center {
-  flex: 0 0 auto;
+  flex: 1;
+  justify-content: center;
+  gap: var(--spacing-md);
 }
 
 .header-right {
-  flex: 1;
-  justify-content: flex-end;
+  flex: 0 0 auto;
+  gap: var(--spacing-sm);
 }
 
+/* Logo and Title */
 .app-title {
-  font-size: 1rem;
+  font-size: var(--font-md);
   font-weight: 500;
   color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
 }
 
 .project-name {
-  color: var(--text-secondary);
+  color: var(--text-tertiary);
   font-weight: 400;
+  padding-left: var(--spacing-sm);
+  border-left: 1px solid var(--border-color);
+  margin-left: var(--spacing-sm);
 }
 
-.project-name .unsaved-marker {
-  color: var(--accent-primary);
-  font-weight: 600;
-}
-
-/* Mode Switcher Styles */
+/* Mode Switcher - Figma Tab Style */
 .mode-switcher {
   display: flex;
-  gap: 0.25rem;
+  gap: 2px;
   background-color: var(--bg-tertiary);
-  padding: 0.25rem;
-  border-radius: 6px;
+  padding: 3px;
+  border-radius: var(--radius-md);
 }
 
 .mode-button {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.375rem 0.75rem;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-xs) var(--spacing-md);
   border: none;
   background-color: transparent;
-  color: var(--text-secondary);
-  border-radius: 4px;
+  color: var(--text-tertiary);
+  border-radius: var(--radius-sm);
   cursor: pointer;
-  font-size: 0.875rem;
+  font-size: var(--font-sm);
+  font-weight: 500;
   transition: all 0.15s ease;
+  white-space: nowrap;
 }
 
 .mode-button:hover {
-  background-color: var(--bg-secondary);
   color: var(--text-primary);
+  background-color: var(--bg-elevated);
 }
 
 .mode-button.active {
-  background-color: var(--accent-primary);
-  color: white;
+  background-color: var(--bg-secondary);
+  color: var(--text-primary);
+  box-shadow: var(--shadow-sm);
 }
 
 .mode-icon {
-  font-size: 1rem;
+  font-size: var(--font-lg);
 }
 
 .mode-label {
   font-weight: 500;
 }
 
-/* Complexity Switcher Styles */
+/* Game Controls - Figma Action Button Style */
+.game-controls {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+}
+
+.btn-launch-game,
+.btn-stop-game {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-xs) var(--spacing-md);
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: var(--font-sm);
+  font-weight: 500;
+  transition: all 0.15s ease;
+  height: 28px;
+}
+
+.btn-launch-game {
+  background-color: var(--success);
+  color: white;
+}
+
+.btn-launch-game:hover:not(:disabled) {
+  background-color: #12a054;
+}
+
+.btn-launch-game:disabled {
+  background-color: var(--bg-tertiary);
+  color: var(--text-muted);
+  cursor: not-allowed;
+}
+
+.btn-stop-game {
+  background-color: var(--error);
+  color: white;
+}
+
+.btn-stop-game:hover {
+  background-color: #e03d1a;
+}
+
+.btn-configure-sdk {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: none;
+  background-color: transparent;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: var(--font-lg);
+  color: var(--text-tertiary);
+  transition: all 0.15s ease;
+}
+
+.btn-configure-sdk:hover {
+  background-color: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+
+.game-status {
+  font-size: var(--font-xs);
+  padding: 2px var(--spacing-sm);
+  border-radius: var(--radius-sm);
+  font-weight: 500;
+}
+
+.game-status-idle {
+  color: var(--text-muted);
+}
+
+.game-status-launching {
+  color: var(--accent-primary);
+  background-color: var(--accent-muted);
+}
+
+.game-status-running {
+  color: var(--success);
+  background-color: var(--success-muted);
+}
+
+.game-status-error {
+  color: var(--error);
+  background-color: var(--error-muted);
+}
+
+/* Complexity Switcher */
 .complexity-switcher {
   display: flex;
-  gap: 0.25rem;
+  gap: 2px;
 }
 
 .complexity-button {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 32px;
-  height: 32px;
-  border: 1px solid var(--border-color);
-  background-color: var(--bg-tertiary);
-  border-radius: 4px;
+  width: 28px;
+  height: 28px;
+  border: none;
+  background-color: transparent;
+  border-radius: var(--radius-sm);
   cursor: pointer;
-  font-size: 1rem;
+  font-size: var(--font-lg);
+  color: var(--text-tertiary);
   transition: all 0.15s ease;
 }
 
 .complexity-button:hover {
-  background-color: var(--bg-secondary);
-  border-color: var(--accent-secondary);
+  background-color: var(--bg-tertiary);
+  color: var(--text-primary);
 }
 
 .complexity-button.active {
-  background-color: var(--accent-primary);
-  border-color: var(--accent-secondary);
+  background-color: var(--accent-muted);
+  color: var(--accent-primary);
 }
 
 .sr-only {
@@ -139,51 +245,51 @@
   border: 0;
 }
 
-/* Main Content Area */
+/* ============================================
+   Main Content Area
+   ============================================ */
 .main-content {
   display: flex;
   flex: 1;
   overflow: hidden;
 }
 
-/* Panel Styles */
-.left-panel,
-.right-panel {
-  width: 250px;
+/* ============================================
+   Left Panel - Figma Layers Panel Style
+   ============================================ */
+.left-panel {
+  width: var(--panel-width);
   min-width: 200px;
-  max-width: 400px;
+  max-width: 320px;
   background-color: var(--bg-secondary);
   display: flex;
   flex-direction: column;
   overflow: hidden;
-}
-
-.left-panel {
-  border-right: 1px solid var(--border-color);
-}
-
-.right-panel {
-  border-left: 1px solid var(--border-color);
+  border-right: 1px solid var(--border-subtle);
 }
 
 .panel-header {
-  padding: 0.75rem 1rem;
-  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-bottom: 1px solid var(--border-subtle);
+  min-height: 36px;
 }
 
 .panel-header h2 {
-  font-size: 0.75rem;
+  font-size: var(--font-xs);
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--text-secondary);
+  letter-spacing: 0.5px;
+  color: var(--text-tertiary);
   margin: 0;
 }
 
 .panel-content {
   flex: 1;
   overflow-y: auto;
-  padding: 0.5rem;
+  padding: var(--spacing-sm);
 }
 
 .panel-empty {
@@ -191,34 +297,34 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 2rem 1rem;
+  padding: var(--spacing-xl);
   text-align: center;
-  gap: 1rem;
+  gap: var(--spacing-md);
 }
 
 .panel-empty p {
-  color: var(--text-secondary);
-  font-size: 0.875rem;
+  color: var(--text-tertiary);
+  font-size: var(--font-sm);
 }
 
-/* Section Styles */
+/* Section Styles - Figma Collapsible Style */
 .panel-section {
-  margin-bottom: 0.25rem;
+  margin-bottom: 2px;
 }
 
 .section-header {
   display: flex;
   align-items: center;
   width: 100%;
-  padding: 0.5rem;
+  padding: var(--spacing-sm);
   border: none;
   background-color: transparent;
-  color: var(--text-primary);
+  color: var(--text-secondary);
   cursor: pointer;
-  border-radius: 4px;
-  font-size: 0.875rem;
+  border-radius: var(--radius-sm);
+  font-size: var(--font-sm);
   text-align: left;
-  transition: background-color 0.15s ease;
+  transition: background-color 0.1s ease;
 }
 
 .section-header:hover {
@@ -226,39 +332,95 @@
 }
 
 .section-icon {
-  margin-right: 0.5rem;
-  font-size: 1rem;
+  margin-right: var(--spacing-sm);
+  font-size: var(--font-lg);
+  opacity: 0.8;
 }
 
 .section-label {
   flex: 1;
   font-weight: 500;
+  color: var(--text-primary);
 }
 
 .section-toggle {
-  font-size: 0.625rem;
-  color: var(--text-secondary);
+  font-size: 10px;
+  color: var(--text-muted);
+  transition: transform 0.15s ease;
+}
+
+.section-header[aria-expanded="true"] .section-toggle {
+  transform: rotate(0deg);
+}
+
+.section-header[aria-expanded="false"] .section-toggle {
+  transform: rotate(-90deg);
 }
 
 .section-content {
-  padding: 0.25rem 0.5rem 0.5rem 1.75rem;
+  padding: var(--spacing-xs) 0 var(--spacing-sm) var(--spacing-xl);
 }
 
 .section-empty {
-  color: var(--text-secondary);
-  font-size: 0.75rem;
+  color: var(--text-muted);
+  font-size: var(--font-xs);
   font-style: italic;
+  padding: var(--spacing-xs) 0;
 }
 
-/* Button Styles */
+/* Resource List - Figma Layer Item Style */
+.resource-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.resource-item {
+  display: flex;
+  align-items: center;
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: background-color 0.1s ease;
+  font-size: var(--font-sm);
+}
+
+.resource-item:hover {
+  background-color: var(--bg-tertiary);
+}
+
+.resource-item.selected {
+  background-color: var(--accent-muted);
+}
+
+.resource-icon {
+  margin-right: var(--spacing-sm);
+  font-size: var(--font-md);
+  opacity: 0.7;
+}
+
+.resource-name {
+  flex: 1;
+  color: var(--text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Button Styles - Figma Style */
 .btn-primary,
 .btn-secondary {
-  padding: 0.5rem 1rem;
-  border-radius: 4px;
-  font-size: 0.875rem;
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-radius: var(--radius-md);
+  font-size: var(--font-sm);
+  font-weight: 500;
   cursor: pointer;
   transition: all 0.15s ease;
   width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-xs);
 }
 
 .btn-primary {
@@ -268,67 +430,109 @@
 }
 
 .btn-primary:hover {
-  background-color: var(--accent-secondary);
+  background-color: var(--accent-hover);
 }
 
 .btn-secondary {
   background-color: transparent;
-  color: var(--text-primary);
+  color: var(--text-secondary);
   border: 1px solid var(--border-color);
 }
 
 .btn-secondary:hover {
   background-color: var(--bg-tertiary);
+  border-color: var(--text-muted);
 }
 
-/* Properties Panel Styles */
+/* ============================================
+   Right Panel - Figma Properties Panel Style
+   ============================================ */
+.right-panel {
+  width: var(--panel-width);
+  min-width: 200px;
+  max-width: 320px;
+  background-color: var(--bg-secondary);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-left: 1px solid var(--border-subtle);
+}
+
 .properties-content {
-  padding: 0.5rem;
+  padding: var(--spacing-md);
 }
 
 .property-group {
-  margin-bottom: 1rem;
+  margin-bottom: var(--spacing-lg);
 }
 
 .property-group-title {
-  font-size: 0.75rem;
+  font-size: var(--font-xs);
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--text-secondary);
-  margin-bottom: 0.5rem;
-  padding-bottom: 0.25rem;
-  border-bottom: 1px solid var(--border-color);
+  letter-spacing: 0.5px;
+  color: var(--text-tertiary);
+  margin-bottom: var(--spacing-sm);
+  padding-bottom: var(--spacing-xs);
+  border-bottom: 1px solid var(--border-subtle);
 }
 
 .property-item {
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
-  margin-bottom: 0.5rem;
+  gap: var(--spacing-xs);
+  margin-bottom: var(--spacing-sm);
 }
 
 .property-item label {
-  font-size: 0.75rem;
-  color: var(--text-secondary);
+  font-size: var(--font-xs);
+  color: var(--text-tertiary);
 }
 
 .property-value {
-  font-size: 0.875rem;
+  font-size: var(--font-sm);
   color: var(--text-primary);
-  font-family: monospace;
+  font-family: 'SF Mono', 'Consolas', monospace;
+  background-color: var(--bg-tertiary);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border-radius: var(--radius-sm);
 }
 
-/* Code Preview Styles */
+/* Empty State - Figma Style */
+.properties-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  padding: var(--spacing-xl);
+  text-align: center;
+}
+
+.properties-empty-icon {
+  width: 64px;
+  height: 64px;
+  margin-bottom: var(--spacing-md);
+  opacity: 0.3;
+  background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-secondary) 100%);
+  border-radius: var(--radius-lg);
+}
+
+.properties-empty-text {
+  color: var(--text-tertiary);
+  font-size: var(--font-sm);
+}
+
+/* Code Preview - Figma Style */
 .code-preview-group {
-  margin-top: 1rem;
+  margin-top: var(--spacing-md);
 }
 
 .code-preview {
   background-color: var(--bg-primary);
-  border: 1px solid var(--border-color);
-  border-radius: 4px;
-  padding: 0.5rem;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-sm);
   overflow-x: auto;
 }
 
@@ -337,34 +541,42 @@
 }
 
 .code-preview code {
-  font-family: 'Consolas', 'Monaco', monospace;
-  font-size: 0.75rem;
+  font-family: 'SF Mono', 'Consolas', monospace;
+  font-size: var(--font-xs);
   color: var(--text-secondary);
 }
 
-.code-edit-hint {
-  font-size: 0.75rem;
-  color: var(--accent-secondary);
-  margin-top: 0.5rem;
-  font-style: italic;
-}
-
-/* Editor Area Styles */
+/* ============================================
+   Editor Area - Canvas Style
+   ============================================ */
 .editor-area {
   flex: 1;
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  background-color: var(--bg-primary);
+  background-color: var(--bg-canvas);
 }
 
-/* Preview Panel Styles */
+.editor-area-block-mode {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background-color: var(--bg-canvas);
+}
+
+.editor-area-block-mode .block-mode-editor {
+  flex: 1;
+  height: 100%;
+}
+
+/* Preview Panel */
 .preview-panel {
   height: 200px;
   min-height: 150px;
   max-height: 400px;
   background-color: var(--bg-tertiary);
-  border-bottom: 1px solid var(--border-color);
+  border-bottom: 1px solid var(--border-subtle);
   display: flex;
   flex-direction: column;
 }
@@ -388,72 +600,61 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.5rem;
-  color: var(--text-secondary);
+  gap: var(--spacing-sm);
+  color: var(--text-muted);
 }
 
 .preview-placeholder-icon {
-  font-size: 2rem;
+  font-size: 32px;
+  opacity: 0.5;
 }
 
 .preview-placeholder-text {
-  font-size: 0.875rem;
-}
-
-.preview-characters {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-}
-
-.preview-dialogue {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
+  font-size: var(--font-sm);
 }
 
 .preview-controls {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0.5rem;
-  padding: 0.5rem;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-sm);
   background-color: var(--bg-secondary);
-  border-top: 1px solid var(--border-color);
+  border-top: 1px solid var(--border-subtle);
 }
 
 .preview-control-btn {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 32px;
-  height: 32px;
-  border: 1px solid var(--border-color);
-  background-color: var(--bg-tertiary);
-  border-radius: 4px;
+  width: 28px;
+  height: 28px;
+  border: none;
+  background-color: transparent;
+  border-radius: var(--radius-sm);
   cursor: pointer;
-  font-size: 1rem;
-  transition: all 0.15s ease;
+  font-size: var(--font-lg);
+  color: var(--text-tertiary);
+  transition: all 0.1s ease;
 }
 
 .preview-control-btn:hover:not(:disabled) {
-  background-color: var(--accent-primary);
-  border-color: var(--accent-secondary);
+  background-color: var(--bg-tertiary);
+  color: var(--text-primary);
 }
 
 .preview-control-btn:disabled {
-  opacity: 0.5;
+  opacity: 0.3;
   cursor: not-allowed;
 }
 
 .preview-step-indicator {
   display: flex;
   align-items: center;
-  gap: 0.25rem;
-  margin-left: 1rem;
-  font-size: 0.75rem;
-  font-family: monospace;
+  gap: var(--spacing-xs);
+  margin-left: var(--spacing-md);
+  font-size: var(--font-xs);
+  font-family: 'SF Mono', monospace;
 }
 
 .step-current {
@@ -462,14 +663,14 @@
 }
 
 .step-separator {
-  color: var(--text-secondary);
+  color: var(--text-muted);
 }
 
 .step-total {
-  color: var(--text-secondary);
+  color: var(--text-muted);
 }
 
-/* Edit Panel Styles */
+/* Edit Panel */
 .edit-panel {
   flex: 1;
   overflow: auto;
@@ -485,47 +686,46 @@
 
 .editor-placeholder {
   text-align: center;
-  padding: 2rem;
-  color: var(--text-secondary);
+  padding: var(--spacing-xl);
+  color: var(--text-muted);
 }
 
 .editor-placeholder h3 {
-  font-size: 1.25rem;
-  color: var(--text-primary);
-  margin-bottom: 0.5rem;
+  font-size: var(--font-lg);
+  color: var(--text-secondary);
+  margin-bottom: var(--spacing-sm);
+  font-weight: 500;
 }
 
 .editor-placeholder p {
-  margin-bottom: 0.5rem;
+  margin-bottom: var(--spacing-xs);
+  font-size: var(--font-sm);
 }
 
-.placeholder-hint {
-  font-size: 0.875rem;
-  max-width: 400px;
-  margin: 1rem auto 0;
-  line-height: 1.5;
-}
-
-
-/* Save Status Indicator */
+/* ============================================
+   Save Status - Toast Style
+   ============================================ */
 .save-status {
   position: fixed;
-  top: 60px;
+  top: 52px;
   left: 50%;
   transform: translateX(-50%);
-  padding: 0.5rem 1rem;
-  border-radius: 6px;
-  font-size: 0.875rem;
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-radius: var(--radius-md);
+  font-size: var(--font-sm);
   font-weight: 500;
   z-index: 1000;
   animation: slideDown 0.2s ease-out;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  box-shadow: var(--shadow-lg);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
 }
 
 @keyframes slideDown {
   from {
     opacity: 0;
-    transform: translateX(-50%) translateY(-10px);
+    transform: translateX(-50%) translateY(-8px);
   }
   to {
     opacity: 1;
@@ -534,126 +734,194 @@
 }
 
 .save-status-saving {
-  background-color: var(--bg-tertiary);
+  background-color: var(--bg-elevated);
   color: var(--text-primary);
   border: 1px solid var(--border-color);
 }
 
 .save-status-saved {
-  background-color: #16a34a;
+  background-color: var(--success);
   color: white;
-  border: 1px solid #22c55e;
 }
 
 .save-status-error {
-  background-color: #dc2626;
+  background-color: var(--error);
   color: white;
-  border: 1px solid #ef4444;
 }
 
 
-/* Block Mode Editor Area Styles */
-.editor-area-block-mode {
-  flex: 1;
+/* ============================================
+   Collapsible Panel Styles - Figma Style
+   ============================================ */
+
+/* Panel Collapse Button */
+.panel-collapse-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border: none;
+  background-color: transparent;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: 12px;
+  color: var(--text-muted);
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+}
+
+.panel-collapse-btn:hover {
+  background-color: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+
+/* Panel Header with collapse button */
+.left-panel .panel-header,
+.right-panel .panel-header {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  cursor: default;
+  user-select: none;
+}
+
+.left-panel .panel-header {
+  justify-content: space-between;
+}
+
+.right-panel .panel-header {
+  justify-content: flex-start;
+}
+
+/* Collapsed Panel State */
+.left-panel.collapsed,
+.right-panel.collapsed {
+  width: 40px;
+  min-width: 40px;
+  max-width: 40px;
+  transition: width 0.2s ease;
+}
+
+.left-panel:not(.collapsed),
+.right-panel:not(.collapsed) {
+  transition: width 0.2s ease;
+}
+
+/* Collapsed Content - Icon buttons */
+.panel-collapsed-content {
   display: flex;
   flex-direction: column;
-  overflow: hidden;
-  background-color: var(--bg-primary);
-}
-
-.editor-area-block-mode .block-mode-editor {
-  flex: 1;
-  height: 100%;
-}
-
-
-/* Game Controls Styles */
-.game-controls {
-  display: flex;
   align-items: center;
-  gap: 0.25rem;
-  margin-left: 1rem;
+  padding: var(--spacing-sm) 0;
+  gap: var(--spacing-xs);
 }
 
-.btn-launch-game,
-.btn-stop-game {
-  display: flex;
-  align-items: center;
-  gap: 0.375rem;
-  padding: 0.375rem 0.75rem;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 0.875rem;
-  font-weight: 500;
-  transition: all 0.15s ease;
-}
-
-.btn-launch-game {
-  background-color: #16a34a;
-  color: white;
-}
-
-.btn-launch-game:hover:not(:disabled) {
-  background-color: #15803d;
-}
-
-.btn-launch-game:disabled {
-  background-color: var(--bg-tertiary);
-  color: var(--text-secondary);
-  cursor: not-allowed;
-}
-
-.btn-stop-game {
-  background-color: #dc2626;
-  color: white;
-}
-
-.btn-stop-game:hover {
-  background-color: #b91c1c;
-}
-
-.btn-configure-sdk {
+.collapsed-section-btn {
   display: flex;
   align-items: center;
   justify-content: center;
   width: 32px;
   height: 32px;
-  border: 1px solid var(--border-color);
-  background-color: var(--bg-tertiary);
-  border-radius: 4px;
+  border: none;
+  background-color: transparent;
+  border-radius: var(--radius-sm);
   cursor: pointer;
-  font-size: 1rem;
+  font-size: 16px;
+  color: var(--text-tertiary);
   transition: all 0.15s ease;
 }
 
-.btn-configure-sdk:hover {
-  background-color: var(--bg-secondary);
-  border-color: var(--accent-secondary);
+.collapsed-section-btn:hover {
+  background-color: var(--bg-tertiary);
+  color: var(--text-primary);
 }
 
-.game-status {
-  margin-left: 0.75rem;
-  font-size: 0.75rem;
-  padding: 0.25rem 0.5rem;
-  border-radius: 4px;
+/* Hide content wrapper when collapsed */
+.left-panel.collapsed .panel-content,
+.right-panel.collapsed .panel-content,
+.left-panel.collapsed .panel-empty,
+.right-panel.collapsed .panel-empty {
+  display: none;
 }
 
-.game-status-idle {
+/* Section Header - Figma style with toggle on left */
+.section-header {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border: none;
+  background-color: transparent;
   color: var(--text-secondary);
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  font-size: var(--font-sm);
+  text-align: left;
+  transition: background-color 0.1s ease;
+  gap: var(--spacing-xs);
 }
 
-.game-status-launching {
-  color: var(--accent-primary);
+.section-header:hover {
   background-color: var(--bg-tertiary);
 }
 
-.game-status-running {
-  color: #16a34a;
-  background-color: rgba(22, 163, 74, 0.1);
+.section-toggle {
+  font-size: 10px;
+  color: var(--text-muted);
+  width: 12px;
+  text-align: center;
+  flex-shrink: 0;
 }
 
-.game-status-error {
-  color: #dc2626;
-  background-color: rgba(220, 38, 38, 0.1);
+.section-icon {
+  font-size: var(--font-md);
+  opacity: 0.8;
+  flex-shrink: 0;
+}
+
+.section-label {
+  flex: 1;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+/* Section Content Animation */
+.section-content {
+  padding: var(--spacing-xs) 0 var(--spacing-sm) 24px;
+  animation: sectionExpand 0.15s ease-out;
+}
+
+@keyframes sectionExpand {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Panel resize handle hint */
+.left-panel:not(.collapsed):hover,
+.right-panel:not(.collapsed):hover {
+  border-color: var(--border-color);
+}
+
+/* Tooltip for collapsed buttons */
+.collapsed-section-btn[title] {
+  position: relative;
+}
+
+/* Panel transition for smooth collapse/expand */
+.left-panel,
+.right-panel {
+  transition: width 0.2s ease, min-width 0.2s ease, max-width 0.2s ease;
+  overflow: hidden;
+}
+
+/* Ensure content doesn't overflow during transition */
+.panel-content-wrapper {
+  overflow: hidden;
 }

@@ -5,27 +5,107 @@
 }
 
 :root {
-  --bg-primary: #1e1e2e;
-  --bg-secondary: #2a2a3e;
-  --bg-tertiary: #363650;
-  --text-primary: #e0e0e0;
-  --text-secondary: #a0a0a0;
-  --accent-primary: #7c3aed;
-  --accent-secondary: #a78bfa;
-  --border-color: #404060;
+  /* Figma-inspired color palette */
+  --bg-primary: #1e1e1e;
+  --bg-secondary: #252526;
+  --bg-tertiary: #2d2d2d;
+  --bg-elevated: #333333;
+  --bg-canvas: #1a1a1a;
+  
+  /* Text colors */
+  --text-primary: #ffffff;
+  --text-secondary: #cccccc;
+  --text-tertiary: #8c8c8c;
+  --text-muted: #666666;
+  
+  /* Accent colors - Figma blue */
+  --accent-primary: #0d99ff;
+  --accent-secondary: #0c8ce9;
+  --accent-hover: #18a0fb;
+  --accent-muted: rgba(13, 153, 255, 0.15);
+  
+  /* Status colors */
+  --success: #14ae5c;
+  --success-muted: rgba(20, 174, 92, 0.15);
+  --warning: #ffcd29;
+  --warning-muted: rgba(255, 205, 41, 0.15);
+  --error: #f24822;
+  --error-muted: rgba(242, 72, 34, 0.15);
+  
+  /* Border colors */
+  --border-color: #3c3c3c;
+  --border-subtle: #2e2e2e;
+  --border-focus: var(--accent-primary);
+  
+  /* Shadows */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.5);
+  
+  /* Spacing */
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 12px;
+  --spacing-lg: 16px;
+  --spacing-xl: 24px;
+  
+  /* Border radius */
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-xl: 12px;
+  
+  /* Font sizes */
+  --font-xs: 11px;
+  --font-sm: 12px;
+  --font-md: 13px;
+  --font-lg: 14px;
+  
+  /* Panel widths */
+  --panel-width: 240px;
+  --toolbar-height: 40px;
 }
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
   background-color: var(--bg-primary);
   color: var(--text-primary);
   overflow: hidden;
+  font-size: var(--font-md);
+  line-height: 1.4;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 .app {
   display: flex;
   flex-direction: column;
   height: 100vh;
+}
+
+/* Scrollbar styling - Figma style */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
+}
+
+/* Selection styling */
+::selection {
+  background: var(--accent-muted);
+  color: var(--text-primary);
 }
 
 .app-header {

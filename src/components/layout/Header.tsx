@@ -170,14 +170,21 @@ export const Header: React.FC = () => {
     <header className="app-header">
       <div className="header-left">
         <h1 className="app-title">
-          Ren'Py Visual Editor
-          <span className="project-name">
-            {' - '}{projectName}{modified ? ' *' : ''}
-          </span>
+          <span style={{ color: 'var(--accent-primary)' }}>◆</span>
+          {' '}Ren'Py Editor
+          {projectPath && (
+            <span className="project-name">
+              {projectName}{modified ? ' •' : ''}
+            </span>
+          )}
         </h1>
       </div>
+      
       <div className="header-center">
         <ModeSwitcher />
+        
+        {/* Separator */}
+        <div style={{ width: 1, height: 20, backgroundColor: 'var(--border-color)', margin: '0 8px' }} />
         
         {/* Game Launch Controls */}
         <div className="game-controls">
@@ -185,26 +192,26 @@ export const Header: React.FC = () => {
             <button
               className="btn-stop-game"
               onClick={handleStopGame}
-              title="停止游戏"
+              title="停止游戏 (Shift+F5)"
             >
-              ⏹️ 停止
+              ■ 停止
             </button>
           ) : (
             <button
               className="btn-launch-game"
               onClick={handleLaunchGame}
               disabled={!projectPath || gameStatus === 'launching'}
-              title={!hasSdk ? '点击配置 Ren\'Py SDK 后启动' : '启动游戏预览 (F5)'}
+              title={!hasSdk ? '点击配置 Ren\'Py SDK 后启动' : '运行游戏 (F5)'}
             >
-              {gameStatus === 'launching' ? '⏳ 启动中...' : '▶️ 运行'}
+              {gameStatus === 'launching' ? '● 启动中' : '▶ 运行'}
             </button>
           )}
           <button
             className="btn-configure-sdk"
             onClick={handleConfigureSdk}
-            title="配置 Ren'Py SDK 路径"
+            title="配置 Ren'Py SDK"
           >
-            ⚙️
+            ⚙
           </button>
         </div>
         
@@ -214,6 +221,7 @@ export const Header: React.FC = () => {
           </span>
         )}
       </div>
+      
       <div className="header-right">
         <ComplexitySwitcher />
       </div>
