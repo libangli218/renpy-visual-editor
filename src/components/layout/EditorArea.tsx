@@ -10,15 +10,16 @@ import { resourceManager, ImageTag } from '../../resource/ResourceManager'
  * EditorArea component - Main editing area with preview and editor
  * 
  * Structure:
- * - Top: Preview panel (scene preview) - hidden in multi-label mode
+ * - Top: Preview panel (scene preview) - hidden in multi-label mode or when previewVisible is false
  * - Bottom: Edit panel (Story Mode or Multi-Label View)
  * 
  * Implements Requirements:
  * - 7.1: Default to Multi-Label View when opening project
  * - 7.3: Remove BlockModeEditor independent entry
+ * - 3.4: Toggle Preview Panel visibility
  */
 export const EditorArea: React.FC = () => {
-  const { mode, ast, setAst, projectPath } = useEditorStore()
+  const { mode, ast, setAst, projectPath, previewVisible } = useEditorStore()
   
   // State for available resources
   const [availableImages, setAvailableImages] = useState<string[]>([])
@@ -128,7 +129,7 @@ export const EditorArea: React.FC = () => {
   // Render normal editor area for story mode
   return (
     <section className="editor-area" aria-label="Editor area">
-      <PreviewPanel />
+      {previewVisible && <PreviewPanel />}
       <div className="edit-panel">
         <StoryModeEditor />
       </div>

@@ -11,6 +11,7 @@ import {
 import { NewProjectWizard, ProjectConfig } from '../project'
 import { findDefaultFile } from '../../utils/FileClassifier'
 import { useSettingsStore } from '../../settings/settingsStore'
+import { showUnsavedChangesDialog } from '../../store/confirmDialogStore'
 
 /**
  * LeftPanel component - Project browser panel (Figma-style collapsible)
@@ -93,6 +94,19 @@ export const LeftPanel: React.FC = () => {
     localStorage.setItem(PANEL_COLLAPSED_KEY, String(isCollapsed))
   }, [isCollapsed])
 
+  // Listen for menu:newProject event to open new project wizard
+  useEffect(() => {
+    const handleMenuNewProject = () => {
+      setShowNewProjectDialog(true)
+    }
+
+    window.addEventListener('menu:newProject', handleMenuNewProject)
+
+    return () => {
+      window.removeEventListener('menu:newProject', handleMenuNewProject)
+    }
+  }, [])
+
   // Toggle panel collapse
   const toggleCollapse = useCallback(() => {
     setIsCollapsed(prev => !prev)
@@ -152,10 +166,64 @@ export const LeftPanel: React.FC = () => {
     })
   }
 
+  /**
+   * Check if there are unsaved changes in the current project
+   */
+  const hasUnsavedChanges = useCallback((): boolean => {
+    const modifiedScripts = projectManager.getModifiedScripts()
+    const settingsState = useSettingsStore.getState()
+    const hasModifiedSettings = settingsState.gui.modified || settingsState.project.modified
+    
+    return modifiedScripts.length > 0 || hasModifiedSettings
+  }, [])
+
+  /**
+   * Prompt user to save unsaved changes before switching projects
+   * Returns true if user wants to proceed, false if cancelled
+   */
+  const promptSaveChanges = useCallback(async (): Promise<boolean> => {
+    const modifiedScripts = projectManager.getModifiedScripts()
+    const settingsState = useSettingsStore.getState()
+    const hasModifiedSettings = settingsState.gui.modified || settingsState.project.modified
+    
+    const items: string[] = []
+    if (modifiedScripts.length > 0) {
+      items.push(`${modifiedScripts.length} 个脚本`)
+    }
+    if (hasModifiedSettings) {
+      items.push('设置')
+    }
+    
+    // Use Figma-style confirm dialog
+    const result = await showUnsavedChangesDialog(items.join(' 和 '))
+    
+    if (result === 'save') {
+      // Trigger save and wait for it to complete
+      window.dispatchEvent(new CustomEvent('editor:save'))
+      // Give some time for save to complete
+      await new Promise(resolve => setTimeout(resolve, 500))
+      return true
+    } else if (result === 'discard') {
+      // Continue without saving
+      return true
+    } else {
+      // Cancel - don't proceed
+      return false
+    }
+  }, [])
+
   const handleOpenProject = async () => {
     if (!window.electronAPI) {
       setError('Electron API not available')
       return
+    }
+
+    // Check for unsaved changes before switching projects
+    if (projectPath && hasUnsavedChanges()) {
+      const shouldProceed = await promptSaveChanges()
+      if (!shouldProceed) {
+        return // User cancelled
+      }
     }
 
     try {
@@ -209,6 +277,14 @@ export const LeftPanel: React.FC = () => {
     if (!window.electronAPI) {
       setError('Electron API not available')
       return
+    }
+
+    // Check for unsaved changes before creating new project
+    if (projectPath && hasUnsavedChanges()) {
+      const shouldProceed = await promptSaveChanges()
+      if (!shouldProceed) {
+        return // User cancelled
+      }
     }
 
     // Show the new project wizard

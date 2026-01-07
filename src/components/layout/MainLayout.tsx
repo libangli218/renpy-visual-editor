@@ -3,9 +3,15 @@ import { LeftPanel } from './LeftPanel'
 import { RightPanel } from './RightPanel'
 import { EditorArea } from './EditorArea'
 import { Header } from './Header'
+import { SettingsDialog } from '../settings/SettingsDialog'
+import { AboutDialog } from '../about/AboutDialog'
+import { ConfirmDialog } from '../common/ConfirmDialog'
 import { projectManager, electronFileSystem } from '../../project/ProjectManager'
 import { useEditorStore } from '../../store/editorStore'
 import { useSettingsStore } from '../../settings/settingsStore'
+import { useSettingsDialogStore } from '../../store/settingsDialogStore'
+import { useConfirmDialogStore } from '../../store/confirmDialogStore'
+import { useKeyboardStore } from '../keyboard/keyboardStore'
 import { 
   registerMenuEventHandlers, 
   unregisterMenuEventHandlers,
@@ -29,14 +35,24 @@ export const MainLayout: React.FC = () => {
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
   const [saveMessage, setSaveMessage] = useState<string>('')
   const [gameRunning, setGameRunning] = useState(false)
+  const [aboutDialogOpen, setAboutDialogOpen] = useState(false)
   
   // Track AST changes to mark scripts as modified
-  const { ast, currentFile, modified, projectPath, canUndo, canRedo, mode } = useEditorStore()
+  const { ast, currentFile, modified, projectPath, canUndo, canRedo, mode, propertiesVisible } = useEditorStore()
   const previousAstRef = useRef(ast)
   const isInitialLoadRef = useRef(true)
 
   // Settings store for saving settings
   const { saveSettings, gui, project } = useSettingsStore()
+  
+  // Settings dialog store for controlling dialog visibility
+  const { isOpen: settingsDialogOpen, openSettingsDialog, closeSettingsDialog } = useSettingsDialogStore()
+  
+  // Keyboard store for controlling help panel visibility
+  const { openHelpPanel } = useKeyboardStore()
+  
+  // Confirm dialog store for global confirmation dialogs
+  const { isOpen: confirmDialogOpen, options: confirmDialogOptions, handleResult: handleConfirmResult } = useConfirmDialogStore()
   
   // Create file system adapter for settings
   const settingsFileSystem = {
@@ -255,6 +271,53 @@ export const MainLayout: React.FC = () => {
   }, [])
 
   /**
+   * Listen for menu:openSettings event to open settings dialog
+   * Requirement 6.1: Settings dialog appears as modal window
+   */
+  useEffect(() => {
+    const handleOpenSettings = () => {
+      openSettingsDialog()
+    }
+
+    window.addEventListener('menu:openSettings', handleOpenSettings)
+
+    return () => {
+      window.removeEventListener('menu:openSettings', handleOpenSettings)
+    }
+  }, [openSettingsDialog])
+
+  /**
+   * Listen for menu:showKeyboardShortcuts event to open keyboard shortcuts panel
+   * Requirement 17.2: Keyboard shortcuts help panel
+   */
+  useEffect(() => {
+    const handleShowKeyboardShortcuts = () => {
+      openHelpPanel()
+    }
+
+    window.addEventListener('menu:showKeyboardShortcuts', handleShowKeyboardShortcuts)
+
+    return () => {
+      window.removeEventListener('menu:showKeyboardShortcuts', handleShowKeyboardShortcuts)
+    }
+  }, [openHelpPanel])
+
+  /**
+   * Listen for menu:showAbout event to open about dialog
+   */
+  useEffect(() => {
+    const handleShowAbout = () => {
+      setAboutDialogOpen(true)
+    }
+
+    window.addEventListener('menu:showAbout', handleShowAbout)
+
+    return () => {
+      window.removeEventListener('menu:showAbout', handleShowAbout)
+    }
+  }, [])
+
+  /**
    * Sync menu state when relevant store values change
    * Requirements: 8.1, 8.2, 8.3
    * - Sync after project open/close (projectPath change)
@@ -281,8 +344,25 @@ export const MainLayout: React.FC = () => {
       <main className="main-content">
         <LeftPanel />
         <EditorArea />
-        <RightPanel />
+        {propertiesVisible && <RightPanel />}
       </main>
+      {/* Settings Dialog - Requirement 6.1 */}
+      <SettingsDialog isOpen={settingsDialogOpen} onClose={closeSettingsDialog} />
+      {/* About Dialog */}
+      <AboutDialog isOpen={aboutDialogOpen} onClose={() => setAboutDialogOpen(false)} />
+      {/* Global Confirm Dialog */}
+      {confirmDialogOptions && (
+        <ConfirmDialog
+          isOpen={confirmDialogOpen}
+          title={confirmDialogOptions.title}
+          message={confirmDialogOptions.message}
+          showSaveOption={confirmDialogOptions.showSaveOption}
+          confirmLabel={confirmDialogOptions.confirmLabel}
+          cancelLabel={confirmDialogOptions.cancelLabel}
+          discardLabel={confirmDialogOptions.discardLabel}
+          onResult={handleConfirmResult}
+        />
+      )}
     </div>
   )
 }

@@ -100,6 +100,8 @@ export const Header: React.FC = () => {
       setGameStatus('running')
       setStatusMessage('游戏运行中')
       setTimeout(() => setStatusMessage(''), 2000)
+      // Dispatch event to notify MainLayout to sync menu state
+      window.dispatchEvent(new CustomEvent('game:started'))
     } else {
       setGameStatus('error')
       setStatusMessage(result.error || '启动失败')
@@ -119,6 +121,8 @@ export const Header: React.FC = () => {
       setGameStatus('idle')
       setStatusMessage('游戏已停止')
       setTimeout(() => setStatusMessage(''), 2000)
+      // Dispatch event to notify MainLayout to sync menu state
+      window.dispatchEvent(new CustomEvent('game:stopped'))
     } else {
       setStatusMessage(result.error || '停止失败')
       setTimeout(() => setStatusMessage(''), 2000)
@@ -140,6 +144,8 @@ export const Header: React.FC = () => {
       (error) => {
         setGameStatus('error')
         setStatusMessage(error)
+        // Dispatch event to notify MainLayout to sync menu state
+        window.dispatchEvent(new CustomEvent('game:stopped'))
         setTimeout(() => {
           setGameStatus('idle')
           setStatusMessage('')
@@ -147,6 +153,9 @@ export const Header: React.FC = () => {
       },
       (code) => {
         setGameStatus('idle')
+        // Dispatch event to notify MainLayout to sync menu state
+        // This handles the case when user closes the game window directly
+        window.dispatchEvent(new CustomEvent('game:stopped'))
         if (code !== 0 && code !== null) {
           setStatusMessage(`游戏退出，代码: ${code}`)
           setTimeout(() => setStatusMessage(''), 3000)

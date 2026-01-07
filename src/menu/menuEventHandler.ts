@@ -10,14 +10,12 @@
 import { useEditorStore } from '../store/editorStore'
 import { projectManager, electronFileSystem } from '../project/ProjectManager'
 import { 
-  launchGame, 
-  stopGame, 
   selectSdkPath, 
-  getSdkPath,
   isGameRunning 
 } from '../project/GameLauncher'
 import { findDefaultFile } from '../utils/FileClassifier'
 import { useSettingsStore } from '../settings/settingsStore'
+import { showUnsavedChangesDialog } from '../store/confirmDialogStore'
 import type { EditorMode } from '../types/editor'
 
 // ============================================================================
@@ -135,10 +133,65 @@ async function handleOpenRecentProject(projectPath: string): Promise<void> {
 }
 
 /**
+ * Check if there are unsaved changes in the current project
+ * Returns true if there are unsaved changes
+ */
+function hasUnsavedChanges(): boolean {
+  const modifiedScripts = projectManager.getModifiedScripts()
+  const settingsStore = useSettingsStore.getState()
+  const hasModifiedSettings = settingsStore.gui.modified || settingsStore.project.modified
+  
+  return modifiedScripts.length > 0 || hasModifiedSettings
+}
+
+/**
+ * Prompt user to save unsaved changes before switching projects
+ * Returns true if user wants to proceed, false if cancelled
+ */
+async function promptSaveChanges(): Promise<boolean> {
+  const modifiedScripts = projectManager.getModifiedScripts()
+  const settingsStore = useSettingsStore.getState()
+  const hasModifiedSettings = settingsStore.gui.modified || settingsStore.project.modified
+  
+  const items: string[] = []
+  if (modifiedScripts.length > 0) {
+    items.push(`${modifiedScripts.length} 个脚本`)
+  }
+  if (hasModifiedSettings) {
+    items.push('设置')
+  }
+  
+  // Use Figma-style confirm dialog
+  const result = await showUnsavedChangesDialog(items.join(' 和 '))
+  
+  if (result === 'save') {
+    // Trigger save and wait for it to complete
+    window.dispatchEvent(new CustomEvent('editor:save'))
+    // Give some time for save to complete
+    await new Promise(resolve => setTimeout(resolve, 500))
+    return true
+  } else if (result === 'discard') {
+    // Continue without saving
+    return true
+  } else {
+    // Cancel - don't proceed
+    return false
+  }
+}
+
+/**
  * Open a project by path and update stores
  * Reuses the same logic as LeftPanel.handleOpenProject
  */
 async function openProjectByPath(projectPath: string): Promise<void> {
+  // Check for unsaved changes before switching projects
+  if (hasUnsavedChanges()) {
+    const shouldProceed = await promptSaveChanges()
+    if (!shouldProceed) {
+      return // User cancelled
+    }
+  }
+  
   const result = await projectManager.openProject(projectPath)
   
   if (result.success && result.project) {
@@ -194,17 +247,14 @@ async function openProjectByPath(projectPath: string): Promise<void> {
 /**
  * Handle save action
  * Requirement: 1.3
+ * 
+ * Dispatches editor:save event to trigger MainLayout's handleSave,
+ * which includes full save logic with status feedback.
  */
 async function handleSave(): Promise<void> {
-  const result = await projectManager.saveProject()
-  
-  if (result.success) {
-    const editorStore = useEditorStore.getState()
-    editorStore.setModified(false)
-    syncMenuState()
-  } else {
-    console.error('Failed to save project:', result.error)
-  }
+  // Dispatch event to trigger MainLayout's save handler
+  // This reuses the existing save logic with proper status feedback
+  window.dispatchEvent(new CustomEvent('editor:save'))
 }
 
 /**
@@ -274,50 +324,26 @@ function handleTogglePropertiesPanel(): void {
 /**
  * Handle run game action
  * Requirement: 4.2
+ * 
+ * Dispatches editor:launch-game event to trigger Header's handleLaunchGame,
+ * which includes full launch logic with save and status feedback.
  */
 async function handleRunGame(): Promise<void> {
-  const editorStore = useEditorStore.getState()
-  const projectPath = editorStore.projectPath
-  
-  if (!projectPath) {
-    console.error('No project open')
-    return
-  }
-  
-  const sdkPath = getSdkPath()
-  if (!sdkPath) {
-    // Prompt user to configure SDK
-    const selectedPath = await selectSdkPath()
-    if (!selectedPath) {
-      return
-    }
-  }
-  
-  const result = await launchGame(projectPath)
-  
-  if (result.success) {
-    // Dispatch event to notify MainLayout of game start
-    window.dispatchEvent(new CustomEvent('game:started'))
-    syncMenuState()
-  } else {
-    console.error('Failed to launch game:', result.error)
-  }
+  // Dispatch event to trigger Header's launch handler
+  // This reuses the existing launch logic with proper save and status feedback
+  window.dispatchEvent(new CustomEvent('editor:launch-game'))
 }
 
 /**
  * Handle stop game action
  * Requirement: 4.3
+ * 
+ * Dispatches editor:stop-game event to trigger Header's handleStopGame,
+ * which includes proper status feedback.
  */
 async function handleStopGame(): Promise<void> {
-  const result = await stopGame()
-  
-  if (result.success) {
-    // Dispatch event to notify MainLayout of game stop
-    window.dispatchEvent(new CustomEvent('game:stopped'))
-    syncMenuState()
-  } else {
-    console.error('Failed to stop game:', result.error)
-  }
+  // Dispatch event to trigger Header's stop handler
+  window.dispatchEvent(new CustomEvent('editor:stop-game'))
 }
 
 /**
