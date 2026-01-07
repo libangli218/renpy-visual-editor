@@ -10,7 +10,6 @@ import {
 } from '../character'
 import { NewProjectWizard, ProjectConfig } from '../project'
 import { findDefaultFile } from '../../utils/FileClassifier'
-import { SettingsSection } from '../settings/SettingsSection'
 import { useSettingsStore } from '../../settings/settingsStore'
 
 /**
@@ -50,7 +49,6 @@ export const LeftPanel: React.FC = () => {
   const [expandedSections, setExpandedSections] = useState<Set<PanelSection>>(
     new Set(['labels', 'characters'])
   )
-  const [settingsExpanded, setSettingsExpanded] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [showNewProjectDialog, setShowNewProjectDialog] = useState(false)
@@ -393,19 +391,6 @@ export const LeftPanel: React.FC = () => {
               {icon}
             </button>
           ))}
-          {/* Settings button in collapsed view */}
-          {projectPath && (
-            <button
-              className="collapsed-section-btn"
-              onClick={() => {
-                setIsCollapsed(false)
-                setSettingsExpanded(true)
-              }}
-              title="Settings"
-            >
-              ⚙️
-            </button>
-          )}
           {!projectPath && (
             <>
               <button
@@ -475,12 +460,6 @@ export const LeftPanel: React.FC = () => {
                   )}
                 </div>
               ))}
-              
-              {/* Settings Section - Only shown when project is open */}
-              <SettingsSection
-                expanded={settingsExpanded}
-                onToggle={() => setSettingsExpanded(prev => !prev)}
-              />
             </div>
           )}
         </>
