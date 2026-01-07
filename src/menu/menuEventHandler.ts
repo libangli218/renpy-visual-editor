@@ -264,6 +264,8 @@ async function handleRunGame(): Promise<void> {
   const result = await launchGame(projectPath)
   
   if (result.success) {
+    // Dispatch event to notify MainLayout of game start
+    window.dispatchEvent(new CustomEvent('game:started'))
     syncMenuState()
   } else {
     console.error('Failed to launch game:', result.error)
@@ -278,6 +280,8 @@ async function handleStopGame(): Promise<void> {
   const result = await stopGame()
   
   if (result.success) {
+    // Dispatch event to notify MainLayout of game stop
+    window.dispatchEvent(new CustomEvent('game:stopped'))
     syncMenuState()
   } else {
     console.error('Failed to stop game:', result.error)

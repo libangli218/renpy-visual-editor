@@ -12,6 +12,7 @@ import {
   syncMenuState,
   type MenuEventCallbacks 
 } from '../../menu'
+import { registerGameListeners, removeGameListeners } from '../../project/GameLauncher'
 import './MainLayout.css'
 
 /**
@@ -27,6 +28,7 @@ import './MainLayout.css'
 export const MainLayout: React.FC = () => {
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
   const [saveMessage, setSaveMessage] = useState<string>('')
+  const [gameRunning, setGameRunning] = useState(false)
   
   // Track AST changes to mark scripts as modified
   const { ast, currentFile, modified, projectPath, canUndo, canRedo, mode } = useEditorStore()
@@ -204,11 +206,65 @@ export const MainLayout: React.FC = () => {
   }, [])
 
   /**
+   * Register game event listeners for menu state sync
+   * Syncs menu state when game starts, stops, or exits
+   * Requirements: 8.2, 8.3
+   */
+  useEffect(() => {
+    const handleGameError = (_error: string) => {
+      // Game encountered an error, update running state
+      setGameRunning(false)
+      syncMenuState()
+    }
+
+    const handleGameExit = (_code: number | null) => {
+      // Game exited, update running state
+      setGameRunning(false)
+      syncMenuState()
+    }
+
+    registerGameListeners(handleGameError, handleGameExit)
+
+    return () => {
+      removeGameListeners()
+    }
+  }, [])
+
+  /**
+   * Listen for game state changes from menu actions
+   * Updates local state when game is launched or stopped via menu
+   */
+  useEffect(() => {
+    const handleGameStarted = () => {
+      setGameRunning(true)
+      syncMenuState()
+    }
+
+    const handleGameStopped = () => {
+      setGameRunning(false)
+      syncMenuState()
+    }
+
+    window.addEventListener('game:started', handleGameStarted)
+    window.addEventListener('game:stopped', handleGameStopped)
+
+    return () => {
+      window.removeEventListener('game:started', handleGameStarted)
+      window.removeEventListener('game:stopped', handleGameStopped)
+    }
+  }, [])
+
+  /**
    * Sync menu state when relevant store values change
+   * Requirements: 8.1, 8.2, 8.3
+   * - Sync after project open/close (projectPath change)
+   * - Sync after undo/redo (canUndo, canRedo change)
+   * - Sync after mode change (mode change)
+   * - Game state is synced via game event listeners
    */
   useEffect(() => {
     syncMenuState()
-  }, [projectPath, modified, canUndo, canRedo, mode])
+  }, [projectPath, modified, canUndo, canRedo, mode, gameRunning])
 
   return (
     <div className="main-layout">
