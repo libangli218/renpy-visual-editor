@@ -3,8 +3,9 @@ import { LeftPanel } from './LeftPanel'
 import { RightPanel } from './RightPanel'
 import { EditorArea } from './EditorArea'
 import { Header } from './Header'
-import { projectManager } from '../../project/ProjectManager'
+import { projectManager, electronFileSystem } from '../../project/ProjectManager'
 import { useEditorStore } from '../../store/editorStore'
+import { useSettingsStore } from '../../settings/settingsStore'
 import './MainLayout.css'
 
 /**
@@ -22,9 +23,19 @@ export const MainLayout: React.FC = () => {
   const [saveMessage, setSaveMessage] = useState<string>('')
   
   // Track AST changes to mark scripts as modified
-  const { ast, currentFile, modified } = useEditorStore()
+  const { ast, currentFile, modified, projectPath } = useEditorStore()
   const previousAstRef = useRef(ast)
   const isInitialLoadRef = useRef(true)
+
+  // Settings store for saving settings
+  const { saveSettings, gui, project } = useSettingsStore()
+  
+  // Create file system adapter for settings
+  const settingsFileSystem = {
+    readFile: (path: string) => electronFileSystem.readFile(path),
+    writeFile: (path: string, content: string) => electronFileSystem.writeFile(path, content),
+    exists: (path: string) => electronFileSystem.exists(path),
+  }
 
   /**
    * Track AST changes and mark the current file as modified
@@ -55,6 +66,7 @@ export const MainLayout: React.FC = () => {
   /**
    * Handle save project
    * Implements Ctrl+S save functionality
+   * Also saves settings from gui.rpy and options.rpy (Requirement 8.2)
    */
   const handleSave = useCallback(async () => {
     if (!projectManager.getProject()) {
@@ -65,7 +77,9 @@ export const MainLayout: React.FC = () => {
     }
 
     const modifiedCount = projectManager.getModifiedScripts().length
-    if (modifiedCount === 0) {
+    const hasModifiedSettings = gui.modified || project.modified
+    
+    if (modifiedCount === 0 && !hasModifiedSettings) {
       setSaveStatus('saved')
       setSaveMessage('没有需要保存的修改')
       setTimeout(() => setSaveStatus('idle'), 2000)
@@ -73,17 +87,39 @@ export const MainLayout: React.FC = () => {
     }
 
     setSaveStatus('saving')
-    setSaveMessage(`正在保存 ${modifiedCount} 个文件...`)
+    const itemsToSave: string[] = []
+    if (modifiedCount > 0) itemsToSave.push(`${modifiedCount} 个脚本`)
+    if (hasModifiedSettings) itemsToSave.push('设置')
+    setSaveMessage(`正在保存 ${itemsToSave.join(' 和 ')}...`)
 
     try {
-      const result = await projectManager.saveProject()
+      let hasError = false
+      let errorMessage = ''
+
+      // Save scripts
+      if (modifiedCount > 0) {
+        const result = await projectManager.saveProject()
+        if (!result.success) {
+          hasError = true
+          errorMessage = result.error || '保存脚本失败'
+        }
+      }
+
+      // Save settings (Requirement 8.2)
+      if (hasModifiedSettings && projectPath) {
+        const settingsResult = await saveSettings(projectPath, settingsFileSystem)
+        if (!settingsResult) {
+          hasError = true
+          errorMessage = errorMessage ? `${errorMessage}; 保存设置失败` : '保存设置失败'
+        }
+      }
       
-      if (result.success) {
-        setSaveStatus('saved')
-        setSaveMessage(`已保存 ${modifiedCount} 个文件`)
-      } else {
+      if (hasError) {
         setSaveStatus('error')
-        setSaveMessage(result.error || '保存失败')
+        setSaveMessage(errorMessage)
+      } else {
+        setSaveStatus('saved')
+        setSaveMessage(`已保存 ${itemsToSave.join(' 和 ')}`)
       }
     } catch (error) {
       setSaveStatus('error')
@@ -92,7 +128,7 @@ export const MainLayout: React.FC = () => {
 
     // Reset status after 2 seconds
     setTimeout(() => setSaveStatus('idle'), 2000)
-  }, [])
+  }, [gui.modified, project.modified, projectPath, saveSettings, settingsFileSystem])
 
   /**
    * Listen for editor:save:confirmed event (triggered after orphan check passes)

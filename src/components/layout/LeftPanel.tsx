@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import { useEditorStore } from '../../store/editorStore'
-import { projectManager } from '../../project/ProjectManager'
+import { projectManager, electronFileSystem } from '../../project/ProjectManager'
 import { resourceManager } from '../../resource/ResourceManager'
 import {
   CharacterList,
@@ -10,6 +10,8 @@ import {
 } from '../character'
 import { NewProjectWizard, ProjectConfig } from '../project'
 import { findDefaultFile } from '../../utils/FileClassifier'
+import { SettingsSection } from '../settings/SettingsSection'
+import { useSettingsStore } from '../../settings/settingsStore'
 
 /**
  * LeftPanel component - Project browser panel (Figma-style collapsible)
@@ -48,6 +50,7 @@ export const LeftPanel: React.FC = () => {
   const [expandedSections, setExpandedSections] = useState<Set<PanelSection>>(
     new Set(['labels', 'characters'])
   )
+  const [settingsExpanded, setSettingsExpanded] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [showNewProjectDialog, setShowNewProjectDialog] = useState(false)
@@ -76,6 +79,16 @@ export const LeftPanel: React.FC = () => {
     deleteCharacter,
     extractCharactersFromAST,
   } = useCharacterStore()
+
+  // Settings store
+  const { loadSettings } = useSettingsStore()
+
+  // Create file system adapter for settings
+  const settingsFileSystem = {
+    readFile: (path: string) => electronFileSystem.readFile(path),
+    writeFile: (path: string, content: string) => electronFileSystem.writeFile(path, content),
+    exists: (path: string) => electronFileSystem.exists(path),
+  }
 
   // Save collapsed state
   useEffect(() => {
@@ -175,6 +188,15 @@ export const LeftPanel: React.FC = () => {
         resetHistory()
         // Clear modified scripts since we just loaded the project
         projectManager.clearModifiedScripts()
+        
+        // Load settings from gui.rpy and options.rpy
+        // Implements Requirement 9.1
+        try {
+          await loadSettings(result.project.path, settingsFileSystem)
+        } catch (settingsError) {
+          console.error('Failed to load settings:', settingsError)
+          // Don't fail project open if settings fail to load
+        }
       } else {
         setError(result.error || 'Failed to open project')
       }
@@ -234,6 +256,15 @@ export const LeftPanel: React.FC = () => {
         resetHistory()
         // Clear modified scripts since we just created the project
         projectManager.clearModifiedScripts()
+        
+        // Load settings from gui.rpy and options.rpy
+        // Implements Requirement 9.1
+        try {
+          await loadSettings(result.project.path, settingsFileSystem)
+        } catch (settingsError) {
+          console.error('Failed to load settings:', settingsError)
+          // Don't fail project creation if settings fail to load
+        }
       } else {
         setError(result.error || 'Failed to create project')
       }
@@ -362,6 +393,19 @@ export const LeftPanel: React.FC = () => {
               {icon}
             </button>
           ))}
+          {/* Settings button in collapsed view */}
+          {projectPath && (
+            <button
+              className="collapsed-section-btn"
+              onClick={() => {
+                setIsCollapsed(false)
+                setSettingsExpanded(true)
+              }}
+              title="Settings"
+            >
+              ⚙️
+            </button>
+          )}
           {!projectPath && (
             <>
               <button
@@ -431,6 +475,12 @@ export const LeftPanel: React.FC = () => {
                   )}
                 </div>
               ))}
+              
+              {/* Settings Section - Only shown when project is open */}
+              <SettingsSection
+                expanded={settingsExpanded}
+                onToggle={() => setSettingsExpanded(prev => !prev)}
+              />
             </div>
           )}
         </>

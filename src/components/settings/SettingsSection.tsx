@@ -5,7 +5,7 @@
  * Implements Requirements 1.1, 1.2, 1.3, 1.4
  */
 
-import React, { useState, useEffect } from 'react'
+import React, { useState } from 'react'
 import { useSettingsStore } from '../../settings/settingsStore'
 import { useEditorStore } from '../../store/editorStore'
 import { ColorSettingsGroup } from './ColorSettingsGroup'

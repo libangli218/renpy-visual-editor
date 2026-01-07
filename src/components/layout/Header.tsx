@@ -2,7 +2,8 @@ import React, { useState, useEffect, useCallback } from 'react'
 import { useEditorStore } from '../../store/editorStore'
 import { ModeSwitcher } from './ModeSwitcher'
 import { ComplexitySwitcher } from './ComplexitySwitcher'
-import { projectManager } from '../../project/ProjectManager'
+import { projectManager, electronFileSystem } from '../../project/ProjectManager'
+import { useSettingsStore } from '../../settings/settingsStore'
 import {
   launchGame,
   stopGame,
@@ -22,6 +23,16 @@ export const Header: React.FC = () => {
   const { modified, projectPath } = useEditorStore()
   const [gameStatus, setGameStatus] = useState<GameStatus>('idle')
   const [statusMessage, setStatusMessage] = useState<string>('')
+  
+  // Settings store for saving settings before launch
+  const { saveSettings, gui, project } = useSettingsStore()
+  
+  // Create file system adapter for settings
+  const settingsFileSystem = {
+    readFile: (path: string) => electronFileSystem.readFile(path),
+    writeFile: (path: string, content: string) => electronFileSystem.writeFile(path, content),
+    exists: (path: string) => electronFileSystem.exists(path),
+  }
   
   // Extract project name from path
   const projectName = projectPath 
@@ -51,15 +62,31 @@ export const Header: React.FC = () => {
       }
     }
 
-    // Save before launching
+    // Save before launching (scripts and settings)
     const modifiedCount = projectManager.getModifiedScripts().length
-    if (modifiedCount > 0) {
+    const hasModifiedSettings = gui.modified || project.modified
+    
+    if (modifiedCount > 0 || hasModifiedSettings) {
       setStatusMessage('正在保存...')
-      const saveResult = await projectManager.saveProject()
-      if (!saveResult.success) {
-        setStatusMessage(`保存失败: ${saveResult.error}`)
-        setTimeout(() => setStatusMessage(''), 3000)
-        return
+      
+      // Save scripts
+      if (modifiedCount > 0) {
+        const saveResult = await projectManager.saveProject()
+        if (!saveResult.success) {
+          setStatusMessage(`保存失败: ${saveResult.error}`)
+          setTimeout(() => setStatusMessage(''), 3000)
+          return
+        }
+      }
+      
+      // Save settings (Requirement 8.2)
+      if (hasModifiedSettings) {
+        const settingsResult = await saveSettings(projectPath, settingsFileSystem)
+        if (!settingsResult) {
+          setStatusMessage('保存设置失败')
+          setTimeout(() => setStatusMessage(''), 3000)
+          return
+        }
       }
     }
 
