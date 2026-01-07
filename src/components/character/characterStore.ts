@@ -17,7 +17,66 @@ import {
 } from './types'
 import { DefineNode, ASTNode, RenpyScript } from '../../types/ast'
 import { createDefineNode } from '../../parser/nodeFactory'
-import { markAsModified } from '../../store/editorStore'
+import { markAsModified, useEditorStore } from '../../store/editorStore'
+
+/**
+ * Sync characters to AST
+ * Updates the AST with current character definitions
+ */
+function syncCharactersToAST(characters: Character[]): void {
+  const { ast, setAst } = useEditorStore.getState()
+  if (!ast) return
+
+  // Generate new define nodes for all characters
+  const characterNodes = characters.map((char) => {
+    const value = generateCharacterValue({
+      name: char.name,
+      displayName: char.displayName,
+      color: char.color || '#ffffff',
+      imagePrefix: char.imagePrefix || '',
+      kind: char.kind || '',
+    })
+    return createDefineNode(char.name, value)
+  })
+
+  // Get character variable names for filtering
+  const characterNames = new Set(characters.map(c => c.name))
+
+  // Filter out old character define statements (Character() calls)
+  const nonCharacterStatements = ast.statements.filter(stmt => {
+    if (stmt.type !== 'define') return true
+    const defineNode = stmt as DefineNode
+    // Keep if it's not a Character() definition
+    if (!defineNode.value.startsWith('Character(')) return true
+    // Remove if it's a character we're managing
+    return false
+  })
+
+  // Find where to insert character definitions (at the beginning, before labels)
+  // Ren'Py convention: define statements come before labels
+  const firstLabelIndex = nonCharacterStatements.findIndex(s => s.type === 'label')
+  
+  let newStatements: ASTNode[]
+  if (firstLabelIndex === -1) {
+    // No labels, put characters at the end
+    newStatements = [...nonCharacterStatements, ...characterNodes]
+  } else {
+    // Insert characters before the first label
+    newStatements = [
+      ...nonCharacterStatements.slice(0, firstLabelIndex),
+      ...characterNodes,
+      ...nonCharacterStatements.slice(firstLabelIndex),
+    ]
+  }
+
+  // Update AST
+  const newAst: RenpyScript = {
+    ...ast,
+    statements: newStatements,
+  }
+
+  setAst(newAst)
+}
 
 export interface CharacterStore {
   // State
@@ -68,49 +127,55 @@ export const useCharacterStore = create<CharacterStore>((set, get) => ({
       kind: data.kind || undefined,
     }
 
-    set((state) => ({
-      characters: [...state.characters, newCharacter],
+    const newCharacters = [...get().characters, newCharacter]
+    
+    set({
+      characters: newCharacters,
       dialogOpen: false,
       editingCharacter: null,
-    }))
+    })
 
-    // Mark editor as modified (Requirement 1.4)
-    markAsModified()
+    // Sync to AST
+    syncCharactersToAST(newCharacters)
 
     return newCharacter
   },
 
   updateCharacter: (id, data) => {
-    set((state) => ({
-      characters: state.characters.map((char) =>
-        char.id === id
-          ? {
-              ...char,
-              name: data.name,
-              displayName: data.displayName,
-              color: data.color || undefined,
-              imagePrefix: data.imagePrefix || undefined,
-              kind: data.kind || undefined,
-            }
-          : char
-      ),
+    const newCharacters = get().characters.map((char) =>
+      char.id === id
+        ? {
+            ...char,
+            name: data.name,
+            displayName: data.displayName,
+            color: data.color || undefined,
+            imagePrefix: data.imagePrefix || undefined,
+            kind: data.kind || undefined,
+          }
+        : char
+    )
+    
+    set({
+      characters: newCharacters,
       dialogOpen: false,
       editingCharacter: null,
-    }))
+    })
 
-    // Mark editor as modified (Requirement 1.4)
-    markAsModified()
+    // Sync to AST
+    syncCharactersToAST(newCharacters)
   },
 
   deleteCharacter: (id) => {
-    set((state) => ({
-      characters: state.characters.filter((char) => char.id !== id),
+    const newCharacters = get().characters.filter((char) => char.id !== id)
+    
+    set({
+      characters: newCharacters,
       selectedCharacterId:
-        state.selectedCharacterId === id ? null : state.selectedCharacterId,
-    }))
+        get().selectedCharacterId === id ? null : get().selectedCharacterId,
+    })
 
-    // Mark editor as modified (Requirement 1.4)
-    markAsModified()
+    // Sync to AST
+    syncCharactersToAST(newCharacters)
   },
 
   selectCharacter: (id) => {

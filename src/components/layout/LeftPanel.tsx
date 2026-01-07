@@ -1,6 +1,7 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useEditorStore } from '../../store/editorStore'
 import { projectManager } from '../../project/ProjectManager'
+import { resourceManager } from '../../resource/ResourceManager'
 import {
   CharacterList,
   CharacterDialog,
@@ -40,13 +41,17 @@ const sections: SectionConfig[] = [
 ]
 
 export const LeftPanel: React.FC = () => {
-  const { projectPath, setProjectPath, setAst, resetHistory } = useEditorStore()
+  const { projectPath, setProjectPath, setAst, setCurrentFile, resetHistory, ast } = useEditorStore()
   const [expandedSections, setExpandedSections] = useState<Set<PanelSection>>(
     new Set(['labels', 'characters'])
   )
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [showNewProjectDialog, setShowNewProjectDialog] = useState(false)
+  
+  // Resource state
+  const [backgrounds, setBackgrounds] = useState<string[]>([])
+  const [audioFiles, setAudioFiles] = useState<string[]>([])
 
   // Character store
   const {
@@ -60,7 +65,50 @@ export const LeftPanel: React.FC = () => {
     addCharacter,
     updateCharacter,
     deleteCharacter,
+    extractCharactersFromAST,
   } = useCharacterStore()
+
+  // Extract characters from AST when AST changes
+  useEffect(() => {
+    if (ast) {
+      extractCharactersFromAST(ast)
+    }
+  }, [ast, extractCharactersFromAST])
+
+  // Scan resources when project path changes
+  useEffect(() => {
+    const scanResources = async () => {
+      if (!projectPath) {
+        setBackgrounds([])
+        setAudioFiles([])
+        return
+      }
+
+      try {
+        await resourceManager.scanResources(projectPath)
+        
+        // Get backgrounds
+        const bgTags = resourceManager.getBackgroundTags()
+        const bgNames = bgTags.flatMap(tag => {
+          if (tag.attributes.length === 0) {
+            return [tag.tag]
+          }
+          return tag.attributes.map(attrs => `${tag.tag} ${attrs.join(' ')}`)
+        })
+        setBackgrounds(bgNames)
+        
+        // Get audio
+        const audio = resourceManager.getResources('audio')
+        setAudioFiles(audio.map(r => r.name))
+      } catch (error) {
+        console.error('Failed to scan resources:', error)
+        setBackgrounds([])
+        setAudioFiles([])
+      }
+    }
+
+    scanResources()
+  }, [projectPath])
 
   const toggleSection = (section: PanelSection) => {
     setExpandedSections((prev) => {
@@ -97,6 +145,8 @@ export const LeftPanel: React.FC = () => {
         // Implements Requirements 1.4, 1.5
         const defaultFilePath = findDefaultFile(result.project.scripts)
         if (defaultFilePath) {
+          // Set current file first so AST changes can be tracked
+          setCurrentFile(defaultFilePath)
           const defaultScript = result.project.scripts.get(defaultFilePath)
           if (defaultScript) {
             setAst(defaultScript)
@@ -104,6 +154,8 @@ export const LeftPanel: React.FC = () => {
         }
         // Reset history after loading project to prevent undo from going back to empty state
         resetHistory()
+        // Clear modified scripts since we just loaded the project
+        projectManager.clearModifiedScripts()
       } else {
         setError(result.error || 'Failed to open project')
       }
@@ -152,6 +204,8 @@ export const LeftPanel: React.FC = () => {
         // Implements Requirements 1.4, 1.5
         const defaultFilePath = findDefaultFile(result.project.scripts)
         if (defaultFilePath) {
+          // Set current file first so AST changes can be tracked
+          setCurrentFile(defaultFilePath)
           const defaultScript = result.project.scripts.get(defaultFilePath)
           if (defaultScript) {
             setAst(defaultScript)
@@ -159,6 +213,8 @@ export const LeftPanel: React.FC = () => {
         }
         // Reset history after creating project to prevent undo from going back to empty state
         resetHistory()
+        // Clear modified scripts since we just created the project
+        projectManager.clearModifiedScripts()
       } else {
         setError(result.error || 'Failed to create project')
       }
@@ -194,6 +250,52 @@ export const LeftPanel: React.FC = () => {
             onAdd={() => openDialog()}
             onDelete={handleDeleteCharacter}
           />
+        )
+      case 'backgrounds':
+        if (backgrounds.length === 0) {
+          return <p className="section-empty">No backgrounds found</p>
+        }
+        return (
+          <ul className="resource-list">
+            {backgrounds.map((bg, index) => (
+              <li key={index} className="resource-item">
+                <span className="resource-icon">🖼️</span>
+                <span className="resource-name">{bg}</span>
+              </li>
+            ))}
+          </ul>
+        )
+      case 'audio':
+        if (audioFiles.length === 0) {
+          return <p className="section-empty">No audio found</p>
+        }
+        return (
+          <ul className="resource-list">
+            {audioFiles.map((audio, index) => (
+              <li key={index} className="resource-item">
+                <span className="resource-icon">🎵</span>
+                <span className="resource-name">{audio}</span>
+              </li>
+            ))}
+          </ul>
+        )
+      case 'labels':
+        // Extract labels from AST
+        const labels = ast?.statements
+          .filter(s => s.type === 'label')
+          .map(s => (s as { name: string }).name) || []
+        if (labels.length === 0) {
+          return <p className="section-empty">No labels found</p>
+        }
+        return (
+          <ul className="resource-list">
+            {labels.map((label, index) => (
+              <li key={index} className="resource-item">
+                <span className="resource-icon">🏷️</span>
+                <span className="resource-name">{label}</span>
+              </li>
+            ))}
+          </ul>
         )
       default:
         return (

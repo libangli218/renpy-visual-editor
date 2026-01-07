@@ -194,6 +194,17 @@ export class ProjectManager {
   }
 
   /**
+   * Clear all modified script markers
+   * Used after project open/create to reset modification state
+   */
+  clearModifiedScripts(): void {
+    this.modifiedScripts.clear()
+    if (this.currentProject) {
+      this.currentProject.modified = false
+    }
+  }
+
+  /**
    * Create a new Ren'Py project with standard directory structure
    * Implements Requirement 1.1
    */

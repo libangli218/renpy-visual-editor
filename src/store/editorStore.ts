@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import { HistoryManager } from './HistoryManager'
 import { EditorMode, ComplexityLevel, EditorState } from '../types/editor'
 import { RenpyScript } from '../types/ast'
+import { projectManager } from '../project/ProjectManager'
 
 // Create a history manager instance
 const historyManager = new HistoryManager<EditorState>(100)
@@ -177,6 +178,16 @@ export const useEditorStore = create<EditorStore>((set, get) => {
     setAst: (ast) => {
       const state = get()
       historyManager.push(createStateSnapshot(state))
+      
+      // Mark the current file as modified in projectManager
+      if (state.currentFile) {
+        projectManager.markScriptModified(state.currentFile)
+        // Also update the script in projectManager
+        if (ast) {
+          projectManager.updateScript(state.currentFile, ast)
+        }
+      }
+      
       set({
         ast,
         modified: true,
