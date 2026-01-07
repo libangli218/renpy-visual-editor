@@ -216,3 +216,135 @@ ipcMain.handle('dialog:selectDirectory', async (_event, title: string) => {
   
   return result.filePaths[0]
 })
+
+// Game launcher handlers
+let gameProcess: import('child_process').ChildProcess | null = null
+
+ipcMain.handle('game:launch', async (_event, projectPath: string, sdkPath: string) => {
+  const { spawn } = await import('child_process')
+  const path = await import('path')
+  const fs = await import('fs/promises')
+  
+  // Determine the Ren'Py executable based on platform
+  let renpyExe: string
+  if (process.platform === 'win32') {
+    renpyExe = path.join(sdkPath, 'renpy.exe')
+  } else if (process.platform === 'darwin') {
+    renpyExe = path.join(sdkPath, 'renpy.sh')
+  } else {
+    renpyExe = path.join(sdkPath, 'renpy.sh')
+  }
+  
+  // Check if Ren'Py executable exists
+  try {
+    await fs.access(renpyExe)
+  } catch {
+    return {
+      success: false,
+      error: `Ren'Py executable not found at: ${renpyExe}`,
+    }
+  }
+  
+  // Check if project path exists
+  try {
+    await fs.access(projectPath)
+  } catch {
+    return {
+      success: false,
+      error: `Project path not found: ${projectPath}`,
+    }
+  }
+  
+  // Kill existing game process if running
+  if (gameProcess && !gameProcess.killed) {
+    gameProcess.kill()
+    gameProcess = null
+  }
+  
+  try {
+    // Launch Ren'Py with the project path
+    gameProcess = spawn(renpyExe, [projectPath], {
+      detached: false,
+      stdio: 'pipe',
+    })
+    
+    // Handle process events
+    gameProcess.on('error', (error) => {
+      console.error('[game:launch] Process error:', error)
+      if (mainWindow) {
+        mainWindow.webContents.send('game:error', error.message)
+      }
+    })
+    
+    gameProcess.on('exit', (code) => {
+      console.log('[game:launch] Process exited with code:', code)
+      gameProcess = null
+      if (mainWindow) {
+        mainWindow.webContents.send('game:exit', code)
+      }
+    })
+    
+    // Capture stdout/stderr for debugging
+    gameProcess.stdout?.on('data', (data) => {
+      console.log('[game:stdout]', data.toString())
+    })
+    
+    gameProcess.stderr?.on('data', (data) => {
+      console.error('[game:stderr]', data.toString())
+    })
+    
+    return {
+      success: true,
+      pid: gameProcess.pid,
+    }
+  } catch (error) {
+    return {
+      success: false,
+      error: `Failed to launch game: ${error instanceof Error ? error.message : String(error)}`,
+    }
+  }
+})
+
+ipcMain.handle('game:stop', async () => {
+  if (gameProcess && !gameProcess.killed) {
+    gameProcess.kill()
+    gameProcess = null
+    return { success: true }
+  }
+  return { success: false, error: 'No game process running' }
+})
+
+ipcMain.handle('game:isRunning', async () => {
+  return gameProcess !== null && !gameProcess.killed
+})
+
+// Select Ren'Py SDK path
+ipcMain.handle('dialog:selectRenpySdk', async () => {
+  if (!mainWindow) return null
+  
+  const result = await dialog.showOpenDialog(mainWindow, {
+    properties: ['openDirectory'],
+    title: 'Select Ren\'Py SDK Directory',
+  })
+  
+  if (result.canceled || result.filePaths.length === 0) {
+    return null
+  }
+  
+  // Verify it's a valid Ren'Py SDK by checking for renpy.exe or renpy.sh
+  const path = await import('path')
+  const fs = await import('fs/promises')
+  const sdkPath = result.filePaths[0]
+  
+  const renpyExe = process.platform === 'win32' 
+    ? path.join(sdkPath, 'renpy.exe')
+    : path.join(sdkPath, 'renpy.sh')
+  
+  try {
+    await fs.access(renpyExe)
+    return sdkPath
+  } catch {
+    // Not a valid SDK
+    return null
+  }
+})

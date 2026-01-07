@@ -178,6 +178,30 @@ export const KeyboardShortcutProvider: React.FC<KeyboardShortcutProviderProps> =
         closeHelpPanel()
       }
     ))
+    
+    // Game launch shortcut (F5)
+    registerShortcut(createShortcut(
+      'launch-game',
+      'F5',
+      {},
+      '运行游戏',
+      'file',
+      () => {
+        window.dispatchEvent(new CustomEvent('editor:launch-game'))
+      }
+    ))
+    
+    // Stop game shortcut (Shift+F5)
+    registerShortcut(createShortcut(
+      'stop-game',
+      'F5',
+      { shift: true },
+      '停止游戏',
+      'file',
+      () => {
+        window.dispatchEvent(new CustomEvent('editor:stop-game'))
+      }
+    ))
   }, [registerShortcut, toggleHelpPanel, closeHelpPanel])
   
   // Set up global keyboard event listener

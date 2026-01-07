@@ -17,6 +17,24 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // Dialog operations
   openDirectory: () => ipcRenderer.invoke('dialog:openDirectory'),
   selectDirectory: (title?: string) => ipcRenderer.invoke('dialog:selectDirectory', title),
+  selectRenpySdk: () => ipcRenderer.invoke('dialog:selectRenpySdk'),
+  
+  // Game launcher operations
+  launchGame: (projectPath: string, sdkPath: string) => ipcRenderer.invoke('game:launch', projectPath, sdkPath),
+  stopGame: () => ipcRenderer.invoke('game:stop'),
+  isGameRunning: () => ipcRenderer.invoke('game:isRunning'),
+  
+  // Game event listeners
+  onGameError: (callback: (error: string) => void) => {
+    ipcRenderer.on('game:error', (_event, error) => callback(error))
+  },
+  onGameExit: (callback: (code: number | null) => void) => {
+    ipcRenderer.on('game:exit', (_event, code) => callback(code))
+  },
+  removeGameListeners: () => {
+    ipcRenderer.removeAllListeners('game:error')
+    ipcRenderer.removeAllListeners('game:exit')
+  },
 })
 
 // Type definitions for the exposed API
@@ -34,6 +52,13 @@ declare global {
       getAppPath: () => Promise<string>
       openDirectory: () => Promise<string | null>
       selectDirectory: (title?: string) => Promise<string | null>
+      selectRenpySdk: () => Promise<string | null>
+      launchGame: (projectPath: string, sdkPath: string) => Promise<{ success: boolean; pid?: number; error?: string }>
+      stopGame: () => Promise<{ success: boolean; error?: string }>
+      isGameRunning: () => Promise<boolean>
+      onGameError: (callback: (error: string) => void) => void
+      onGameExit: (callback: (code: number | null) => void) => void
+      removeGameListeners: () => void
     }
   }
 }

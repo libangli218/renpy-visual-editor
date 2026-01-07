@@ -565,3 +565,95 @@
   flex: 1;
   height: 100%;
 }
+
+
+/* Game Controls Styles */
+.game-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-left: 1rem;
+}
+
+.btn-launch-game,
+.btn-stop-game {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.375rem 0.75rem;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: all 0.15s ease;
+}
+
+.btn-launch-game {
+  background-color: #16a34a;
+  color: white;
+}
+
+.btn-launch-game:hover:not(:disabled) {
+  background-color: #15803d;
+}
+
+.btn-launch-game:disabled {
+  background-color: var(--bg-tertiary);
+  color: var(--text-secondary);
+  cursor: not-allowed;
+}
+
+.btn-stop-game {
+  background-color: #dc2626;
+  color: white;
+}
+
+.btn-stop-game:hover {
+  background-color: #b91c1c;
+}
+
+.btn-configure-sdk {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--border-color);
+  background-color: var(--bg-tertiary);
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: all 0.15s ease;
+}
+
+.btn-configure-sdk:hover {
+  background-color: var(--bg-secondary);
+  border-color: var(--accent-secondary);
+}
+
+.game-status {
+  margin-left: 0.75rem;
+  font-size: 0.75rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+}
+
+.game-status-idle {
+  color: var(--text-secondary);
+}
+
+.game-status-launching {
+  color: var(--accent-primary);
+  background-color: var(--bg-tertiary);
+}
+
+.game-status-running {
+  color: #16a34a;
+  background-color: rgba(22, 163, 74, 0.1);
+}
+
+.game-status-error {
+  color: #dc2626;
+  background-color: rgba(220, 38, 38, 0.1);
+}

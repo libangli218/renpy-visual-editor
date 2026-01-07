@@ -51,6 +51,13 @@ declare global {
       getAppPath: () => Promise<string>
       openDirectory: () => Promise<string | null>
       selectDirectory: (title?: string) => Promise<string | null>
+      selectRenpySdk: () => Promise<string | null>
+      launchGame: (projectPath: string, sdkPath: string) => Promise<{ success: boolean; pid?: number; error?: string }>
+      stopGame: () => Promise<{ success: boolean; error?: string }>
+      isGameRunning: () => Promise<boolean>
+      onGameError: (callback: (error: string) => void) => void
+      onGameExit: (callback: (code: number | null) => void) => void
+      removeGameListeners: () => void
     }
   }
 }
