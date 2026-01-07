@@ -179,10 +179,11 @@ export class BlockTreeBuilder {
       positionSlot.value = node.atPosition
     }
     
-    // Handle expression from attributes
+    // Handle expression from attributes - join all attributes as a single expression
     const expressionSlot = slots.find(s => s.name === 'expression')
     if (expressionSlot && node.attributes && node.attributes.length > 0) {
-      expressionSlot.value = node.attributes[0]
+      // Join all attributes with space to match the format in imageTags
+      expressionSlot.value = node.attributes.join(' ')
     }
 
     return this.createBlock('show', node.id, slots)

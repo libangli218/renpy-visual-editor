@@ -891,7 +891,10 @@ export class BlockOperationHandler {
     }
 
     if (expressionSlot?.value) {
-      node.attributes = [expressionSlot.value as string]
+      // Split expression back into individual attributes
+      // e.g., "green normal" → ["green", "normal"]
+      const expressionValue = expressionSlot.value as string
+      node.attributes = expressionValue.split(' ').filter(s => s.length > 0)
     }
 
     return node

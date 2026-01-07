@@ -327,7 +327,8 @@ describe('Property 2: 积木结构正确性 (Block Structure Correctness)', () =
         // Must have expression slot (Requirement 4.4)
         expect(hasSlot(block!, 'expression')).toBe(true)
         if (showNode.attributes && showNode.attributes.length > 0) {
-          expect(getSlotValue(block!, 'expression')).toBe(showNode.attributes[0])
+          // Expression slot contains all attributes joined with space
+          expect(getSlotValue(block!, 'expression')).toBe(showNode.attributes.join(' '))
         }
       }),
       { numRuns: 100 }

@@ -1048,7 +1048,6 @@ export const MultiLabelView: React.FC<MultiLabelViewProps> = ({
 
   // Build image tag options
   const imageTagOptions: SlotOption[] = useMemo(() => {
-    console.log('[MultiLabelView] Building imageTagOptions from imageTags:', imageTags)
     return imageTags.map(tag => ({
       value: tag.tag,
       label: tag.tag,

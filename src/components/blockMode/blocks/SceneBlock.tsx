@@ -77,17 +77,28 @@ export const SceneBlock: React.FC<SceneBlockProps> = ({
     onSlotChange?.(block.id, slotName, value)
   }, [block.id, onSlotChange])
   
+  /**
+   * Handle character change - also clear expression since new character may have different options
+   */
+  const handleCharacterChange = useCallback((newCharacter: string) => {
+    onSlotChange?.(block.id, 'character', newCharacter)
+    // Clear expression when character changes
+    onSlotChange?.(block.id, 'expression', null)
+  }, [block.id, onSlotChange])
+  
   // Check for errors
   const hasSlotErrors = Object.keys(slotErrors).length > 0
   const hasError = baseProps.hasError || hasSlotErrors
   
+  // Get character slot value for dependency tracking
+  const characterValue = getSlotValue(block, 'character') as string | undefined
+  
   // Build expression options based on selected character (image tag)
   const expressionOptions = useMemo(() => {
-    const character = getSlotValue(block, 'character') as string
-    if (!character) return []
+    if (!characterValue) return []
     
     // Find the image tag for this character
-    const tag = imageTags.find(t => t.tag === character)
+    const tag = imageTags.find(t => t.tag === characterValue)
     if (!tag) return []
     
     // Convert attributes to options
@@ -96,7 +107,7 @@ export const SceneBlock: React.FC<SceneBlockProps> = ({
       label: attrs.join(' '),
     }))
     return options
-  }, [block, imageTags])
+  }, [characterValue, imageTags])
   
   // Render different content based on block type
   const renderContent = () => {
@@ -203,7 +214,7 @@ export const SceneBlock: React.FC<SceneBlockProps> = ({
             <select
               className={`block-slot-input block-slot-select ${slotErrors['character'] ? 'has-error' : ''}`}
               value={character || ''}
-              onChange={(e) => handleSlotChange('character', e.target.value)}
+              onChange={(e) => handleCharacterChange(e.target.value)}
               title={slotErrors['character']}
             >
               <option value="">选择角色...</option>
