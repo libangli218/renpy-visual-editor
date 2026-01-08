@@ -38,6 +38,8 @@ import { SceneBlock } from './blocks/SceneBlock'
 import { MenuBlock } from './blocks/MenuBlock'
 import { FlowBlock } from './blocks/FlowBlock'
 import { AudioBlock } from './blocks/AudioBlock'
+import { SetBlock } from './blocks/SetBlock'
+import { PythonBlock } from './blocks/PythonBlock'
 import { RenpyScript, LabelNode } from '../../types/ast'
 import { ImageTag } from '../../resource/ResourceManager'
 import './BlockModeEditor.css'
@@ -744,6 +746,22 @@ export const BlockModeEditor: React.FC<BlockModeEditorProps> = ({
             {...commonProps}
             availableMusic={audioOptions}
             availableSounds={audioOptions}
+          />
+        )
+      
+      case 'set':
+        return (
+          <SetBlock
+            key={block.id}
+            {...commonProps}
+          />
+        )
+      
+      case 'python':
+        return (
+          <PythonBlock
+            key={block.id}
+            {...commonProps}
           />
         )
       

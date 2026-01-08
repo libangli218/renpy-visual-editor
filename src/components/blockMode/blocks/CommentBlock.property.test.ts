@@ -56,6 +56,7 @@ const TYPE_TO_CATEGORY: Record<BlockType, BlockCategory> = {
   'call': 'flow',
   'return': 'flow',
   'python': 'advanced',
+  'set': 'advanced',
   'comment': 'advanced',
 }
 

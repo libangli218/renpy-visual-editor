@@ -273,7 +273,8 @@ export const BaseBlock: React.FC<BaseBlockProps> = memo(({
       </div>
       
       {/* Block Content (slots and children) */}
-      {!collapsed && (
+      {/* Only apply collapsed logic to container blocks */}
+      {(!collapsed || !isContainer) && (
         <div className="block-content">
           {children}
         </div>

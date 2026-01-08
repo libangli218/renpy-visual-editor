@@ -30,6 +30,8 @@ import { SceneBlock } from './blocks/SceneBlock'
 import { MenuBlock } from './blocks/MenuBlock'
 import { FlowBlock } from './blocks/FlowBlock'
 import { AudioBlock } from './blocks/AudioBlock'
+import { SetBlock } from './blocks/SetBlock'
+import { PythonBlock } from './blocks/PythonBlock'
 import { RenpyScript, LabelNode } from '../../types/ast'
 import { Block, BlockType, SlotOption, BlockClipboard } from './types'
 import { ImageTag } from '../../resource/ResourceManager'
@@ -1211,6 +1213,20 @@ export const MultiLabelView: React.FC<MultiLabelViewProps> = ({
               {...commonProps}
               availableMusic={audioOptions}
               availableSounds={audioOptions}
+            />
+          )
+        case 'set':
+          return (
+            <SetBlock
+              key={block.id}
+              {...commonProps}
+            />
+          )
+        case 'python':
+          return (
+            <PythonBlock
+              key={block.id}
+              {...commonProps}
             />
           )
         default:

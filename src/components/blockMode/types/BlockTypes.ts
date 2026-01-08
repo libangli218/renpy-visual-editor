@@ -28,6 +28,7 @@ export type BlockType =
   | 'call'
   | 'return'
   | 'python'
+  | 'set'
   | 'comment'
 
 /**

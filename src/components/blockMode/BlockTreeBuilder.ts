@@ -32,6 +32,7 @@ import {
   PythonNode,
   PlayNode,
   StopNode,
+  SetNode,
 } from '../../types/ast'
 
 /**
@@ -103,6 +104,7 @@ export class BlockTreeBuilder {
    * @returns The Block, or null if the node type is not supported
    */
   buildBlock(node: ASTNode): Block | null {
+    console.log('[BlockTreeBuilder] buildBlock called with node type:', node.type, 'id:', node.id)
     switch (node.type) {
       case 'dialogue':
         return this.buildDialogueBlock(node as DialogueNode)
@@ -126,6 +128,8 @@ export class BlockTreeBuilder {
         return this.buildIfBlock(node as IfNode)
       case 'python':
         return this.buildPythonBlock(node as PythonNode)
+      case 'set':
+        return this.buildSetBlock(node as SetNode)
       case 'play':
         return this.buildPlayBlock(node as PlayNode)
       case 'stop':
@@ -450,6 +454,30 @@ export class BlockTreeBuilder {
     }
 
     return this.createBlock('python', node.id, slots)
+  }
+
+  /**
+   * Build a set block (variable assignment)
+   */
+  private buildSetBlock(node: SetNode): Block {
+    const slots = getDefaultSlots('set')
+    
+    const variableSlot = slots.find(s => s.name === 'variable')
+    if (variableSlot) {
+      variableSlot.value = node.variable
+    }
+    
+    const operatorSlot = slots.find(s => s.name === 'operator')
+    if (operatorSlot) {
+      operatorSlot.value = node.operator || '='
+    }
+    
+    const valueSlot = slots.find(s => s.name === 'value')
+    if (valueSlot) {
+      valueSlot.value = node.value
+    }
+
+    return this.createBlock('set', node.id, slots)
   }
 
   /**

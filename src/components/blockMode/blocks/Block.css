@@ -268,9 +268,7 @@
   padding: 8px;  /* Reduced from 12px to minimize nesting shrinkage */
 }
 
-.block-content:empty {
-  display: none;
-}
+/* Note: Removed .block-content:empty rule as it can cause issues with React rendering */
 
 /* ========================================
  * Block Slots
@@ -1004,4 +1002,125 @@
   pointer-events: none;
   z-index: 10;
   box-shadow: 0 0 4px rgba(33, 150, 243, 0.5);
+}
+
+
+/* ========================================
+ * Set Block Styles (Variable Assignment)
+ * ======================================== */
+
+.set-block .block-content {
+  display: block;
+  padding: 8px;
+}
+
+.set-block-content {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 0;
+}
+
+.set-block-variable {
+  flex: 1;
+  min-width: 80px;
+  max-width: 150px;
+  padding: 4px 8px;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  font-family: 'Consolas', 'Monaco', monospace;
+  font-size: 12px;
+}
+
+.set-block-variable:focus {
+  outline: none;
+  border-color: var(--accent-primary);
+}
+
+.set-block-variable.has-error {
+  border-color: #f44336;
+}
+
+.set-block-operator {
+  width: 50px;
+  padding: 4px 4px;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  font-family: 'Consolas', 'Monaco', monospace;
+  font-size: 12px;
+  text-align: center;
+  cursor: pointer;
+}
+
+.set-block-operator:focus {
+  outline: none;
+  border-color: var(--accent-primary);
+}
+
+.set-block-value {
+  flex: 2;
+  min-width: 100px;
+  padding: 4px 8px;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  font-family: 'Consolas', 'Monaco', monospace;
+  font-size: 12px;
+}
+
+.set-block-value:focus {
+  outline: none;
+  border-color: var(--accent-primary);
+}
+
+.set-block-value.has-error {
+  border-color: #f44336;
+}
+
+
+/* ========================================
+ * Python Block Styles
+ * ======================================== */
+
+.python-block .block-content {
+  display: block;
+  padding: 8px;
+}
+
+.python-block-content {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.python-code-area {
+  width: 100%;
+  min-height: 60px;
+  padding: 8px;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+  font-size: 12px;
+  line-height: 1.4;
+  resize: vertical;
+}
+
+.python-code-area:focus {
+  outline: none;
+  border-color: var(--accent-primary);
+}
+
+.python-code-area.has-error {
+  border-color: #f44336;
+}
+
+.python-code-area::placeholder {
+  color: var(--text-muted);
 }

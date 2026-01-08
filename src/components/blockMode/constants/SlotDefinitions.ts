@@ -591,6 +591,37 @@ export const DEFAULT_SLOT_CONFIGS: Record<BlockType, BlockSlot[]> = {
     },
   ],
 
+  set: [
+    {
+      name: 'variable',
+      type: 'text',
+      value: '',
+      required: true,
+      placeholder: '变量名',
+    },
+    {
+      name: 'operator',
+      type: 'select',
+      value: '=',
+      required: true,
+      placeholder: '运算符',
+      options: [
+        { value: '=', label: '=' },
+        { value: '+=', label: '+=' },
+        { value: '-=', label: '-=' },
+        { value: '*=', label: '*=' },
+        { value: '/=', label: '/=' },
+      ],
+    },
+    {
+      name: 'value',
+      type: 'text',
+      value: '',
+      required: true,
+      placeholder: '值',
+    },
+  ],
+
   comment: [
     {
       name: 'text',

@@ -39,6 +39,7 @@ import {
   PythonNode,
   PlayNode,
   StopNode,
+  SetNode,
 } from '../../types/ast'
 
 /**
@@ -829,6 +830,8 @@ export class BlockOperationHandler {
         return this.createIfNode(id, block)
       case 'python':
         return this.createPythonNode(id, block)
+      case 'set':
+        return this.createSetNode(id, block)
       case 'play-music':
         return this.createPlayMusicNode(id, block)
       case 'stop-music':
@@ -995,6 +998,20 @@ export class BlockOperationHandler {
       id,
       type: 'python',
       code: codeSlot?.value as string ?? '',
+    }
+  }
+
+  private createSetNode(id: string, block: Block): SetNode {
+    const variableSlot = block.slots.find(s => s.name === 'variable')
+    const operatorSlot = block.slots.find(s => s.name === 'operator')
+    const valueSlot = block.slots.find(s => s.name === 'value')
+    
+    return {
+      id,
+      type: 'set',
+      variable: variableSlot?.value as string ?? '',
+      operator: (operatorSlot?.value as '=' | '+=' | '-=' | '*=' | '/=') ?? '=',
+      value: valueSlot?.value as string ?? '',
     }
   }
 
@@ -1341,6 +1358,8 @@ export class BlockOperationHandler {
         return this.updateIfProperty(astNode as IfNode, slotName, value)
       case 'python':
         return this.updatePythonProperty(astNode as PythonNode, slotName, value)
+      case 'set':
+        return this.updateSetProperty(astNode as SetNode, slotName, value)
       case 'play-music':
         return this.updatePlayMusicProperty(astNode as PlayNode, slotName, value)
       case 'stop-music':
@@ -1483,6 +1502,17 @@ export class BlockOperationHandler {
   private updatePythonProperty(node: PythonNode, slotName: string, value: unknown): { success: boolean; error?: string } {
     if (slotName === 'code') {
       node.code = value as string
+    }
+    return { success: true }
+  }
+
+  private updateSetProperty(node: SetNode, slotName: string, value: unknown): { success: boolean; error?: string } {
+    if (slotName === 'variable') {
+      node.variable = value as string
+    } else if (slotName === 'operator') {
+      node.operator = value as '=' | '+=' | '-=' | '*=' | '/='
+    } else if (slotName === 'value') {
+      node.value = value as string
     }
     return { success: true }
   }
