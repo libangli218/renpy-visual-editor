@@ -76,6 +76,12 @@ export class BlockTreeBuilder {
       nameSlot.value = label.name
     }
 
+    // Map advanced properties
+    const parametersSlot = slots.find(s => s.name === 'parameters')
+    if (parametersSlot && label.parameters && label.parameters.length > 0) {
+      parametersSlot.value = label.parameters.join(', ')
+    }
+
     const children = label.body?.map(node => this.buildBlock(node)).filter(Boolean) as Block[] ?? []
 
     return {
@@ -146,6 +152,17 @@ export class BlockTreeBuilder {
       textSlot.value = node.text
     }
 
+    // Map advanced properties
+    const withTransitionSlot = slots.find(s => s.name === 'withTransition')
+    if (withTransitionSlot && node.withTransition !== undefined) {
+      withTransitionSlot.value = node.withTransition
+    }
+
+    const attributesSlot = slots.find(s => s.name === 'attributes')
+    if (attributesSlot && node.attributes && node.attributes.length > 0) {
+      attributesSlot.value = node.attributes.join(' ')
+    }
+
     return this.createBlock('dialogue', node.id, slots)
   }
 
@@ -158,6 +175,17 @@ export class BlockTreeBuilder {
     const imageSlot = slots.find(s => s.name === 'image')
     if (imageSlot) {
       imageSlot.value = node.image
+    }
+
+    // Map advanced properties
+    const onLayerSlot = slots.find(s => s.name === 'onLayer')
+    if (onLayerSlot && node.onLayer !== undefined) {
+      onLayerSlot.value = node.onLayer
+    }
+
+    const withTransitionSlot = slots.find(s => s.name === 'withTransition')
+    if (withTransitionSlot && node.withTransition !== undefined) {
+      withTransitionSlot.value = node.withTransition
     }
 
     return this.createBlock('scene', node.id, slots)
@@ -186,6 +214,32 @@ export class BlockTreeBuilder {
       expressionSlot.value = node.attributes.join(' ')
     }
 
+    // Map advanced properties
+    const asTagSlot = slots.find(s => s.name === 'asTag')
+    if (asTagSlot && node.asTag !== undefined) {
+      asTagSlot.value = node.asTag
+    }
+
+    const behindTagSlot = slots.find(s => s.name === 'behindTag')
+    if (behindTagSlot && node.behindTag !== undefined) {
+      behindTagSlot.value = node.behindTag
+    }
+
+    const onLayerSlot = slots.find(s => s.name === 'onLayer')
+    if (onLayerSlot && node.onLayer !== undefined) {
+      onLayerSlot.value = node.onLayer
+    }
+
+    const zorderSlot = slots.find(s => s.name === 'zorder')
+    if (zorderSlot && node.zorder !== undefined) {
+      zorderSlot.value = node.zorder
+    }
+
+    const withTransitionSlot = slots.find(s => s.name === 'withTransition')
+    if (withTransitionSlot && node.withTransition !== undefined) {
+      withTransitionSlot.value = node.withTransition
+    }
+
     return this.createBlock('show', node.id, slots)
   }
 
@@ -198,6 +252,17 @@ export class BlockTreeBuilder {
     const characterSlot = slots.find(s => s.name === 'character')
     if (characterSlot) {
       characterSlot.value = node.image
+    }
+
+    // Map advanced properties
+    const onLayerSlot = slots.find(s => s.name === 'onLayer')
+    if (onLayerSlot && node.onLayer !== undefined) {
+      onLayerSlot.value = node.onLayer
+    }
+
+    const withTransitionSlot = slots.find(s => s.name === 'withTransition')
+    if (withTransitionSlot && node.withTransition !== undefined) {
+      withTransitionSlot.value = node.withTransition
     }
 
     return this.createBlock('hide', node.id, slots)
@@ -223,6 +288,17 @@ export class BlockTreeBuilder {
   private buildMenuBlock(node: MenuNode): Block {
     const slots = getDefaultSlots('menu')
     
+    // Map advanced properties
+    const setVarSlot = slots.find(s => s.name === 'setVar')
+    if (setVarSlot && node.setVar !== undefined) {
+      setVarSlot.value = node.setVar
+    }
+
+    const screenSlot = slots.find(s => s.name === 'screen')
+    if (screenSlot && node.screen !== undefined) {
+      screenSlot.value = node.screen
+    }
+
     // Build choice children
     const children = node.choices.map(choice => this.buildChoiceBlock(choice, node.id))
 
@@ -262,6 +338,12 @@ export class BlockTreeBuilder {
       targetSlot.value = node.target
     }
 
+    // Map advanced properties
+    const expressionSlot = slots.find(s => s.name === 'expression')
+    if (expressionSlot && node.expression !== undefined) {
+      expressionSlot.value = node.expression ? 'true' : 'false'
+    }
+
     return this.createBlock('jump', node.id, slots)
   }
 
@@ -274,6 +356,12 @@ export class BlockTreeBuilder {
     const targetSlot = slots.find(s => s.name === 'target')
     if (targetSlot) {
       targetSlot.value = node.target
+    }
+
+    // Map advanced properties
+    const argumentsSlot = slots.find(s => s.name === 'arguments')
+    if (argumentsSlot && node.arguments && node.arguments.length > 0) {
+      argumentsSlot.value = node.arguments.join(', ')
     }
 
     return this.createBlock('call', node.id, slots)
@@ -372,6 +460,38 @@ export class BlockTreeBuilder {
         fadeinSlot.value = node.fadeIn
       }
       
+      const loopSlot = slots.find(s => s.name === 'loop')
+      if (loopSlot && node.loop !== undefined) {
+        loopSlot.value = node.loop
+      }
+
+      // Map advanced properties for play-music
+      const fadeoutSlot = slots.find(s => s.name === 'fadeout')
+      if (fadeoutSlot && node.fadeOut !== undefined) {
+        fadeoutSlot.value = node.fadeOut
+      }
+
+      const volumeSlot = slots.find(s => s.name === 'volume')
+      if (volumeSlot && node.volume !== undefined) {
+        volumeSlot.value = node.volume
+      }
+
+      const ifChangedSlot = slots.find(s => s.name === 'ifChanged')
+      if (ifChangedSlot && node.ifChanged !== undefined) {
+        ifChangedSlot.value = node.ifChanged
+      }
+    } else {
+      // Map advanced properties for play-sound
+      const fadeinSlot = slots.find(s => s.name === 'fadein')
+      if (fadeinSlot && node.fadeIn !== undefined) {
+        fadeinSlot.value = node.fadeIn
+      }
+
+      const volumeSlot = slots.find(s => s.name === 'volume')
+      if (volumeSlot && node.volume !== undefined) {
+        volumeSlot.value = node.volume
+      }
+
       const loopSlot = slots.find(s => s.name === 'loop')
       if (loopSlot && node.loop !== undefined) {
         loopSlot.value = node.loop
