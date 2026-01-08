@@ -213,25 +213,32 @@ export class CodeGenerator {
 
   /**
    * Generate dialogue or narration
-   * Format: "text" or speaker "text" or speaker attr1 attr2 "text"
+   * Format: "text" [with transition] or speaker "text" [with transition] or speaker attr1 attr2 "text" [with transition]
    */
   private generateDialogue(node: DialogueNode, indent: number): string {
     const indentStr = this.getIndent(indent)
     const escapedText = this.escapeString(node.text)
     
+    let line: string
+    
     if (node.speaker === null) {
       // Narration
-      return `${indentStr}"${escapedText}"`
+      line = `${indentStr}"${escapedText}"`
+    } else {
+      // Dialogue with speaker
+      line = `${indentStr}${node.speaker}`
+      
+      if (node.attributes && node.attributes.length > 0) {
+        line += ' ' + node.attributes.join(' ')
+      }
+      
+      line += ` "${escapedText}"`
     }
     
-    // Dialogue with speaker
-    let line = `${indentStr}${node.speaker}`
-    
-    if (node.attributes && node.attributes.length > 0) {
-      line += ' ' + node.attributes.join(' ')
+    // with transition (advanced property)
+    if (node.withTransition) {
+      line += ` with ${node.withTransition}`
     }
-    
-    line += ` "${escapedText}"`
     
     return line
   }
@@ -286,10 +293,23 @@ export class CodeGenerator {
 
   /**
    * Generate menu statement
+   * Format: menu [name] [(set var)] [(screen name)]:
    */
   private generateMenu(node: MenuNode, indent: number): string {
     const indentStr = this.getIndent(indent)
-    let line = `${indentStr}menu:`
+    let line = `${indentStr}menu`
+    
+    // Add set clause if present (advanced property)
+    if (node.setVar) {
+      line += ` (set ${node.setVar})`
+    }
+    
+    // Add screen clause if present (advanced property)
+    if (node.screen) {
+      line += ` (screen ${node.screen})`
+    }
+    
+    line += ':'
     
     // Generate prompt as a dialogue line inside the menu (if present)
     const choiceLines: string[] = []
@@ -338,14 +358,28 @@ export class CodeGenerator {
 
   /**
    * Generate scene statement
+   * Order: scene image [onlayer layer] [with transition]
    */
   private generateScene(node: SceneNode, indent: number): string {
     const indentStr = this.getIndent(indent)
-    return `${indentStr}scene ${node.image}`
+    let line = `${indentStr}scene ${node.image}`
+    
+    // onlayer layer
+    if (node.onLayer) {
+      line += ` onlayer ${node.onLayer}`
+    }
+    
+    // with transition (must be last)
+    if (node.withTransition) {
+      line += ` with ${node.withTransition}`
+    }
+    
+    return line
   }
 
   /**
    * Generate show statement
+   * Order: show image [attributes] [as tag] [at transform] [behind tag] [onlayer layer] [zorder integer] [with transition]
    */
   private generateShow(node: ShowNode, indent: number): string {
     const indentStr = this.getIndent(indent)
@@ -355,8 +389,34 @@ export class CodeGenerator {
       line += ' ' + node.attributes.join(' ')
     }
     
+    // as tag (must come before at)
+    if (node.asTag) {
+      line += ` as ${node.asTag}`
+    }
+    
+    // at position/transform
     if (node.atPosition) {
       line += ` at ${node.atPosition}`
+    }
+    
+    // behind tag
+    if (node.behindTag) {
+      line += ` behind ${node.behindTag}`
+    }
+    
+    // onlayer layer
+    if (node.onLayer) {
+      line += ` onlayer ${node.onLayer}`
+    }
+    
+    // zorder integer
+    if (node.zorder !== undefined && node.zorder !== null) {
+      line += ` zorder ${node.zorder}`
+    }
+    
+    // with transition (must be last)
+    if (node.withTransition) {
+      line += ` with ${node.withTransition}`
     }
     
     return line
@@ -364,10 +424,23 @@ export class CodeGenerator {
 
   /**
    * Generate hide statement
+   * Order: hide image [onlayer layer] [with transition]
    */
   private generateHide(node: HideNode, indent: number): string {
     const indentStr = this.getIndent(indent)
-    return `${indentStr}hide ${node.image}`
+    let line = `${indentStr}hide ${node.image}`
+    
+    // onlayer layer
+    if (node.onLayer) {
+      line += ` onlayer ${node.onLayer}`
+    }
+    
+    // with transition (must be last)
+    if (node.withTransition) {
+      line += ` with ${node.withTransition}`
+    }
+    
+    return line
   }
 
   /**
@@ -496,13 +569,18 @@ export class CodeGenerator {
   }
 
   /**
-   * Generate play options (fadein, loop, volume)
+   * Generate play options (fadein, fadeout, loop, volume, if_changed)
    */
   private generatePlayOptions(node: PlayNode): string {
     const options: string[] = []
     
     if (node.fadeIn !== undefined && node.fadeIn !== null) {
       options.push(`fadein ${node.fadeIn}`)
+    }
+    
+    // fadeout for current music (advanced property)
+    if (node.fadeOut !== undefined && node.fadeOut !== null) {
+      options.push(`fadeout ${node.fadeOut}`)
     }
     
     if (node.loop === true) {
@@ -513,6 +591,11 @@ export class CodeGenerator {
     
     if (node.volume !== undefined && node.volume !== null) {
       options.push(`volume ${node.volume}`)
+    }
+    
+    // if_changed flag (advanced property)
+    if (node.ifChanged === true) {
+      options.push('if_changed')
     }
     
     return options.length > 0 ? ' ' + options.join(' ') : ''

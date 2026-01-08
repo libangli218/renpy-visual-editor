@@ -572,4 +572,200 @@ describe('CodeGenerator', () => {
       expect(code).toContain('        "Nested"') // 8 spaces (2 levels)
     })
   })
+
+  describe('Advanced Properties Generation', () => {
+    describe('Show Advanced Properties', () => {
+      it('should generate show with as tag', () => {
+        const show = createShowNode('sylvie', { asTag: 'sylvie_left' })
+        const code = generateNode(show, 0)
+        expect(code).toBe('show sylvie as sylvie_left')
+      })
+
+      it('should generate show with behind tag', () => {
+        const show = createShowNode('sylvie', { behindTag: 'eileen' })
+        const code = generateNode(show, 0)
+        expect(code).toBe('show sylvie behind eileen')
+      })
+
+      it('should generate show with onlayer', () => {
+        const show = createShowNode('sylvie', { onLayer: 'master' })
+        const code = generateNode(show, 0)
+        expect(code).toBe('show sylvie onlayer master')
+      })
+
+      it('should generate show with zorder', () => {
+        const show = createShowNode('sylvie', { zorder: 10 })
+        const code = generateNode(show, 0)
+        expect(code).toBe('show sylvie zorder 10')
+      })
+
+      it('should generate show with negative zorder', () => {
+        const show = createShowNode('sylvie', { zorder: -5 })
+        const code = generateNode(show, 0)
+        expect(code).toBe('show sylvie zorder -5')
+      })
+
+      it('should generate show with withTransition', () => {
+        const show = createShowNode('sylvie', { withTransition: 'dissolve' })
+        const code = generateNode(show, 0)
+        expect(code).toBe('show sylvie with dissolve')
+      })
+
+      it('should generate show with all advanced properties in correct order', () => {
+        const show = createShowNode('sylvie', {
+          attributes: ['happy'],
+          asTag: 'sylvie_left',
+          atPosition: 'left',
+          behindTag: 'eileen',
+          onLayer: 'master',
+          zorder: 10,
+          withTransition: 'dissolve',
+        })
+        const code = generateNode(show, 0)
+        expect(code).toBe('show sylvie happy as sylvie_left at left behind eileen onlayer master zorder 10 with dissolve')
+      })
+
+      it('should generate show with partial advanced properties', () => {
+        const show = createShowNode('sylvie', {
+          atPosition: 'center',
+          onLayer: 'transient',
+          withTransition: 'fade',
+        })
+        const code = generateNode(show, 0)
+        expect(code).toBe('show sylvie at center onlayer transient with fade')
+      })
+    })
+
+    describe('Scene Advanced Properties', () => {
+      it('should generate scene with onlayer', () => {
+        const scene = createSceneNode('bg classroom', { onLayer: 'master' })
+        const code = generateNode(scene, 0)
+        expect(code).toBe('scene bg classroom onlayer master')
+      })
+
+      it('should generate scene with withTransition', () => {
+        const scene = createSceneNode('bg classroom', { withTransition: 'dissolve' })
+        const code = generateNode(scene, 0)
+        expect(code).toBe('scene bg classroom with dissolve')
+      })
+
+      it('should generate scene with all advanced properties', () => {
+        const scene = createSceneNode('bg classroom', {
+          onLayer: 'master',
+          withTransition: 'fade',
+        })
+        const code = generateNode(scene, 0)
+        expect(code).toBe('scene bg classroom onlayer master with fade')
+      })
+    })
+
+    describe('Hide Advanced Properties', () => {
+      it('should generate hide with onlayer', () => {
+        const hide = createHideNode('sylvie', { onLayer: 'master' })
+        const code = generateNode(hide, 0)
+        expect(code).toBe('hide sylvie onlayer master')
+      })
+
+      it('should generate hide with withTransition', () => {
+        const hide = createHideNode('sylvie', { withTransition: 'dissolve' })
+        const code = generateNode(hide, 0)
+        expect(code).toBe('hide sylvie with dissolve')
+      })
+
+      it('should generate hide with all advanced properties', () => {
+        const hide = createHideNode('sylvie', {
+          onLayer: 'transient',
+          withTransition: 'fade',
+        })
+        const code = generateNode(hide, 0)
+        expect(code).toBe('hide sylvie onlayer transient with fade')
+      })
+    })
+
+    describe('Play Advanced Properties', () => {
+      it('should generate play music with fadeout', () => {
+        const play = createPlayNode('music', 'audio/bgm.ogg', { fadeOut: 2.0 })
+        const code = generateNode(play, 0)
+        expect(code).toBe('play music "audio/bgm.ogg" fadeout 2')
+      })
+
+      it('should generate play music with if_changed', () => {
+        const play = createPlayNode('music', 'audio/bgm.ogg', { ifChanged: true })
+        const code = generateNode(play, 0)
+        expect(code).toBe('play music "audio/bgm.ogg" if_changed')
+      })
+
+      it('should generate play music with all advanced options', () => {
+        const play = createPlayNode('music', 'audio/bgm.ogg', {
+          fadeIn: 1.0,
+          fadeOut: 2.0,
+          loop: true,
+          volume: 0.8,
+          ifChanged: true,
+        })
+        const code = generateNode(play, 0)
+        expect(code).toBe('play music "audio/bgm.ogg" fadein 1 fadeout 2 loop volume 0.8 if_changed')
+      })
+
+      it('should generate queue music with advanced options', () => {
+        const play = createPlayNode('music', 'audio/next.ogg', {
+          queue: true,
+          fadeIn: 1.5,
+          fadeOut: 1.0,
+          ifChanged: true,
+        })
+        const code = generateNode(play, 0)
+        expect(code).toBe('queue music "audio/next.ogg" fadein 1.5 fadeout 1 if_changed')
+      })
+    })
+
+    describe('Menu Advanced Properties', () => {
+      it('should generate menu with set clause', () => {
+        const menu = createMenuNode([
+          createMenuChoice('Option 1', [createJumpNode('opt1')]),
+        ], { setVar: 'chosen_options' })
+        const code = generateNode(menu, 0)
+        expect(code).toContain('menu (set chosen_options):')
+      })
+
+      it('should generate menu with screen clause', () => {
+        const menu = createMenuNode([
+          createMenuChoice('Option 1', [createJumpNode('opt1')]),
+        ], { screen: 'custom_menu' })
+        const code = generateNode(menu, 0)
+        expect(code).toContain('menu (screen custom_menu):')
+      })
+
+      it('should generate menu with both set and screen clauses', () => {
+        const menu = createMenuNode([
+          createMenuChoice('Option 1', [createJumpNode('opt1')]),
+        ], { setVar: 'chosen', screen: 'my_menu' })
+        const code = generateNode(menu, 0)
+        expect(code).toContain('menu (set chosen) (screen my_menu):')
+      })
+    })
+
+    describe('Dialogue Advanced Properties', () => {
+      it('should generate narration with withTransition', () => {
+        const dialogue = createDialogueNode('The screen shakes.', null, { withTransition: 'vpunch' })
+        const code = generateNode(dialogue, 0)
+        expect(code).toBe('"The screen shakes." with vpunch')
+      })
+
+      it('should generate dialogue with withTransition', () => {
+        const dialogue = createDialogueNode('Hello!', 's', { withTransition: 'dissolve' })
+        const code = generateNode(dialogue, 0)
+        expect(code).toBe('s "Hello!" with dissolve')
+      })
+
+      it('should generate dialogue with attributes and withTransition', () => {
+        const dialogue = createDialogueNode('Hello!', 's', {
+          attributes: ['happy'],
+          withTransition: 'fade',
+        })
+        const code = generateNode(dialogue, 0)
+        expect(code).toBe('s happy "Hello!" with fade')
+      })
+    })
+  })
 })
