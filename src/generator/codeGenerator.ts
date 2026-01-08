@@ -310,27 +310,33 @@ export class CodeGenerator {
 
   /**
    * Generate menu statement
-   * Format: menu [name] [(set var)] [(screen name)]:
+   * Format: menu [name] [arguments]:
+   *     [set var]
+   *     [caption]
+   *     "choice":
+   *         body
    */
   private generateMenu(node: MenuNode, indent: number): string {
     const indentStr = this.getIndent(indent)
     let line = `${indentStr}menu`
     
-    // Add set clause if present (advanced property)
-    if (node.setVar) {
-      line += ` (set ${node.setVar})`
-    }
-    
-    // Add screen clause if present (advanced property)
+    // Add screen argument if present (advanced property)
+    // Format: menu (screen=screen_name):
     if (node.screen) {
-      line += ` (screen ${node.screen})`
+      line += ` (screen=${node.screen})`
     }
     
     line += ':'
     
-    // Generate prompt as a dialogue line inside the menu (if present)
+    // Generate menu body
     const choiceLines: string[] = []
     
+    // Add set clause if present (must be first line in menu block)
+    if (node.setVar) {
+      choiceLines.push(`${this.getIndent(indent + 1)}set ${node.setVar}`)
+    }
+    
+    // Generate prompt as a dialogue line inside the menu (if present)
     if (node.prompt) {
       // Prompt is a dialogue line inside the menu block
       // Check if prompt has a speaker (format: 'speaker: "text"')

@@ -56,6 +56,7 @@ export type SlotType =
   | 'label'          // Label 选择 (Label select)
   | 'expression'     // Python 表达式 (Python expression)
   | 'number'         // 数字 (Number)
+  | 'range'          // 滑动条 (Range slider)
   | 'transition'     // 过渡效果 (Transition effect)
   | 'position'       // 位置 (Position)
 

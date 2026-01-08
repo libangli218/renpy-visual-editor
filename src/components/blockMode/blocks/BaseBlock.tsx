@@ -164,6 +164,24 @@ export const BaseBlock: React.FC<BaseBlockProps> = memo(({
    * Handle drag start
    */
   const handleDragStart = useCallback((e: React.DragEvent) => {
+    // Check if the drag started from an interactive element that should not trigger block drag
+    const target = e.target as HTMLElement
+    
+    const isInteractiveElement = 
+      target.tagName === 'INPUT' ||
+      target.tagName === 'TEXTAREA' ||
+      target.tagName === 'SELECT' ||
+      target.tagName === 'BUTTON' ||
+      target.closest('input[type="range"]') ||
+      target.closest('.slot-range-input') ||
+      target.closest('.range-input-container')
+    
+    if (isInteractiveElement) {
+      e.preventDefault()
+      e.stopPropagation()
+      return
+    }
+    
     setIsDragging(true)
     e.dataTransfer.setData('application/x-block-id', block.id)
     e.dataTransfer.setData('text/plain', block.id)

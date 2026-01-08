@@ -755,7 +755,9 @@ describe('CodeGenerator', () => {
           createMenuChoice('Option 1', [createJumpNode('opt1')]),
         ], { setVar: 'chosen_options' })
         const code = generateNode(menu, 0)
-        expect(code).toContain('menu (set chosen_options):')
+        // New format: set is inside menu block, not on menu line
+        expect(code).toContain('menu:')
+        expect(code).toContain('set chosen_options')
       })
 
       it('should generate menu with screen clause', () => {
@@ -763,7 +765,7 @@ describe('CodeGenerator', () => {
           createMenuChoice('Option 1', [createJumpNode('opt1')]),
         ], { screen: 'custom_menu' })
         const code = generateNode(menu, 0)
-        expect(code).toContain('menu (screen custom_menu):')
+        expect(code).toContain('menu (screen=custom_menu):')
       })
 
       it('should generate menu with both set and screen clauses', () => {
@@ -771,7 +773,9 @@ describe('CodeGenerator', () => {
           createMenuChoice('Option 1', [createJumpNode('opt1')]),
         ], { setVar: 'chosen', screen: 'my_menu' })
         const code = generateNode(menu, 0)
-        expect(code).toContain('menu (set chosen) (screen my_menu):')
+        // New format: screen on menu line, set inside menu block
+        expect(code).toContain('menu (screen=my_menu):')
+        expect(code).toContain('set chosen')
       })
     })
 

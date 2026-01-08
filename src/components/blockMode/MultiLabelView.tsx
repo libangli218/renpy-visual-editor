@@ -1213,6 +1213,7 @@ export const MultiLabelView: React.FC<MultiLabelViewProps> = ({
               {...commonProps}
               availableMusic={audioOptions}
               availableSounds={audioOptions}
+              audioBasePath={projectPath ? `${projectPath}/game/` : ''}
             />
           )
         case 'set':

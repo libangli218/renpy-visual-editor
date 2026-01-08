@@ -329,8 +329,20 @@ describe('RenpyParser Advanced Properties', () => {
       expect(node.screen).toBe('custom_menu')
     })
 
-    it('parses menu with both set and screen clauses', () => {
+    it('parses menu with both set and screen clauses (legacy format)', () => {
       const result = parser.parse(`menu (set choices) (screen my_menu):
+    "Option 1":
+        jump opt1`)
+      const node = result.ast.statements[0] as MenuNode
+      
+      expect(node.type).toBe('menu')
+      expect(node.setVar).toBe('choices')
+      expect(node.screen).toBe('my_menu')
+    })
+
+    it('parses menu with screen argument and set inside block (new format)', () => {
+      const result = parser.parse(`menu (screen=my_menu):
+    set choices
     "Option 1":
         jump opt1`)
       const node = result.ast.statements[0] as MenuNode

@@ -178,6 +178,69 @@ export const AdvancedPanel: React.FC<AdvancedPanelProps> = ({
           </div>
         )
 
+      case 'range':
+        const rangeMin = slot.validation?.min ?? 0
+        const rangeMax = slot.validation?.max ?? 1
+        const rangeValue = slot.value !== null && slot.value !== undefined ? Number(slot.value) : rangeMin
+        const rangeStep = rangeMax <= 1 ? 0.01 : 1
+        
+        return (
+          <div 
+            key={key} 
+            className="slot range-slot"
+            draggable={false}
+          >
+            {slot.placeholder && (
+              <label className={`slot-label ${slot.required ? 'required' : ''}`}>
+                {slot.placeholder}
+              </label>
+            )}
+            <div 
+              className="range-input-container"
+              draggable={false}
+            >
+              <input
+                type="range"
+                className={`slot-input slot-range-input ${error ? 'has-error' : ''}`}
+                value={rangeValue}
+                onChange={(e) => {
+                  const val = parseFloat(e.target.value)
+                  handleSlotChange(slot.name, val)
+                }}
+                onMouseDown={(e) => {
+                  // Find the closest draggable ancestor and temporarily disable it
+                  // This prevents the block from being dragged when interacting with the slider
+                  const draggableAncestor = (e.target as HTMLElement).closest('[draggable="true"]') as HTMLElement
+                  if (draggableAncestor) {
+                    draggableAncestor.setAttribute('draggable', 'false')
+                    const reEnable = () => {
+                      draggableAncestor.setAttribute('draggable', 'true')
+                      document.removeEventListener('mouseup', reEnable)
+                    }
+                    document.addEventListener('mouseup', reEnable)
+                  }
+                  e.stopPropagation()
+                }}
+                onPointerDown={(e) => e.stopPropagation()}
+                draggable={false}
+                min={rangeMin}
+                max={rangeMax}
+                step={rangeStep}
+                aria-required={slot.required}
+                aria-invalid={!!error}
+              />
+              <span className="range-value-display">
+                {slot.value !== null && slot.value !== undefined 
+                  ? (rangeMax <= 1 ? (Number(slot.value) * 100).toFixed(0) + '%' : String(slot.value))
+                  : '--'}
+              </span>
+            </div>
+            {error && (
+              <span className="slot-error" role="alert">{error}</span>
+            )}
+          </div>
+        )
+
       case 'select':
         return (
           <SelectSlot

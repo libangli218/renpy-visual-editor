@@ -383,21 +383,37 @@ export class RenpyParser {
 
   /**
    * Parse a menu statement
-   * Format: menu [name] [(set var)] [(screen name)]:
+   * Format: menu [name] [(screen=name)]:
+   *     [set var]
    *     "prompt text"  # optional prompt (no colon at end)
    *     speaker "prompt text"  # optional prompt with speaker (no colon at end)
    *     "choice text":
    *         body
    */
   private parseMenu(line: LineInfo): ASTNode | null {
-    // Match menu with optional name, set clause, and screen clause
-    // Format: menu [name] [(set var)] [(screen name)]:
-    const match = line.content.match(/^menu(?:\s+(\w+))?(?:\s*\(\s*set\s+(\w+)\s*\))?(?:\s*\(\s*screen\s+(\w+)\s*\))?\s*:\s*$/)
-    if (!match) return null
+    // Match menu with optional name and screen argument
+    // Format: menu [name] [(screen=name)]:
+    // Also support legacy format: menu [name] [(set var)] [(screen name)]:
     
-    let prompt = match[1]
-    const setVar = match[2]
-    const screen = match[3]
+    // Try new format first: menu [name] [(screen=name)]:
+    let match = line.content.match(/^menu(?:\s+(\w+))?(?:\s*\(\s*screen\s*=\s*(\w+)\s*\))?\s*:\s*$/)
+    let prompt: string | undefined
+    let setVar: string | undefined
+    let screen: string | undefined
+    
+    if (match) {
+      prompt = match[1]
+      screen = match[2]
+    } else {
+      // Try legacy format: menu [name] [(set var)] [(screen name)]:
+      match = line.content.match(/^menu(?:\s+(\w+))?(?:\s*\(\s*set\s+(\w+)\s*\))?(?:\s*\(\s*screen\s+(\w+)\s*\))?\s*:\s*$/)
+      if (!match) return null
+      
+      prompt = match[1]
+      setVar = match[2]
+      screen = match[3]
+    }
+    
     this.advance()
     
     const choices: MenuChoice[] = []
@@ -407,12 +423,21 @@ export class RenpyParser {
       return createMenuNode(choices, { prompt, setVar, screen, line: line.lineNumber })
     }
     
-    // Parse menu choices
+    // Parse menu body
     while (this.currentLine() !== null && this.currentLine()!.indent >= choiceIndent) {
       const choiceLine = this.currentLine()!
       
       if (choiceLine.indent > choiceIndent) {
         // This is part of a choice body, skip
+        this.advance()
+        continue
+      }
+      
+      // Check for set clause (must be at menu indent level)
+      // Format: set var_name
+      const setMatch = choiceLine.content.match(/^set\s+(\w+)\s*$/)
+      if (setMatch) {
+        setVar = setMatch[1]
         this.advance()
         continue
       }

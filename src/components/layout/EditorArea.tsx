@@ -47,9 +47,22 @@ export const EditorArea: React.FC = () => {
         const allImages = [...backgrounds, ...images].map(r => r.name)
         setAvailableImages(allImages)
         
-        // Get audio
+        // Get audio - use relative path from game/ directory
         const audio = resourceManager.getResources('audio')
-        setAvailableAudio(audio.map(r => r.name))
+        setAvailableAudio(audio.map(r => {
+          // Convert absolute path to relative path from game/ directory
+          // e.g., "C:/project/game/audio/jiangnang.mp3" -> "audio/jiangnang.mp3"
+          const gamePath = projectPath + '/game/'
+          if (r.path.includes(gamePath)) {
+            return r.path.substring(r.path.indexOf(gamePath) + gamePath.length).replace(/\\/g, '/')
+          }
+          // Fallback: try to extract from path
+          const audioMatch = r.path.match(/game[/\\](.+)$/)
+          if (audioMatch) {
+            return audioMatch[1].replace(/\\/g, '/')
+          }
+          return r.name
+        }))
         
         // Get image tags for Show block
         const tags = resourceManager.getImageTags()

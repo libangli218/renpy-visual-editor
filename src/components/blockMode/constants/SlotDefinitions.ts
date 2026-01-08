@@ -487,10 +487,10 @@ export const DEFAULT_SLOT_CONFIGS: Record<BlockType, BlockSlot[]> = {
     },
     {
       name: 'volume',
-      type: 'number',
+      type: 'range',
       value: null,
       required: false,
-      placeholder: '音量 (0.0-1.0)',
+      placeholder: '音量',
       validation: {
         min: 0,
         max: 1,
@@ -552,10 +552,10 @@ export const DEFAULT_SLOT_CONFIGS: Record<BlockType, BlockSlot[]> = {
     },
     {
       name: 'volume',
-      type: 'number',
+      type: 'range',
       value: null,
       required: false,
-      placeholder: '音量 (0.0-1.0)',
+      placeholder: '音量',
       validation: {
         min: 0,
         max: 1,

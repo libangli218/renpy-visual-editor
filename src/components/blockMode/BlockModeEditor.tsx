@@ -746,6 +746,7 @@ export const BlockModeEditor: React.FC<BlockModeEditorProps> = ({
             {...commonProps}
             availableMusic={audioOptions}
             availableSounds={audioOptions}
+            audioBasePath={projectPath ? `${projectPath}/game/` : ''}
           />
         )
       
