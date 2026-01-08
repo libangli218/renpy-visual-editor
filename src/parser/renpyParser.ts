@@ -287,18 +287,35 @@ export class RenpyParser {
    * Format: call target(args) or call expression target
    */
   private parseCall(line: LineInfo): ASTNode | null {
-    // Updated regex to support 'from' clause: call target(args) from return_label
-    const match = line.content.match(/^call\s+(expression\s+)?(\w+)(?:\s*\((.*?)\))?(?:\s+from\s+(\w+))?\s*$/)
-    if (!match) return null
+    // Support both normal call and expression call with pass keyword
+    // Normal: call target(args) [from label]
+    // Expression: call expression target [pass (args)] [from label]
     
-    const expression = !!match[1]
-    const target = match[2]
-    const argsStr = match[3]
-    const args = argsStr ? argsStr.split(',').map(a => a.trim()).filter(a => a) : undefined
-    const fromLabel = match[4]
+    // Try expression mode first (more specific pattern)
+    const exprMatch = line.content.match(/^call\s+expression\s+(.+?)(?:\s+pass\s*\((.*?)\))?(?:\s+from\s+(\w+))?\s*$/)
+    if (exprMatch) {
+      const target = exprMatch[1].trim()
+      const argsStr = exprMatch[2]
+      const args = argsStr ? argsStr.split(',').map(a => a.trim()).filter(a => a) : undefined
+      const fromLabel = exprMatch[3]
+      
+      this.advance()
+      return createCallNode(target, { arguments: args, expression: true, from: fromLabel, line: line.lineNumber })
+    }
     
-    this.advance()
-    return createCallNode(target, { arguments: args, expression, from: fromLabel, line: line.lineNumber })
+    // Normal call: call target(args) [from label]
+    const normalMatch = line.content.match(/^call\s+(\w+)(?:\s*\((.*?)\))?(?:\s+from\s+(\w+))?\s*$/)
+    if (normalMatch) {
+      const target = normalMatch[1]
+      const argsStr = normalMatch[2]
+      const args = argsStr ? argsStr.split(',').map(a => a.trim()).filter(a => a) : undefined
+      const fromLabel = normalMatch[3]
+      
+      this.advance()
+      return createCallNode(target, { arguments: args, expression: false, from: fromLabel, line: line.lineNumber })
+    }
+    
+    return null
   }
 
   /**
