@@ -100,6 +100,10 @@ export interface BlockSlot {
   options?: SlotOption[]
   /** 验证规则 (Validation rules) */
   validation?: SlotValidation
+  /** 是否为高级属性，true 表示在高级面板中显示 (Advanced flag - if true, displayed in advanced panel) */
+  advanced?: boolean
+  /** 属性的默认值，用于判断是否已配置 (Default value for determining if configured) */
+  defaultValue?: unknown
 }
 
 /**

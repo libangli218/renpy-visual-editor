@@ -72,7 +72,12 @@ export function createLabelNode(
 export function createDialogueNode(
   text: string,
   speaker: string | null = null,
-  options: { attributes?: string[]; line?: number; extend?: boolean } = {}
+  options: {
+    attributes?: string[]
+    line?: number
+    extend?: boolean
+    withTransition?: string
+  } = {}
 ): DialogueNode {
   return {
     id: generateNodeId(),
@@ -81,6 +86,7 @@ export function createDialogueNode(
     text,
     attributes: options.attributes,
     extend: options.extend,
+    withTransition: options.withTransition,
     line: options.line,
   }
 }
@@ -91,13 +97,20 @@ export function createDialogueNode(
  */
 export function createMenuNode(
   choices: MenuChoice[] = [],
-  options: { prompt?: string; line?: number } = {}
+  options: {
+    prompt?: string
+    line?: number
+    setVar?: string
+    screen?: string
+  } = {}
 ): MenuNode {
   return {
     id: generateNodeId(),
     type: 'menu',
     choices,
     prompt: options.prompt,
+    setVar: options.setVar,
+    screen: options.screen,
     line: options.line,
   }
 }
@@ -122,13 +135,20 @@ export function createMenuChoice(
  */
 export function createSceneNode(
   image: string,
-  options: { layer?: string; line?: number } = {}
+  options: {
+    layer?: string
+    line?: number
+    onLayer?: string
+    withTransition?: string
+  } = {}
 ): SceneNode {
   return {
     id: generateNodeId(),
     type: 'scene',
     image,
     layer: options.layer,
+    onLayer: options.onLayer,
+    withTransition: options.withTransition,
     line: options.line,
   }
 }
@@ -138,7 +158,16 @@ export function createSceneNode(
  */
 export function createShowNode(
   image: string,
-  options: { attributes?: string[]; atPosition?: string; line?: number } = {}
+  options: {
+    attributes?: string[]
+    atPosition?: string
+    line?: number
+    asTag?: string
+    behindTag?: string
+    onLayer?: string
+    zorder?: number
+    withTransition?: string
+  } = {}
 ): ShowNode {
   return {
     id: generateNodeId(),
@@ -146,6 +175,11 @@ export function createShowNode(
     image,
     attributes: options.attributes,
     atPosition: options.atPosition,
+    asTag: options.asTag,
+    behindTag: options.behindTag,
+    onLayer: options.onLayer,
+    zorder: options.zorder,
+    withTransition: options.withTransition,
     line: options.line,
   }
 }
@@ -155,12 +189,18 @@ export function createShowNode(
  */
 export function createHideNode(
   image: string,
-  options: { line?: number } = {}
+  options: {
+    line?: number
+    onLayer?: string
+    withTransition?: string
+  } = {}
 ): HideNode {
   return {
     id: generateNodeId(),
     type: 'hide',
     image,
+    onLayer: options.onLayer,
+    withTransition: options.withTransition,
     line: options.line,
   }
 }
@@ -332,7 +372,15 @@ export function createDefaultNode(
 export function createPlayNode(
   channel: 'music' | 'sound' | 'voice',
   file: string,
-  options: { fadeIn?: number; loop?: boolean; volume?: number; queue?: boolean; line?: number } = {}
+  options: {
+    fadeIn?: number
+    loop?: boolean
+    volume?: number
+    queue?: boolean
+    line?: number
+    fadeOut?: number
+    ifChanged?: boolean
+  } = {}
 ): PlayNode {
   return {
     id: generateNodeId(),
@@ -343,6 +391,8 @@ export function createPlayNode(
     loop: options.loop,
     volume: options.volume,
     queue: options.queue,
+    fadeOut: options.fadeOut,
+    ifChanged: options.ifChanged,
     line: options.line,
   }
 }

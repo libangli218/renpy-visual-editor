@@ -39,6 +39,8 @@ export interface DialogueNode extends BaseNode {
   text: string
   attributes?: string[]
   extend?: boolean  // If true, this dialogue extends the previous one
+  // Advanced properties
+  withTransition?: string  // with transition
 }
 
 // Menu node
@@ -46,6 +48,9 @@ export interface MenuNode extends BaseNode {
   type: 'menu'
   prompt?: string
   choices: MenuChoice[]
+  // Advanced properties
+  setVar?: string          // set clause variable
+  screen?: string          // custom screen name
 }
 
 export interface MenuChoice {
@@ -60,6 +65,9 @@ export interface SceneNode extends BaseNode {
   image: string
   layer?: string
   atl?: ATLBlock
+  // Advanced properties
+  onLayer?: string         // onlayer layer
+  withTransition?: string  // with transition
 }
 
 // Show node
@@ -69,12 +77,21 @@ export interface ShowNode extends BaseNode {
   attributes?: string[]
   atPosition?: string
   atl?: ATLBlock
+  // Advanced properties
+  asTag?: string           // as tag
+  behindTag?: string       // behind tag
+  onLayer?: string         // onlayer layer
+  zorder?: number          // zorder integer
+  withTransition?: string  // with transition
 }
 
 // Hide node
 export interface HideNode extends BaseNode {
   type: 'hide'
   image: string
+  // Advanced properties
+  onLayer?: string         // onlayer layer
+  withTransition?: string  // with transition
 }
 
 // With node
@@ -155,6 +172,9 @@ export interface PlayNode extends BaseNode {
   loop?: boolean
   volume?: number
   queue?: boolean  // For queue music syntax
+  // Advanced properties
+  fadeOut?: number         // fadeout for current music
+  ifChanged?: boolean      // if_changed flag
 }
 
 // Stop node
