@@ -11,11 +11,12 @@
  * - useMemo for expensive computations
  * - useCallback for event handlers
  * 
- * Requirements: 2.1-2.5
+ * Requirements: 2.1-2.5, 8.1 (Advanced Properties)
  */
 
 import React, { useCallback, useState, useRef, useMemo, memo, useEffect } from 'react'
-import { Block } from './types'
+import { Block, BlockSlot } from './types'
+import { AdvancedPanel } from './blocks/AdvancedPanel'
 import './LabelContainer.css'
 
 /**
@@ -50,6 +51,10 @@ export interface LabelContainerProps {
   selectedBlockId?: string | null
   /** Canvas scale factor for correct drop indicator positioning */
   canvasScale?: number
+  /** Callback when a slot value changes */
+  onSlotChange?: (blockId: string, slotName: string, value: unknown) => void
+  /** Validation errors for slots */
+  slotErrors?: Record<string, string>
 }
 
 /**
@@ -69,6 +74,7 @@ interface DropPosition {
  * - 2.3: Provide vertical content area for child blocks
  * - 2.4: Show placeholder when empty
  * - 2.5: Support drag-drop reordering
+ * - 8.1: Label block advanced properties (parameters)
  */
 export const LabelContainer: React.FC<LabelContainerProps> = memo(({
   block,
@@ -85,6 +91,8 @@ export const LabelContainer: React.FC<LabelContainerProps> = memo(({
   className = '',
   selectedBlockId,
   canvasScale = 1,
+  onSlotChange,
+  slotErrors = {},
 }) => {
   const [isDragOver, setIsDragOver] = useState(false)
   const [dropPosition, setDropPosition] = useState<DropPosition | null>(null)
@@ -109,6 +117,20 @@ export const LabelContainer: React.FC<LabelContainerProps> = memo(({
   // Memoize children array reference
   const children = useMemo(() => block.children || [], [block.children])
   const isEmpty = children.length === 0
+  
+  /**
+   * Get advanced slots for the label block
+   */
+  const advancedSlots = useMemo((): BlockSlot[] => {
+    return block.slots?.filter(slot => slot.advanced === true) || []
+  }, [block.slots])
+  
+  /**
+   * Handle slot value change for advanced properties
+   */
+  const handleSlotChange = useCallback((slotName: string, value: unknown) => {
+    onSlotChange?.(block.id, slotName, value)
+  }, [block.id, onSlotChange])
 
   /**
    * Calculate drop index based on mouse Y position
@@ -355,6 +377,18 @@ export const LabelContainer: React.FC<LabelContainerProps> = memo(({
           {children.length} {children.length === 1 ? '个积木' : '个积木'}
         </span>
       </div>
+      
+      {/* Advanced Panel for Label block */}
+      {advancedSlots.length > 0 && (
+        <div className="label-container-advanced">
+          <AdvancedPanel
+            slots={advancedSlots}
+            onSlotChange={handleSlotChange}
+            slotErrors={slotErrors}
+            panelId={`label-${block.id}`}
+          />
+        </div>
+      )}
 
       {/* Content Area */}
       <div

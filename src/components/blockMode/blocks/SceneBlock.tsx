@@ -5,13 +5,14 @@
  * Provides scene setup blocks: Scene (background), Show (character),
  * Hide (character), and With (transition).
  * 
- * Requirements: 4.1-4.6
+ * Requirements: 4.1-4.6, 1.1, 1.4, 2.1, 3.1 (Advanced Properties)
  */
 
 import React, { useCallback, useMemo } from 'react'
-import { Block, SlotOption } from '../types'
+import { Block, BlockSlot, SlotOption } from '../types'
 import { TRANSITION_OPTIONS, POSITION_OPTIONS } from '../constants'
 import { BaseBlock, BaseBlockProps } from './BaseBlock'
+import { AdvancedPanel } from './AdvancedPanel'
 import { ImageTag } from '../../../resource/ResourceManager'
 import './Block.css'
 
@@ -59,6 +60,10 @@ function isSlotRequired(block: Block, slotName: string): boolean {
  * - 4.4: Show block contains optional expression selection
  * - 4.5: Display resource preview thumbnail
  * - 4.6: Hide block contains character selection
+ * - 1.1: Show block advanced properties (as, behind, onlayer, zorder, with)
+ * - 1.4: Show block basic properties visible without expanding advanced panel
+ * - 2.1: Scene block advanced properties (onlayer, with)
+ * - 3.1: Hide block advanced properties (onlayer, with)
  */
 export const SceneBlock: React.FC<SceneBlockProps> = ({
   block,
@@ -108,6 +113,13 @@ export const SceneBlock: React.FC<SceneBlockProps> = ({
     }))
     return options
   }, [characterValue, imageTags])
+  
+  /**
+   * Get advanced slots for the current block type
+   */
+  const advancedSlots = useMemo((): BlockSlot[] => {
+    return block.slots.filter(slot => slot.advanced === true)
+  }, [block.slots])
   
   // Render different content based on block type
   const renderContent = () => {
@@ -191,6 +203,16 @@ export const SceneBlock: React.FC<SceneBlockProps> = ({
             </select>
           </div>
         </div>
+        
+        {/* Advanced Panel for Scene block */}
+        {advancedSlots.length > 0 && (
+          <AdvancedPanel
+            slots={advancedSlots}
+            onSlotChange={handleSlotChange}
+            slotErrors={slotErrors}
+            panelId={`scene-${block.id}`}
+          />
+        )}
       </div>
     )
   }
@@ -279,6 +301,16 @@ export const SceneBlock: React.FC<SceneBlockProps> = ({
             />
           ))}
         </div>
+        
+        {/* Advanced Panel for Show block */}
+        {advancedSlots.length > 0 && (
+          <AdvancedPanel
+            slots={advancedSlots}
+            onSlotChange={handleSlotChange}
+            slotErrors={slotErrors}
+            panelId={`show-${block.id}`}
+          />
+        )}
       </div>
     )
   }
@@ -309,6 +341,16 @@ export const SceneBlock: React.FC<SceneBlockProps> = ({
             ))}
           </select>
         </div>
+        
+        {/* Advanced Panel for Hide block */}
+        {advancedSlots.length > 0 && (
+          <AdvancedPanel
+            slots={advancedSlots}
+            onSlotChange={handleSlotChange}
+            slotErrors={slotErrors}
+            panelId={`hide-${block.id}`}
+          />
+        )}
       </div>
     )
   }

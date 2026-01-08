@@ -5,12 +5,13 @@
  * Provides audio control blocks: Play Music, Stop Music, and Play Sound.
  * Includes audio preview/playback functionality.
  * 
- * Requirements: 6.1-6.5
+ * Requirements: 6.1-6.5, 4.1, 5.1 (Advanced Properties)
  */
 
-import React, { useCallback, useState, useRef, useEffect } from 'react'
-import { Block, SlotOption } from '../types'
+import React, { useCallback, useState, useRef, useEffect, useMemo } from 'react'
+import { Block, BlockSlot, SlotOption } from '../types'
 import { BaseBlock, BaseBlockProps } from './BaseBlock'
+import { AdvancedPanel } from './AdvancedPanel'
 import './Block.css'
 
 /**
@@ -54,6 +55,8 @@ function isSlotRequired(block: Block, slotName: string): boolean {
  * - 6.3: Stop Music block contains optional fade-out time
  * - 6.4: Play Sound block contains sound file selection
  * - 6.5: Provide audio preview/playback functionality
+ * - 4.1: Play Music block advanced properties (fadeout, volume, if_changed)
+ * - 5.1: Play Sound block advanced properties (fadein, volume, loop)
  */
 export const AudioBlock: React.FC<AudioBlockProps> = ({
   block,
@@ -114,6 +117,13 @@ export const AudioBlock: React.FC<AudioBlockProps> = ({
   // Check for errors
   const hasSlotErrors = Object.keys(slotErrors).length > 0
   const hasError = baseProps.hasError || hasSlotErrors
+  
+  /**
+   * Get advanced slots for the current block type
+   */
+  const advancedSlots = useMemo((): BlockSlot[] => {
+    return block.slots.filter(slot => slot.advanced === true)
+  }, [block.slots])
   
   // Render different content based on block type
   const renderContent = () => {
@@ -220,6 +230,16 @@ export const AudioBlock: React.FC<AudioBlockProps> = ({
             </select>
           </div>
         </div>
+        
+        {/* Advanced Panel for Play Music block */}
+        {advancedSlots.length > 0 && (
+          <AdvancedPanel
+            slots={advancedSlots}
+            onSlotChange={handleSlotChange}
+            slotErrors={slotErrors}
+            panelId={`play-music-${block.id}`}
+          />
+        )}
       </div>
     )
   }
@@ -305,6 +325,16 @@ export const AudioBlock: React.FC<AudioBlockProps> = ({
             {isPlaying ? '⏹️' : '▶️'}
           </button>
         </div>
+        
+        {/* Advanced Panel for Play Sound block */}
+        {advancedSlots.length > 0 && (
+          <AdvancedPanel
+            slots={advancedSlots}
+            onSlotChange={handleSlotChange}
+            slotErrors={slotErrors}
+            panelId={`play-sound-${block.id}`}
+          />
+        )}
       </div>
     )
   }

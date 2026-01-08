@@ -5,12 +5,13 @@
  * Provides menu container with choice blocks.
  * Menu can contain multiple Choice blocks, each with text and optional condition.
  * 
- * Requirements: 5.1-5.4
+ * Requirements: 5.1-5.4, 7.1 (Advanced Properties)
  */
 
-import React, { useCallback, useState, useRef, useEffect } from 'react'
-import { Block } from '../types'
+import React, { useCallback, useState, useRef, useEffect, useMemo } from 'react'
+import { Block, BlockSlot } from '../types'
 import { BaseBlock, BaseBlockProps } from './BaseBlock'
+import { AdvancedPanel } from './AdvancedPanel'
 import './Block.css'
 
 /**
@@ -75,6 +76,7 @@ function getSlotValue(block: Block, slotName: string): unknown {
  * Implements Requirements:
  * - 5.1: Menu block as container for multiple choice blocks
  * - 5.2: Support adding and deleting choices
+ * - 7.1: Menu block advanced properties (setVar, screen)
  */
 export const MenuBlock: React.FC<MenuBlockProps> = ({
   block,
@@ -110,6 +112,20 @@ export const MenuBlock: React.FC<MenuBlockProps> = ({
       document.removeEventListener('dragend', handleGlobalDragEnd)
     }
   }, [])
+  
+  /**
+   * Handle slot value change
+   */
+  const handleSlotChange = useCallback((slotName: string, value: unknown) => {
+    onSlotChange?.(block.id, slotName, value)
+  }, [block.id, onSlotChange])
+  
+  /**
+   * Get advanced slots for the menu block
+   */
+  const advancedSlots = useMemo((): BlockSlot[] => {
+    return block.slots.filter(slot => slot.advanced === true)
+  }, [block.slots])
   
   /**
    * Handle add choice button click
@@ -275,6 +291,16 @@ export const MenuBlock: React.FC<MenuBlockProps> = ({
       showCollapseButton={choices.length > 0}
       depth={depth}
     >
+      {/* Advanced Panel for Menu block */}
+      {advancedSlots.length > 0 && (
+        <AdvancedPanel
+          slots={advancedSlots}
+          onSlotChange={handleSlotChange}
+          slotErrors={slotErrors}
+          panelId={`menu-${block.id}`}
+        />
+      )}
+      
       <div 
         ref={choicesContainerRef}
         className={`menu-choices-container ${isDragOver ? 'drag-over' : ''}`}

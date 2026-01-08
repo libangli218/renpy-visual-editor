@@ -4,12 +4,13 @@
  * 
  * Provides flow control blocks: Jump, Call, Return, and If/Elif/Else.
  * 
- * Requirements: 5.5-5.8
+ * Requirements: 5.5-5.8, 9.1, 10.1 (Advanced Properties)
  */
 
-import React, { useCallback, useState, useRef, useEffect } from 'react'
-import { Block, SlotOption } from '../types'
+import React, { useCallback, useState, useRef, useEffect, useMemo } from 'react'
+import { Block, BlockSlot, SlotOption } from '../types'
 import { BaseBlock, BaseBlockProps } from './BaseBlock'
+import { AdvancedPanel } from './AdvancedPanel'
 import './Block.css'
 
 /**
@@ -103,6 +104,8 @@ function getIfCollapsedSummary(block: Block): string {
  * - 5.6: Call block contains target label selection
  * - 5.7: Return block represents flow end, no child blocks
  * - 5.8: If block as container with condition and true/false branches
+ * - 9.1: Call block advanced properties (arguments, fromLabel)
+ * - 10.1: Jump block advanced properties (expression)
  */
 export const FlowBlock: React.FC<FlowBlockProps> = ({
   block,
@@ -138,6 +141,13 @@ export const FlowBlock: React.FC<FlowBlockProps> = ({
   const handleSlotChange = useCallback((slotName: string, value: unknown) => {
     onSlotChange?.(block.id, slotName, value)
   }, [block.id, onSlotChange])
+  
+  /**
+   * Get advanced slots for the current block type
+   */
+  const advancedSlots = useMemo((): BlockSlot[] => {
+    return block.slots.filter(slot => slot.advanced === true)
+  }, [block.slots])
   
   /**
    * Calculate drop index based on mouse Y position
@@ -292,6 +302,16 @@ export const FlowBlock: React.FC<FlowBlockProps> = ({
         {slotErrors['target'] && (
           <span className="slot-error-message">{slotErrors['target']}</span>
         )}
+        
+        {/* Advanced Panel for Jump block */}
+        {advancedSlots.length > 0 && (
+          <AdvancedPanel
+            slots={advancedSlots}
+            onSlotChange={handleSlotChange}
+            slotErrors={slotErrors}
+            panelId={`jump-${block.id}`}
+          />
+        )}
       </div>
     )
   }
@@ -322,6 +342,16 @@ export const FlowBlock: React.FC<FlowBlockProps> = ({
         </div>
         {slotErrors['target'] && (
           <span className="slot-error-message">{slotErrors['target']}</span>
+        )}
+        
+        {/* Advanced Panel for Call block */}
+        {advancedSlots.length > 0 && (
+          <AdvancedPanel
+            slots={advancedSlots}
+            onSlotChange={handleSlotChange}
+            slotErrors={slotErrors}
+            panelId={`call-${block.id}`}
+          />
         )}
       </div>
     )

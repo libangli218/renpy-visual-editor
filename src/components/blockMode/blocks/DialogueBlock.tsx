@@ -5,12 +5,13 @@
  * Provides dialogue editing with character selection and multiline text input.
  * Supports narrator mode (no character selected).
  * 
- * Requirements: 3.1-3.5
+ * Requirements: 3.1-3.5, 11.1 (Advanced Properties)
  */
 
 import React, { useCallback, useMemo } from 'react'
-import { Block, SlotOption } from '../types'
+import { Block, BlockSlot, SlotOption } from '../types'
 import { BaseBlock, BaseBlockProps } from './BaseBlock'
+import { AdvancedPanel } from './AdvancedPanel'
 import './Block.css'
 
 /**
@@ -50,6 +51,7 @@ function isSlotRequired(block: Block, slotName: string): boolean {
  * - 3.3: Support narrator mode (empty character)
  * - 3.4: Support multiline text input
  * - 3.5: Real-time AST update on text input
+ * - 11.1: Dialogue block advanced properties (withTransition, attributes)
  */
 export const DialogueBlock: React.FC<DialogueBlockProps> = ({
   block,
@@ -73,6 +75,20 @@ export const DialogueBlock: React.FC<DialogueBlockProps> = ({
     ]
     return options
   }, [availableCharacters])
+  
+  /**
+   * Get advanced slots for the dialogue block
+   */
+  const advancedSlots = useMemo((): BlockSlot[] => {
+    return block.slots.filter(slot => slot.advanced === true)
+  }, [block.slots])
+  
+  /**
+   * Handle slot value change
+   */
+  const handleSlotChange = useCallback((slotName: string, value: unknown) => {
+    onSlotChange?.(block.id, slotName, value)
+  }, [block.id, onSlotChange])
   
   /**
    * Handle speaker change
@@ -146,6 +162,16 @@ export const DialogueBlock: React.FC<DialogueBlockProps> = ({
             <span className="slot-error-message">{textError}</span>
           )}
         </div>
+        
+        {/* Advanced Panel for Dialogue block */}
+        {advancedSlots.length > 0 && (
+          <AdvancedPanel
+            slots={advancedSlots}
+            onSlotChange={handleSlotChange}
+            slotErrors={slotErrors}
+            panelId={`dialogue-${block.id}`}
+          />
+        )}
       </div>
     </BaseBlock>
   )

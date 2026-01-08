@@ -62,6 +62,16 @@
 }
 
 /* ========================================
+ * Advanced Panel Container
+ * ======================================== */
+
+.label-container-advanced {
+  padding: 0 16px 12px 16px;
+  background-color: var(--bg-secondary, #f5f5f5);
+  border-bottom: 1px solid var(--border-color, #e0e0e0);
+}
+
+/* ========================================
  * Content Area Styles
  * ======================================== */
 
