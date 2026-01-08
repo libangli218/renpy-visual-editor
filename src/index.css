@@ -5,26 +5,34 @@
 }
 
 :root {
-  /* Figma-inspired color palette */
+  /* ========================================
+   * Figma-inspired Design System
+   * Based on Rasmus Andersson's design principles
+   * ======================================== */
+  
+  /* ========== Background Colors ========== */
   --bg-primary: #1e1e1e;
   --bg-secondary: #252526;
   --bg-tertiary: #2d2d2d;
   --bg-elevated: #333333;
   --bg-canvas: #1a1a1a;
+  --bg-hover: rgba(255, 255, 255, 0.05);
+  --bg-active: rgba(255, 255, 255, 0.08);
   
-  /* Text colors */
+  /* ========== Text Colors ========== */
   --text-primary: #ffffff;
   --text-secondary: #cccccc;
   --text-tertiary: #8c8c8c;
   --text-muted: #666666;
   
-  /* Accent colors - Figma blue */
+  /* ========== Accent Colors - Figma Blue ========== */
   --accent-primary: #0d99ff;
   --accent-secondary: #0c8ce9;
   --accent-hover: #18a0fb;
   --accent-muted: rgba(13, 153, 255, 0.15);
+  --accent-subtle: rgba(13, 153, 255, 0.08);
   
-  /* Status colors */
+  /* ========== Status Colors ========== */
   --success: #14ae5c;
   --success-muted: rgba(20, 174, 92, 0.15);
   --warning: #ffcd29;
@@ -32,36 +40,46 @@
   --error: #f24822;
   --error-muted: rgba(242, 72, 34, 0.15);
   
-  /* Border colors */
+  /* ========== Border Colors ========== */
   --border-color: #3c3c3c;
   --border-subtle: #2e2e2e;
   --border-focus: var(--accent-primary);
   
-  /* Shadows */
+  /* ========== Shadows ========== */
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
   --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
   --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.5);
+  --shadow-focus: 0 0 0 2px var(--accent-muted);
+  --shadow-inset: inset 0 1px 2px rgba(0, 0, 0, 0.2);
   
-  /* Spacing */
+  /* ========== Spacing Scale ========== */
   --spacing-xs: 4px;
   --spacing-sm: 8px;
   --spacing-md: 12px;
   --spacing-lg: 16px;
   --spacing-xl: 24px;
+  --spacing-2xl: 32px;
   
-  /* Border radius */
+  /* ========== Border Radius Scale ========== */
   --radius-sm: 4px;
   --radius-md: 6px;
   --radius-lg: 8px;
   --radius-xl: 12px;
+  --radius-full: 9999px;
   
-  /* Font sizes */
+  /* ========== Typography Scale ========== */
   --font-xs: 11px;
   --font-sm: 12px;
   --font-md: 13px;
   --font-lg: 14px;
+  --font-xl: 16px;
   
-  /* Panel widths */
+  /* ========== Transition Timing ========== */
+  --transition-fast: 0.1s ease;
+  --transition-normal: 0.15s ease;
+  --transition-slow: 0.2s ease;
+  
+  /* ========== Layout ========== */
   --panel-width: 240px;
   --toolbar-height: 40px;
 }

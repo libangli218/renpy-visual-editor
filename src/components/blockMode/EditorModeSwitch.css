@@ -32,6 +32,11 @@
   color: var(--text-primary, #cdd6f4);
 }
 
+.mode-switch-button:focus {
+  outline: none;
+  box-shadow: var(--shadow-focus);
+}
+
 .mode-switch-button.active {
   background: var(--accent-primary, #89b4fa);
   color: var(--bg-primary, #1e1e2e);

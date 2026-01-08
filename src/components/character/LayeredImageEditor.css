@@ -45,6 +45,11 @@
   background-color: var(--accent-secondary);
 }
 
+.enable-layers-btn:focus {
+  outline: none;
+  box-shadow: var(--shadow-focus);
+}
+
 .layers-image-name {
   display: flex;
   align-items: center;
@@ -142,6 +147,11 @@
   color: #ff4444;
 }
 
+.layer-remove-btn:focus {
+  outline: none;
+  box-shadow: var(--shadow-focus);
+}
+
 /* Layer Attribute Content */
 .layer-attribute-content {
   padding: 0.5rem;
@@ -203,6 +213,11 @@
   color: var(--accent-primary);
 }
 
+.option-set-default-btn:focus {
+  outline: none;
+  box-shadow: var(--shadow-focus);
+}
+
 .option-remove-btn {
   width: 16px;
   height: 16px;
@@ -230,6 +245,11 @@
   color: #ff4444;
 }
 
+.option-remove-btn:focus {
+  outline: none;
+  box-shadow: var(--shadow-focus);
+}
+
 /* Add Option Form */
 .add-option-form {
   display: flex;
@@ -249,6 +269,7 @@
 .add-option-form input:focus {
   outline: none;
   border-color: var(--accent-primary);
+  box-shadow: var(--shadow-focus);
 }
 
 .add-option-form input.error {
@@ -279,6 +300,11 @@
 
 .btn-add-option:hover {
   background-color: var(--accent-secondary);
+}
+
+.btn-add-option:focus {
+  outline: none;
+  box-shadow: var(--shadow-focus);
 }
 
 .option-error-text {
@@ -313,6 +339,7 @@
 .add-layer-form input:focus {
   outline: none;
   border-color: var(--accent-primary);
+  box-shadow: var(--shadow-focus);
 }
 
 .add-layer-form input.error {
@@ -349,6 +376,11 @@
   background-color: var(--accent-secondary);
 }
 
+.add-layer-actions .btn-add:focus {
+  outline: none;
+  box-shadow: var(--shadow-focus);
+}
+
 .add-layer-actions .btn-cancel {
   background-color: var(--bg-secondary);
   color: var(--text-secondary);
@@ -357,6 +389,11 @@
 
 .add-layer-actions .btn-cancel:hover {
   background-color: var(--bg-tertiary);
+}
+
+.add-layer-actions .btn-cancel:focus {
+  outline: none;
+  box-shadow: var(--shadow-focus);
 }
 
 .error-text {
@@ -380,6 +417,11 @@
 .add-layer-btn:hover {
   background-color: var(--bg-secondary);
   border-color: var(--accent-primary);
+}
+
+.add-layer-btn:focus {
+  outline: none;
+  box-shadow: var(--shadow-focus);
 }
 
 /* Hints */

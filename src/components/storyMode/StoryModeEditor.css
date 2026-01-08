@@ -33,7 +33,7 @@
 
 .story-block:hover {
   border-color: var(--accent-secondary);
-  background-color: var(--bg-tertiary);
+  background-color: var(--bg-hover);
 }
 
 .story-block.selected {
@@ -133,6 +133,7 @@
 .block-text-input:focus {
   outline: none;
   border-color: var(--accent-primary);
+  box-shadow: var(--shadow-focus);
 }
 
 .block-meta {
@@ -258,8 +259,13 @@
 }
 
 .block-action-btn:hover {
-  background-color: var(--accent-primary);
+  background-color: var(--bg-hover);
   color: white;
+}
+
+.block-action-btn:focus {
+  outline: none;
+  box-shadow: var(--shadow-focus);
 }
 
 .block-action-btn.delete:hover {
@@ -310,7 +316,12 @@
 .add-block-btn:hover {
   border-color: var(--accent-primary);
   color: var(--accent-primary);
-  background-color: var(--bg-secondary);
+  background-color: var(--bg-hover);
+}
+
+.add-block-btn:focus {
+  outline: none;
+  box-shadow: var(--shadow-focus);
 }
 
 
@@ -342,7 +353,7 @@
 .quick-input:focus {
   outline: none;
   border-color: var(--accent-primary);
-  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
+  box-shadow: var(--shadow-focus);
 }
 
 .quick-input::placeholder {
@@ -376,9 +387,14 @@
 }
 
 .quick-input-help-btn:hover {
-  background-color: var(--accent-primary);
+  background-color: var(--bg-hover);
   color: white;
   border-color: var(--accent-primary);
+}
+
+.quick-input-help-btn:focus {
+  outline: none;
+  box-shadow: var(--shadow-focus);
 }
 
 .quick-input-help {

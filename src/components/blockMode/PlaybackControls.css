@@ -36,7 +36,12 @@
 }
 
 .playback-button:hover:not(:disabled) {
-  background-color: var(--playback-button-hover-bg, #4a4a4a);
+  background-color: var(--bg-hover);
+}
+
+.playback-button:focus {
+  outline: none;
+  box-shadow: var(--shadow-focus);
 }
 
 .playback-button:active:not(:disabled) {

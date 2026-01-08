@@ -24,21 +24,21 @@
 .collapsible-header {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 4px 8px;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-xs) var(--spacing-sm);
   cursor: pointer;
   user-select: none;
-  border-radius: 4px;
-  transition: background-color 0.15s ease;
+  border-radius: var(--radius-sm);
+  transition: background-color var(--transition-fast);
 }
 
 .collapsible-header:hover {
-  background-color: var(--bg-tertiary, rgba(0, 0, 0, 0.05));
+  background-color: var(--bg-hover);
 }
 
 .collapsible-header:focus-visible {
-  outline: 2px solid var(--accent-primary, #2196F3);
-  outline-offset: 2px;
+  outline: none;
+  box-shadow: var(--shadow-focus);
 }
 
 /* ========================================
@@ -52,8 +52,8 @@
   width: 16px;
   height: 16px;
   font-size: 10px;
-  color: var(--text-secondary, #666);
-  transition: transform 0.2s ease;
+  color: var(--text-tertiary);
+  transition: transform var(--transition-normal);
   flex-shrink: 0;
 }
 
@@ -68,14 +68,14 @@
 .collapse-summary {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: var(--spacing-md);
   flex: 1;
   min-width: 0;
 }
 
 .summary-text {
-  font-size: 12px;
-  color: var(--text-secondary, #666);
+  font-size: var(--font-xs);
+  color: var(--text-tertiary);
   font-style: italic;
   white-space: nowrap;
   overflow: hidden;
@@ -85,7 +85,7 @@
 .summary-icons {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--spacing-sm);
   flex-shrink: 0;
 }
 
@@ -93,22 +93,22 @@
   display: flex;
   align-items: center;
   gap: 2px;
-  font-size: 14px;
+  font-size: var(--font-lg);
   opacity: 0.8;
 }
 
 .summary-count {
   font-size: 10px;
-  color: var(--text-secondary, #666);
+  color: var(--text-tertiary);
   font-weight: 500;
 }
 
 .summary-more {
-  font-size: 11px;
-  color: var(--text-tertiary, #999);
-  padding: 2px 6px;
-  background-color: var(--bg-tertiary, rgba(0, 0, 0, 0.05));
-  border-radius: 10px;
+  font-size: var(--font-xs);
+  color: var(--text-muted);
+  padding: 2px var(--spacing-sm);
+  background-color: var(--bg-tertiary);
+  border-radius: var(--radius-full);
 }
 
 /* ========================================
@@ -130,9 +130,9 @@
 
 /* When used inside BaseBlock, adjust spacing */
 .base-block .collapsible-header {
-  margin: -4px -8px 8px -8px;
-  padding: 6px 8px;
-  border-bottom: 1px solid var(--border-color, #e0e0e0);
+  margin: calc(-1 * var(--spacing-xs)) calc(-1 * var(--spacing-sm)) var(--spacing-sm) calc(-1 * var(--spacing-sm));
+  padding: var(--spacing-sm) var(--spacing-sm);
+  border-bottom: 1px solid var(--border-subtle);
 }
 
 .base-block.collapsed .collapsible-header {
@@ -146,7 +146,7 @@
 
 @media (max-width: 400px) {
   .collapse-summary {
-    gap: 8px;
+    gap: var(--spacing-sm);
   }
   
   .summary-icons {

@@ -44,13 +44,13 @@
 }
 
 .breadcrumb-link:hover {
-  background: var(--bg-hover, #313244);
+  background: var(--bg-hover);
   color: var(--text-primary, #cdd6f4);
 }
 
 .breadcrumb-link:focus {
-  outline: 2px solid var(--accent-primary, #89b4fa);
-  outline-offset: 2px;
+  outline: none;
+  box-shadow: var(--shadow-focus);
 }
 
 .breadcrumb-current {

@@ -51,8 +51,13 @@
 
 .settings-reset-button:hover {
   color: var(--text-primary);
-  background-color: var(--bg-tertiary);
+  background-color: var(--bg-hover);
   border-color: var(--border-hover);
+}
+
+.settings-reset-button:focus {
+  outline: none;
+  box-shadow: var(--shadow-focus);
 }
 
 .settings-reset-button:active {
@@ -91,7 +96,12 @@
 }
 
 .settings-subsection-header:hover {
-  background-color: var(--bg-tertiary);
+  background-color: var(--bg-hover);
+}
+
+.settings-subsection-header:focus {
+  outline: none;
+  box-shadow: var(--shadow-focus);
 }
 
 .subsection-toggle {
@@ -299,6 +309,7 @@
 .font-number-input:focus {
   outline: none;
   border-color: var(--accent-primary);
+  box-shadow: var(--shadow-focus);
 }
 
 /* ============================================
@@ -338,6 +349,7 @@
 .dialogue-number-input:focus {
   outline: none;
   border-color: var(--accent-primary);
+  box-shadow: var(--shadow-focus);
 }
 
 .dialogue-select {
@@ -354,6 +366,7 @@
 .dialogue-select:focus {
   outline: none;
   border-color: var(--accent-primary);
+  box-shadow: var(--shadow-focus);
 }
 
 /* ============================================
@@ -390,6 +403,7 @@
 .project-text-input:focus {
   outline: none;
   border-color: var(--accent-primary);
+  box-shadow: var(--shadow-focus);
 }
 
 /* ============================================
@@ -485,6 +499,7 @@
 .display-select:focus {
   outline: none;
   border-color: var(--accent-primary);
+  box-shadow: var(--shadow-focus);
 }
 
 /* ============================================

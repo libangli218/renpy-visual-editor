@@ -219,6 +219,7 @@ export const BaseBlock: React.FC<BaseBlockProps> = memo(({
       style={{
         '--block-color': definition?.color || '#607D8B',
         '--block-depth': depth,
+        borderLeftColor: definition?.color || '#607D8B',
       } as React.CSSProperties}
       onClick={handleClick}
       onDoubleClick={handleDoubleClick}
@@ -235,12 +236,6 @@ export const BaseBlock: React.FC<BaseBlockProps> = memo(({
     >
       {/* Block Header */}
       <div className="block-header">
-        {/* Color indicator bar */}
-        <div 
-          className="block-color-bar"
-          style={{ backgroundColor: definition?.color || '#607D8B' }}
-        />
-        
         {/* Collapse button for containers */}
         {shouldShowCollapseButton && (
           <button

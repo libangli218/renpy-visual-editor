@@ -12,20 +12,21 @@
 .label-card {
   display: flex;
   flex-direction: column;
-  background-color: var(--bg-primary, #ffffff);
-  border: 1px solid var(--border-color, #e0e0e0);
-  border-radius: 8px;
+  background-color: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
   overflow: hidden;
-  transition: box-shadow 0.2s ease, border-color 0.2s ease;
+  transition: all var(--transition-normal);
 }
 
 .label-card:hover {
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border-color: var(--text-muted);
+  box-shadow: var(--shadow-sm);
 }
 
 .label-card.selected {
-  border-color: var(--accent-primary, #2196F3);
-  box-shadow: 0 0 0 2px rgba(33, 150, 243, 0.2);
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 0 2px var(--accent-muted);
 }
 
 .label-card.collapsed {
@@ -39,10 +40,10 @@
 .label-card-header {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 10px 12px;
-  background-color: var(--bg-secondary, #f5f5f5);
-  border-bottom: 1px solid var(--border-color, #e0e0e0);
+  gap: var(--spacing-sm);
+  padding: var(--spacing-md);
+  background-color: var(--bg-secondary);
+  border-bottom: 1px solid var(--border-subtle);
   flex-shrink: 0;
 }
 
@@ -61,18 +62,23 @@
   border: none;
   background: transparent;
   cursor: pointer;
-  border-radius: 4px;
-  transition: background-color 0.15s ease;
+  border-radius: var(--radius-sm);
+  transition: background-color var(--transition-fast);
 }
 
 .label-card-collapse-btn:hover {
-  background-color: rgba(0, 0, 0, 0.08);
+  background-color: var(--bg-hover);
+}
+
+.label-card-collapse-btn:focus {
+  outline: none;
+  box-shadow: var(--shadow-focus);
 }
 
 .collapse-icon {
   font-size: 10px;
-  color: var(--text-secondary, #666666);
-  transition: transform 0.2s ease;
+  color: var(--text-tertiary);
+  transition: transform var(--transition-normal);
 }
 
 .collapse-icon.collapsed {
@@ -83,37 +89,37 @@
 .label-card-title {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--spacing-sm);
   flex: 1;
   min-width: 0;
 }
 
 .label-card-title .label-icon {
-  font-size: 16px;
+  font-size: var(--font-xl);
   flex-shrink: 0;
 }
 
 .label-card-title .label-name {
   margin: 0;
-  font-size: 14px;
+  font-size: var(--font-lg);
   font-weight: 600;
-  color: var(--text-primary, #333333);
+  color: var(--text-primary);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   cursor: default;
 }
 
-/* Editable label name - Don Norman: direct manipulation */
+/* Editable label name */
 .label-card-title .label-name[title] {
   cursor: text;
 }
 
 .label-card-title .label-name[title]:hover {
-  background-color: rgba(0, 0, 0, 0.04);
-  border-radius: 4px;
-  padding: 2px 4px;
-  margin: -2px -4px;
+  background-color: var(--bg-hover);
+  border-radius: var(--radius-sm);
+  padding: 2px var(--spacing-xs);
+  margin: -2px calc(-1 * var(--spacing-xs));
 }
 
 /* Inline name editing container */
@@ -127,43 +133,43 @@
 .label-name-input {
   flex: 1;
   min-width: 0;
-  padding: 4px 8px;
-  font-size: 14px;
+  padding: var(--spacing-xs) var(--spacing-sm);
+  font-size: var(--font-lg);
   font-weight: 600;
-  color: var(--text-primary, #333333);
-  background-color: var(--bg-primary, #ffffff);
-  border: 2px solid var(--accent-primary, #2196F3);
-  border-radius: 4px;
+  color: var(--text-primary);
+  background-color: var(--bg-primary);
+  border: 2px solid var(--accent-primary);
+  border-radius: var(--radius-sm);
   outline: none;
   font-family: inherit;
 }
 
 .label-name-input:focus {
-  box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.2);
+  box-shadow: var(--shadow-focus);
 }
 
 .label-name-input.error {
-  border-color: var(--error-color, #f44336);
+  border-color: var(--error);
 }
 
 .label-name-input.error:focus {
-  box-shadow: 0 0 0 3px rgba(244, 67, 54, 0.2);
+  box-shadow: 0 0 0 2px var(--error-muted);
 }
 
 .label-name-error {
-  font-size: 11px;
-  color: var(--error-color, #f44336);
+  font-size: var(--font-xs);
+  color: var(--error);
   margin-top: 2px;
   padding-left: 2px;
 }
 
 /* Block Count Badge */
 .label-card-count {
-  font-size: 11px;
-  color: var(--text-secondary, #666666);
-  background-color: var(--bg-tertiary, #e8e8e8);
-  padding: 2px 8px;
-  border-radius: 10px;
+  font-size: var(--font-xs);
+  color: var(--text-tertiary);
+  background-color: var(--bg-tertiary);
+  padding: 2px var(--spacing-sm);
+  border-radius: var(--radius-full);
   flex-shrink: 0;
 }
 
@@ -178,10 +184,10 @@
   border: none;
   background: transparent;
   cursor: pointer;
-  border-radius: 4px;
-  font-size: 14px;
+  border-radius: var(--radius-sm);
+  font-size: var(--font-lg);
   opacity: 0;
-  transition: opacity 0.15s ease, background-color 0.15s ease;
+  transition: all var(--transition-fast);
 }
 
 .label-card:hover .label-card-delete-btn {
@@ -190,7 +196,13 @@
 
 .label-card-delete-btn:hover {
   opacity: 1 !important;
-  background-color: rgba(244, 67, 54, 0.1);
+  background-color: var(--error-muted);
+  color: var(--error);
+}
+
+.label-card-delete-btn:focus {
+  outline: none;
+  box-shadow: var(--shadow-focus);
 }
 
 /* ========================================
@@ -202,20 +214,20 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 16px;
+  padding: var(--spacing-lg);
   text-align: center;
-  background-color: var(--bg-primary, #ffffff);
+  background-color: var(--bg-tertiary);
 }
 
 .label-card-summary .summary-text {
-  font-size: 13px;
-  color: var(--text-secondary, #666666);
-  margin-bottom: 4px;
+  font-size: var(--font-md);
+  color: var(--text-secondary);
+  margin-bottom: var(--spacing-xs);
 }
 
 .label-card-summary .summary-hint {
-  font-size: 11px;
-  color: var(--text-tertiary, #999999);
+  font-size: var(--font-xs);
+  color: var(--text-muted);
 }
 
 /* ========================================
@@ -247,7 +259,8 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
+  background-color: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -255,72 +268,79 @@
 }
 
 .label-card-delete-dialog {
-  background-color: var(--bg-primary, #ffffff);
-  border-radius: 12px;
-  padding: 24px;
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-xl);
   max-width: 400px;
   width: 90%;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  box-shadow: var(--shadow-lg);
 }
 
 .delete-dialog-header {
   display: flex;
   align-items: center;
-  gap: 10px;
-  margin-bottom: 16px;
+  gap: var(--spacing-md);
+  margin-bottom: var(--spacing-lg);
 }
 
 .delete-dialog-header .delete-dialog-icon {
-  font-size: 24px;
+  font-size: var(--font-xl);
 }
 
 .delete-dialog-header h4 {
   margin: 0;
-  font-size: 18px;
+  font-size: var(--font-xl);
   font-weight: 600;
-  color: var(--text-primary, #333333);
+  color: var(--text-primary);
 }
 
 .delete-dialog-message {
-  margin: 0 0 20px 0;
-  font-size: 14px;
-  color: var(--text-secondary, #666666);
+  margin: 0 0 var(--spacing-lg) 0;
+  font-size: var(--font-lg);
+  color: var(--text-secondary);
   line-height: 1.5;
 }
 
 .delete-dialog-warning {
-  color: var(--error-color, #f44336);
-  font-size: 12px;
+  color: var(--error);
+  font-size: var(--font-xs);
 }
 
 .delete-dialog-actions {
   display: flex;
   justify-content: flex-end;
-  gap: 12px;
+  gap: var(--spacing-md);
 }
 
 .delete-dialog-cancel,
 .delete-dialog-confirm {
-  padding: 8px 20px;
-  border-radius: 6px;
-  font-size: 14px;
+  padding: var(--spacing-sm) var(--spacing-lg);
+  border-radius: var(--radius-md);
+  font-size: var(--font-lg);
   font-weight: 500;
   cursor: pointer;
-  transition: background-color 0.15s ease;
+  transition: all var(--transition-fast);
 }
 
 .delete-dialog-cancel {
-  background-color: var(--bg-secondary, #f5f5f5);
-  border: 1px solid var(--border-color, #e0e0e0);
-  color: var(--text-primary, #333333);
+  background-color: transparent;
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
 }
 
 .delete-dialog-cancel:hover {
-  background-color: var(--bg-tertiary, #e8e8e8);
+  background-color: var(--bg-hover);
+  border-color: var(--text-muted);
+}
+
+.delete-dialog-cancel:focus {
+  outline: none;
+  box-shadow: var(--shadow-focus);
 }
 
 .delete-dialog-confirm {
-  background-color: var(--error-color, #f44336);
+  background-color: var(--error);
   border: none;
   color: white;
 }
@@ -329,20 +349,25 @@
   background-color: #d32f2f;
 }
 
+.delete-dialog-confirm:focus {
+  outline: none;
+  box-shadow: var(--shadow-focus);
+}
+
 /* ========================================
  * Responsive Adjustments
  * ======================================== */
 
 @media (max-width: 600px) {
   .label-card-header {
-    padding: 8px 10px;
+    padding: var(--spacing-sm) var(--spacing-md);
   }
 
   .label-card-title .label-name {
-    font-size: 13px;
+    font-size: var(--font-md);
   }
 
   .label-card-delete-dialog {
-    padding: 20px;
+    padding: var(--spacing-lg);
   }
 }

@@ -100,13 +100,13 @@
 }
 
 .toolbar-search:hover {
-  background-color: var(--toolbar-active);
+  background-color: var(--bg-hover);
 }
 
 .toolbar-search:focus-within {
   background-color: var(--toolbar-active);
   border-color: var(--toolbar-accent);
-  box-shadow: 0 0 0 1px var(--toolbar-accent);
+  box-shadow: var(--shadow-focus);
 }
 
 .toolbar-search .search-icon {
@@ -204,7 +204,12 @@
 }
 
 .toolbar-button:hover {
-  background-color: var(--toolbar-hover);
+  background-color: var(--bg-hover);
+}
+
+.toolbar-button:focus {
+  outline: none;
+  box-shadow: var(--shadow-focus);
 }
 
 .toolbar-button:active {
@@ -387,7 +392,7 @@
 
 .dialog-input:focus {
   border-color: var(--toolbar-accent);
-  box-shadow: 0 0 0 1px var(--toolbar-accent);
+  box-shadow: var(--shadow-focus);
 }
 
 .dialog-input.error {
@@ -395,7 +400,7 @@
 }
 
 .dialog-input.error:focus {
-  box-shadow: 0 0 0 1px #ff5555;
+  box-shadow: var(--shadow-focus);
 }
 
 .dialog-input::placeholder {
@@ -439,7 +444,12 @@
 }
 
 .dialog-cancel:hover {
-  background-color: #4a4a4a;
+  background-color: var(--bg-hover);
+}
+
+.dialog-cancel:focus {
+  outline: none;
+  box-shadow: var(--shadow-focus);
 }
 
 .dialog-confirm {
@@ -450,6 +460,11 @@
 
 .dialog-confirm:hover {
   background-color: var(--toolbar-accent-hover);
+}
+
+.dialog-confirm:focus {
+  outline: none;
+  box-shadow: var(--shadow-focus);
 }
 
 /* ========================================

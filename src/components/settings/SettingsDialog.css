@@ -95,8 +95,13 @@
 }
 
 .settings-dialog-close:hover {
-  background-color: var(--bg-tertiary);
+  background-color: var(--bg-hover);
   color: var(--text-primary);
+}
+
+.settings-dialog-close:focus {
+  outline: none;
+  box-shadow: var(--shadow-focus);
 }
 
 .settings-dialog-close:active {
@@ -130,7 +135,12 @@
 
 .settings-dialog-tab:hover {
   color: var(--text-primary);
-  background-color: var(--bg-tertiary);
+  background-color: var(--bg-hover);
+}
+
+.settings-dialog-tab:focus {
+  outline: none;
+  box-shadow: var(--shadow-focus);
 }
 
 .settings-dialog-tab.active {
@@ -245,6 +255,11 @@
   background-color: var(--accent-active);
 }
 
+.settings-dialog-btn-primary:focus {
+  outline: none;
+  box-shadow: var(--shadow-focus);
+}
+
 .settings-dialog-btn-secondary {
   background-color: transparent;
   color: var(--text-secondary);
@@ -252,9 +267,14 @@
 }
 
 .settings-dialog-btn-secondary:hover {
-  background-color: var(--bg-tertiary);
+  background-color: var(--bg-hover);
   color: var(--text-primary);
   border-color: var(--border-hover);
+}
+
+.settings-dialog-btn-secondary:focus {
+  outline: none;
+  box-shadow: var(--shadow-focus);
 }
 
 .settings-dialog-btn-secondary:active {
@@ -274,6 +294,11 @@
 
 .settings-dialog-btn-danger:active {
   background-color: #a93226;
+}
+
+.settings-dialog-btn-danger:focus {
+  outline: none;
+  box-shadow: var(--shadow-focus);
 }
 
 /* ============================================

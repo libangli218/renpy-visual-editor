@@ -11,53 +11,53 @@
 .character-list {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-xs, 4px);
+  gap: var(--spacing-xs);
 }
 
-/* Add Button - Subtle, consistent with VariableList */
+/* Add Button - Ghost style */
 .character-add-btn {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: var(--spacing-xs, 4px);
+  gap: var(--spacing-xs);
   width: 100%;
-  padding: var(--spacing-xs, 4px) var(--spacing-sm, 8px);
-  margin-bottom: var(--spacing-xs, 4px);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  margin-bottom: var(--spacing-xs);
   background: transparent;
-  color: var(--text-tertiary, #666);
-  border: 1px dashed var(--border-color, #333);
-  border-radius: var(--radius-sm, 4px);
-  font-size: var(--font-xs, 11px);
+  color: var(--text-tertiary);
+  border: 1px dashed var(--border-color);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-xs);
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: all var(--transition-normal);
 }
 
 .character-add-btn:hover {
-  background: var(--bg-tertiary, rgba(255, 255, 255, 0.03));
-  border-color: var(--text-muted, #555);
-  color: var(--text-secondary, #999);
+  background: var(--bg-hover);
+  border-color: var(--text-muted);
+  color: var(--text-secondary);
 }
 
 .character-add-btn:active {
-  background: var(--bg-hover, rgba(255, 255, 255, 0.05));
+  background: var(--bg-active);
+}
+
+.character-add-btn:focus {
+  outline: none;
+  box-shadow: var(--shadow-focus);
 }
 
 /* Empty State */
 .character-list-empty {
   text-align: center;
-  padding: var(--spacing-md, 12px) var(--spacing-sm, 8px);
-  color: var(--text-muted, #666);
+  padding: var(--spacing-md) var(--spacing-sm);
+  color: var(--text-muted);
 }
 
 .character-list-empty p {
-  margin: var(--spacing-xs, 4px) 0;
-  font-size: var(--font-xs, 11px);
-}
-
-.character-list-empty .hint {
-  font-style: normal;
-  opacity: 0.8;
+  margin: var(--spacing-xs) 0;
+  font-size: var(--font-xs);
 }
 
 /* Character Items Container */
@@ -74,41 +74,41 @@
 .character-item {
   display: flex;
   align-items: center;
-  gap: var(--spacing-sm, 8px);
-  padding: var(--spacing-xs, 4px) var(--spacing-sm, 8px);
-  border-radius: var(--radius-sm, 4px);
+  gap: var(--spacing-sm);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border-radius: var(--radius-sm);
   cursor: pointer;
-  transition: background-color 0.1s ease;
+  transition: background-color var(--transition-fast);
   min-height: 32px;
   background: transparent;
 }
 
 .character-item:hover {
-  background: var(--bg-tertiary, rgba(255, 255, 255, 0.03));
+  background: var(--bg-hover);
 }
 
 .character-item:active {
-  background: var(--bg-hover, rgba(255, 255, 255, 0.05));
+  background: var(--bg-active);
 }
 
 .character-item.selected {
-  background: var(--accent-muted, rgba(13, 153, 255, 0.15));
+  background: var(--accent-muted);
 }
 
 .character-item.selected:hover {
-  background: var(--accent-muted, rgba(13, 153, 255, 0.2));
+  background: var(--accent-muted);
 }
 
 .character-item:focus {
   outline: none;
-  box-shadow: inset 0 0 0 1px var(--accent-primary, #0d99ff);
+  box-shadow: var(--shadow-focus);
 }
 
 /* Character Content */
 .character-item-content {
   display: flex;
   align-items: center;
-  gap: var(--spacing-sm, 8px);
+  gap: var(--spacing-sm);
   flex: 1;
   min-width: 0;
 }
@@ -117,9 +117,9 @@
 .character-color-indicator {
   width: 10px;
   height: 10px;
-  border-radius: 50%;
+  border-radius: var(--radius-full);
   flex-shrink: 0;
-  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.15);
+  box-shadow: var(--shadow-inset);
 }
 
 /* Character Info */
@@ -131,9 +131,9 @@
 }
 
 .character-display-name {
-  font-size: var(--font-sm, 12px);
+  font-size: var(--font-sm);
   font-weight: 500;
-  color: var(--text-primary, #fff);
+  color: var(--text-primary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -141,9 +141,9 @@
 }
 
 .character-var-name {
-  font-size: var(--font-xs, 10px);
+  font-size: var(--font-xs);
   font-family: 'SF Mono', 'Consolas', 'Monaco', monospace;
-  color: var(--text-muted, #666);
+  color: var(--text-muted);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -151,11 +151,11 @@
 }
 
 .character-item.selected .character-display-name {
-  color: var(--text-primary, #fff);
+  color: var(--text-primary);
 }
 
 .character-item.selected .character-var-name {
-  color: var(--text-tertiary, #8c8c8c);
+  color: var(--text-tertiary);
 }
 
 /* Delete Button - Hidden by default, appears on hover */
@@ -168,13 +168,13 @@
   justify-content: center;
   background: transparent;
   border: none;
-  border-radius: var(--radius-sm, 4px);
-  color: var(--text-muted, #666);
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
   cursor: pointer;
   font-size: 12px;
   line-height: 1;
   opacity: 0;
-  transition: all 0.1s ease;
+  transition: all var(--transition-fast);
   flex-shrink: 0;
 }
 
@@ -184,15 +184,20 @@
 
 .character-delete-btn:hover {
   opacity: 1 !important;
-  background: rgba(239, 68, 68, 0.15);
-  color: var(--error, #ef4444);
+  background: var(--error-muted);
+  color: var(--error);
+}
+
+.character-delete-btn:focus {
+  outline: none;
+  box-shadow: var(--shadow-focus);
 }
 
 .character-item.selected .character-delete-btn {
-  color: var(--text-tertiary, #8c8c8c);
+  color: var(--text-tertiary);
 }
 
 .character-item.selected .character-delete-btn:hover {
-  background: rgba(239, 68, 68, 0.2);
-  color: var(--error, #ef4444);
+  background: var(--error-muted);
+  color: var(--error);
 }

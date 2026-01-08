@@ -97,8 +97,8 @@
 }
 
 .character-sprite:focus {
-  outline: 2px solid var(--accent-primary);
-  outline-offset: 4px;
+  outline: none;
+  box-shadow: var(--shadow-focus);
   border-radius: 4px;
 }
 
@@ -276,8 +276,8 @@
 }
 
 .menu-choice:focus {
-  outline: 2px solid var(--accent-primary);
-  outline-offset: 2px;
+  outline: none;
+  box-shadow: var(--shadow-focus);
 }
 
 /* Empty Dialogue State */

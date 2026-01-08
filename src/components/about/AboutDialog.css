@@ -52,6 +52,12 @@
 
 .about-dialog-close:hover {
   color: var(--text-primary);
+  background-color: var(--bg-hover);
+}
+
+.about-dialog-close:focus {
+  outline: none;
+  box-shadow: var(--shadow-focus);
 }
 
 .about-dialog-content {
@@ -120,4 +126,9 @@
 
 .about-dialog-btn-primary:hover {
   background-color: var(--accent-hover);
+}
+
+.about-dialog-btn-primary:focus {
+  outline: none;
+  box-shadow: var(--shadow-focus);
 }

@@ -37,12 +37,13 @@
 
 .figma-color-swatch-btn:hover {
   border-color: var(--text-muted);
+  background-color: var(--bg-hover);
 }
 
 .figma-color-swatch-btn:focus {
   outline: none;
   border-color: var(--accent-primary);
-  box-shadow: 0 0 0 2px var(--accent-muted);
+  box-shadow: var(--shadow-focus);
 }
 
 .figma-color-swatch {
