@@ -315,26 +315,36 @@ export class RenpyParser {
 
   /**
    * Parse dialogue or narration
-   * Format: "text" or speaker "text" or speaker attr "text"
+   * Format: "text" [with transition] or speaker "text" [with transition] or speaker attr "text" [with transition]
    */
   private parseDialogue(line: LineInfo): ASTNode | null {
-    // Narration: just a quoted string
-    const narrationMatch = line.content.match(/^"((?:[^"\\]|\\.)*)"\s*$/)
+    // Narration: just a quoted string, optionally with "with transition"
+    // Format: "text" or "text" with transition
+    const narrationMatch = line.content.match(/^"((?:[^"\\]|\\.)*)"(?:\s+with\s+(\w+))?\s*$/)
     if (narrationMatch) {
       this.advance()
-      return createDialogueNode(this.unescapeString(narrationMatch[1]), null, { line: line.lineNumber })
+      return createDialogueNode(this.unescapeString(narrationMatch[1]), null, { 
+        withTransition: narrationMatch[2],
+        line: line.lineNumber 
+      })
     }
     
-    // Dialogue with speaker: speaker "text" or speaker attr1 attr2 "text"
-    const dialogueMatch = line.content.match(/^(\w+)(?:\s+([^"]+))?\s+"((?:[^"\\]|\\.)*)"\s*$/)
+    // Dialogue with speaker: speaker "text" or speaker attr1 attr2 "text", optionally with "with transition"
+    // Format: speaker [attrs] "text" [with transition]
+    const dialogueMatch = line.content.match(/^(\w+)(?:\s+([^"]+))?\s+"((?:[^"\\]|\\.)*)"(?:\s+with\s+(\w+))?\s*$/)
     if (dialogueMatch) {
       const speaker = dialogueMatch[1]
       const attrsStr = dialogueMatch[2]?.trim()
       const text = this.unescapeString(dialogueMatch[3])
+      const withTransition = dialogueMatch[4]
       const attributes = attrsStr ? attrsStr.split(/\s+/).filter(a => a) : undefined
       
       this.advance()
-      return createDialogueNode(text, speaker, { attributes, line: line.lineNumber })
+      return createDialogueNode(text, speaker, { 
+        attributes, 
+        withTransition,
+        line: line.lineNumber 
+      })
     }
     
     return null
@@ -354,24 +364,28 @@ export class RenpyParser {
 
   /**
    * Parse a menu statement
-   * Format: menu:
+   * Format: menu [name] [(set var)] [(screen name)]:
    *     "prompt text"  # optional prompt (no colon at end)
    *     speaker "prompt text"  # optional prompt with speaker (no colon at end)
    *     "choice text":
    *         body
    */
   private parseMenu(line: LineInfo): ASTNode | null {
-    const match = line.content.match(/^menu(?:\s+(\w+))?\s*:\s*$/)
+    // Match menu with optional name, set clause, and screen clause
+    // Format: menu [name] [(set var)] [(screen name)]:
+    const match = line.content.match(/^menu(?:\s+(\w+))?(?:\s*\(\s*set\s+(\w+)\s*\))?(?:\s*\(\s*screen\s+(\w+)\s*\))?\s*:\s*$/)
     if (!match) return null
     
     let prompt = match[1]
+    const setVar = match[2]
+    const screen = match[3]
     this.advance()
     
     const choices: MenuChoice[] = []
     const choiceIndent = this.currentLine()?.indent ?? 0
     
     if (choiceIndent <= line.indent) {
-      return createMenuNode(choices, { prompt, line: line.lineNumber })
+      return createMenuNode(choices, { prompt, setVar, screen, line: line.lineNumber })
     }
     
     // Parse menu choices
@@ -414,7 +428,7 @@ export class RenpyParser {
       }
     }
     
-    return createMenuNode(choices, { prompt, line: line.lineNumber })
+    return createMenuNode(choices, { prompt, setVar, screen, line: line.lineNumber })
   }
 
   /**
@@ -489,21 +503,44 @@ export class RenpyParser {
 
   /**
    * Parse a scene statement
-   * Format: scene image or scene image with transition
+   * Format: scene image [onlayer layer] [with transition]
    */
   private parseScene(line: LineInfo): ASTNode | null {
     const match = line.content.match(/^scene\s+(.+?)\s*$/)
     if (!match) return null
     
-    const image = match[1].trim()
+    let rest = match[1].trim()
+    let onLayer: string | undefined
+    let withTransition: string | undefined
+    
+    // Parse clauses from right to left
+    // Check for "with transition" (must be last)
+    const withMatch = rest.match(/^(.+?)\s+with\s+(\w+)\s*$/)
+    if (withMatch) {
+      rest = withMatch[1].trim()
+      withTransition = withMatch[2]
+    }
+    
+    // Check for "onlayer layer"
+    const onlayerMatch = rest.match(/^(.+?)\s+onlayer\s+(\w+)\s*$/)
+    if (onlayerMatch) {
+      rest = onlayerMatch[1].trim()
+      onLayer = onlayerMatch[2]
+    }
+    
+    const image = rest.trim()
     
     this.advance()
-    return createSceneNode(image, { line: line.lineNumber })
+    return createSceneNode(image, { 
+      onLayer,
+      withTransition,
+      line: line.lineNumber 
+    })
   }
 
   /**
    * Parse a show statement
-   * Format: show image or show image at position
+   * Format: show image [attributes] [as tag] [at position] [behind tag] [onlayer layer] [zorder integer] [with transition]
    */
   private parseShow(line: LineInfo): ASTNode | null {
     const match = line.content.match(/^show\s+(.+?)\s*$/)
@@ -511,6 +548,42 @@ export class RenpyParser {
     
     let rest = match[1].trim()
     let atPosition: string | undefined
+    let asTag: string | undefined
+    let behindTag: string | undefined
+    let onLayer: string | undefined
+    let zorder: number | undefined
+    let withTransition: string | undefined
+    
+    // Parse clauses from right to left to handle optional parts correctly
+    // Order in Ren'Py: image [attributes] [as tag] [at transform] [behind tag] [onlayer layer] [zorder integer] [with transition]
+    
+    // Check for "with transition" (must be last)
+    const withMatch = rest.match(/^(.+?)\s+with\s+(\w+)\s*$/)
+    if (withMatch) {
+      rest = withMatch[1].trim()
+      withTransition = withMatch[2]
+    }
+    
+    // Check for "zorder integer"
+    const zorderMatch = rest.match(/^(.+?)\s+zorder\s+(-?\d+)\s*$/)
+    if (zorderMatch) {
+      rest = zorderMatch[1].trim()
+      zorder = parseInt(zorderMatch[2], 10)
+    }
+    
+    // Check for "onlayer layer"
+    const onlayerMatch = rest.match(/^(.+?)\s+onlayer\s+(\w+)\s*$/)
+    if (onlayerMatch) {
+      rest = onlayerMatch[1].trim()
+      onLayer = onlayerMatch[2]
+    }
+    
+    // Check for "behind tag"
+    const behindMatch = rest.match(/^(.+?)\s+behind\s+(\w+)\s*$/)
+    if (behindMatch) {
+      rest = behindMatch[1].trim()
+      behindTag = behindMatch[2]
+    }
     
     // Check for "at position"
     const atMatch = rest.match(/^(.+?)\s+at\s+(.+)$/)
@@ -519,27 +592,66 @@ export class RenpyParser {
       atPosition = atMatch[2].trim()
     }
     
+    // Check for "as tag"
+    const asMatch = rest.match(/^(.+?)\s+as\s+(\w+)\s*$/)
+    if (asMatch) {
+      rest = asMatch[1].trim()
+      asTag = asMatch[2]
+    }
+    
     // Parse image and attributes
     const parts = rest.split(/\s+/)
     const image = parts[0]
     const attributes = parts.length > 1 ? parts.slice(1) : undefined
     
     this.advance()
-    return createShowNode(image, { attributes, atPosition, line: line.lineNumber })
+    return createShowNode(image, { 
+      attributes, 
+      atPosition, 
+      asTag,
+      behindTag,
+      onLayer,
+      zorder,
+      withTransition,
+      line: line.lineNumber 
+    })
   }
 
   /**
    * Parse a hide statement
-   * Format: hide image
+   * Format: hide image [onlayer layer] [with transition]
    */
   private parseHide(line: LineInfo): ASTNode | null {
-    const match = line.content.match(/^hide\s+(\w+)\s*$/)
+    const match = line.content.match(/^hide\s+(.+?)\s*$/)
     if (!match) return null
     
-    const image = match[1]
+    let rest = match[1].trim()
+    let onLayer: string | undefined
+    let withTransition: string | undefined
+    
+    // Parse clauses from right to left
+    // Check for "with transition" (must be last)
+    const withMatch = rest.match(/^(.+?)\s+with\s+(\w+)\s*$/)
+    if (withMatch) {
+      rest = withMatch[1].trim()
+      withTransition = withMatch[2]
+    }
+    
+    // Check for "onlayer layer"
+    const onlayerMatch = rest.match(/^(.+?)\s+onlayer\s+(\w+)\s*$/)
+    if (onlayerMatch) {
+      rest = onlayerMatch[1].trim()
+      onLayer = onlayerMatch[2]
+    }
+    
+    const image = rest.trim()
     
     this.advance()
-    return createHideNode(image, { line: line.lineNumber })
+    return createHideNode(image, { 
+      onLayer,
+      withTransition,
+      line: line.lineNumber 
+    })
   }
 
   /**
@@ -558,7 +670,7 @@ export class RenpyParser {
 
   /**
    * Parse a play statement
-   * Format: play channel "file" or play channel "file" fadein X loop
+   * Format: play channel "file" [fadein X] [fadeout X] [volume X] [loop|noloop] [if_changed]
    * Also handles: queue music "file"
    */
   private parsePlay(line: LineInfo): ASTNode | null {
@@ -570,11 +682,16 @@ export class RenpyParser {
       const options = queueMatch[3].trim()
       
       let fadeIn: number | undefined
+      let fadeOut: number | undefined
       let loop: boolean | undefined
       let volume: number | undefined
+      let ifChanged: boolean | undefined
       
       const fadeInMatch = options.match(/fadein\s+([\d.]+)/)
       if (fadeInMatch) fadeIn = parseFloat(fadeInMatch[1])
+      
+      const fadeOutMatch = options.match(/fadeout\s+([\d.]+)/)
+      if (fadeOutMatch) fadeOut = parseFloat(fadeOutMatch[1])
       
       if (options.includes('loop')) loop = true
       if (options.includes('noloop')) loop = false
@@ -582,8 +699,10 @@ export class RenpyParser {
       const volumeMatch = options.match(/volume\s+([\d.]+)/)
       if (volumeMatch) volume = parseFloat(volumeMatch[1])
       
+      if (options.includes('if_changed')) ifChanged = true
+      
       this.advance()
-      return createPlayNode(channel, file, { fadeIn, loop, volume, queue: true, line: line.lineNumber })
+      return createPlayNode(channel, file, { fadeIn, fadeOut, loop, volume, ifChanged, queue: true, line: line.lineNumber })
     }
     
     const match = line.content.match(/^play\s+(music|sound)\s+"([^"]+)"(.*)$/)
@@ -594,12 +713,17 @@ export class RenpyParser {
     const options = match[3].trim()
     
     let fadeIn: number | undefined
+    let fadeOut: number | undefined
     let loop: boolean | undefined
     let volume: number | undefined
+    let ifChanged: boolean | undefined
     
     // Parse options
     const fadeInMatch = options.match(/fadein\s+([\d.]+)/)
     if (fadeInMatch) fadeIn = parseFloat(fadeInMatch[1])
+    
+    const fadeOutMatch = options.match(/fadeout\s+([\d.]+)/)
+    if (fadeOutMatch) fadeOut = parseFloat(fadeOutMatch[1])
     
     if (options.includes('loop')) loop = true
     if (options.includes('noloop')) loop = false
@@ -607,8 +731,10 @@ export class RenpyParser {
     const volumeMatch = options.match(/volume\s+([\d.]+)/)
     if (volumeMatch) volume = parseFloat(volumeMatch[1])
     
+    if (options.includes('if_changed')) ifChanged = true
+    
     this.advance()
-    return createPlayNode(channel, file, { fadeIn, loop, volume, line: line.lineNumber })
+    return createPlayNode(channel, file, { fadeIn, fadeOut, loop, volume, ifChanged, line: line.lineNumber })
   }
 
   /**
