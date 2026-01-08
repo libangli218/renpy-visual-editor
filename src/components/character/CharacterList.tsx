@@ -2,6 +2,7 @@
  * CharacterList Component
  * 
  * Displays the list of defined characters in the left panel.
+ * Figma-style design with colored indicators.
  * Implements Requirements 7.1: Display all defined characters
  */
 
@@ -26,24 +27,21 @@ export const CharacterList: React.FC<CharacterListProps> = ({
 }) => {
   return (
     <div className="character-list">
-      <div className="character-list-header">
-        <button
-          className="character-add-btn"
-          onClick={onAdd}
-          title="Add new character"
-          aria-label="Add new character"
-        >
-          + Add Character
-        </button>
-      </div>
+      <button
+        className="character-add-btn"
+        onClick={onAdd}
+        title="添加角色"
+        aria-label="添加角色"
+      >
+        + 添加角色
+      </button>
 
       {characters.length === 0 ? (
         <div className="character-list-empty">
-          <p>No characters defined</p>
-          <p className="hint">Click "Add Character" to create one</p>
+          <p>暂无角色</p>
         </div>
       ) : (
-        <ul className="character-items" role="listbox" aria-label="Characters">
+        <ul className="character-items" role="listbox" aria-label="角色列表">
           {characters.map((character) => (
             <li
               key={character.id}
@@ -77,8 +75,8 @@ export const CharacterList: React.FC<CharacterListProps> = ({
                   e.stopPropagation()
                   onDelete(character.id)
                 }}
-                title={`Delete ${character.displayName || character.name}`}
-                aria-label={`Delete ${character.displayName || character.name}`}
+                title={`删除 ${character.displayName || character.name}`}
+                aria-label={`删除 ${character.displayName || character.name}`}
               >
                 ×
               </button>

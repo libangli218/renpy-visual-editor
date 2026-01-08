@@ -8,10 +8,17 @@ import {
   useCharacterStore,
   CharacterFormData,
 } from '../character'
+import {
+  VariableList,
+  VariableDialog,
+  useVariableStore,
+  VariableFormData,
+  Variable,
+} from '../variable'
 import { NewProjectWizard, ProjectConfig } from '../project'
 import { findDefaultFile } from '../../utils/FileClassifier'
 import { useSettingsStore } from '../../settings/settingsStore'
-import { showUnsavedChangesDialog } from '../../store/confirmDialogStore'
+import { showUnsavedChangesDialog, showConfirmDialog } from '../../store/confirmDialogStore'
 
 /**
  * LeftPanel component - Project browser panel (Figma-style collapsible)
@@ -79,6 +86,19 @@ export const LeftPanel: React.FC = () => {
     extractCharactersFromAST,
   } = useCharacterStore()
 
+  // Variable store
+  const {
+    variables,
+    dialogOpen: variableDialogOpen,
+    editingVariable,
+    openDialog: openVariableDialog,
+    closeDialog: closeVariableDialog,
+    addVariable,
+    updateVariable,
+    deleteVariable,
+    extractVariablesFromAST,
+  } = useVariableStore()
+
   // Settings store
   const { loadSettings } = useSettingsStore()
 
@@ -113,11 +133,13 @@ export const LeftPanel: React.FC = () => {
   }, [])
 
   // Extract characters from AST when AST changes
+  // Extract characters from AST when AST changes
   useEffect(() => {
     if (ast) {
       extractCharactersFromAST(ast)
+      extractVariablesFromAST(ast)
     }
-  }, [ast, extractCharactersFromAST])
+  }, [ast, extractCharactersFromAST, extractVariablesFromAST])
 
   // Scan resources when project path changes
   useEffect(() => {
@@ -357,9 +379,43 @@ export const LeftPanel: React.FC = () => {
     }
   }
 
-  const handleDeleteCharacter = (id: string) => {
-    if (window.confirm('Are you sure you want to delete this character?')) {
+  const handleDeleteCharacter = async (id: string) => {
+    const character = characters.find(c => c.id === id)
+    const result = await showConfirmDialog({
+      title: '删除角色',
+      message: `确定要删除角色 "${character?.displayName || character?.name || id}" 吗？`,
+      showSaveOption: false,
+      confirmLabel: '删除',
+      cancelLabel: '取消',
+    })
+    if (result === 'save') {
       deleteCharacter(id)
+    }
+  }
+
+  const handleSaveVariable = (data: VariableFormData) => {
+    if (editingVariable) {
+      updateVariable(editingVariable.id, data)
+    } else {
+      addVariable(data)
+    }
+  }
+
+  const handleEditVariable = (variable: Variable) => {
+    openVariableDialog(variable)
+  }
+
+  const handleDeleteVariable = async (id: string) => {
+    const variable = variables.find(v => v.id === id)
+    const result = await showConfirmDialog({
+      title: '删除变量',
+      message: `确定要删除变量 "${variable?.name || id}" 吗？`,
+      showSaveOption: false,
+      confirmLabel: '删除',
+      cancelLabel: '取消',
+    })
+    if (result === 'save') {
+      deleteVariable(id)
     }
   }
 
@@ -420,6 +476,15 @@ export const LeftPanel: React.FC = () => {
               </li>
             ))}
           </ul>
+        )
+      case 'variables':
+        return (
+          <VariableList
+            variables={variables}
+            onAdd={() => openVariableDialog()}
+            onEdit={handleEditVariable}
+            onDelete={handleDeleteVariable}
+          />
         )
       default:
         return (
@@ -548,6 +613,15 @@ export const LeftPanel: React.FC = () => {
         existingNames={characters.map((c) => c.name)}
         onSave={handleSaveCharacter}
         onCancel={closeDialog}
+      />
+
+      {/* Variable Dialog */}
+      <VariableDialog
+        isOpen={variableDialogOpen}
+        variable={editingVariable}
+        existingNames={variables.map((v) => v.name)}
+        onSave={handleSaveVariable}
+        onCancel={closeVariableDialog}
       />
 
       {/* New Project Wizard */}

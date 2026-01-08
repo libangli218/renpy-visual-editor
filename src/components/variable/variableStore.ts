@@ -1,8 +1,7 @@
 /**
  * Variable Store
  * 
- * Zustand store for managing variables in the editor.
- * Implements Requirements 8.1, 8.2, 8.3, 8.4, 8.6
+ * Zustand store for managing variables (default/define statements).
  */
 
 import { create } from 'zustand'
@@ -11,11 +10,83 @@ import {
   VariableFormData,
   VariableScope,
   generateVariableId,
-  inferTypeFromValue,
 } from './types'
 import { DefineNode, DefaultNode, ASTNode, RenpyScript } from '../../types/ast'
 import { createDefineNode, createDefaultNode } from '../../parser/nodeFactory'
-import { markAsModified } from '../../store/editorStore'
+import { useEditorStore } from '../../store/editorStore'
+
+/**
+ * Sync variables to AST
+ * 
+ * This function replaces ALL non-Character define/default statements with the current variables.
+ * This ensures deleted variables are removed from AST.
+ */
+function syncVariablesToAST(variables: Variable[]): void {
+  const { ast, setAst } = useEditorStore.getState()
+  if (!ast) return
+
+  // Filter out ALL non-Character define statements and ALL default statements
+  // We will re-add only the variables we're managing
+  const nonVariableStatements = ast.statements.filter(stmt => {
+    if (stmt.type === 'define') {
+      const defineNode = stmt as DefineNode
+      // Keep ONLY Character() definitions
+      return defineNode.value.startsWith('Character(')
+    }
+    if (stmt.type === 'default') {
+      // Remove ALL default statements - we'll re-add the ones we're managing
+      return false
+    }
+    return true
+  })
+
+  // Generate new nodes for all variables
+  const variableNodes: ASTNode[] = variables.map((v) => {
+    if (v.scope === 'define') {
+      return createDefineNode(v.name, v.value)
+    } else if (v.scope === 'persistent') {
+      // Persistent variables use default with persistent. prefix
+      return createDefaultNode(`persistent.${v.name}`, v.value)
+    } else {
+      // default scope
+      return createDefaultNode(v.name, v.value)
+    }
+  })
+
+  // Find where to insert variables (after Character definitions, before labels)
+  const firstLabelIndex = nonVariableStatements.findIndex(s => s.type === 'label')
+  
+  // Find last Character definition
+  let lastCharDefIndex = -1
+  for (let i = 0; i < nonVariableStatements.length; i++) {
+    const stmt = nonVariableStatements[i]
+    if (stmt.type === 'define') {
+      const defineNode = stmt as DefineNode
+      if (defineNode.value.startsWith('Character(')) {
+        lastCharDefIndex = i
+      }
+    }
+  }
+
+  let newStatements: ASTNode[]
+  const insertIndex = lastCharDefIndex >= 0 ? lastCharDefIndex + 1 : 
+                      firstLabelIndex >= 0 ? firstLabelIndex : 
+                      nonVariableStatements.length
+
+  newStatements = [
+    ...nonVariableStatements.slice(0, insertIndex),
+    ...variableNodes,
+    ...nonVariableStatements.slice(insertIndex),
+  ]
+
+  // Update AST
+  const newAst: RenpyScript = {
+    ...ast,
+    statements: newStatements,
+  }
+
+  setAst(newAst)
+}
 
 export interface VariableStore {
   // State
@@ -33,13 +104,12 @@ export interface VariableStore {
   openDialog: (variable?: Variable) => void
   closeDialog: () => void
 
-  // Grouping helpers
+  // Query methods
   getVariablesByScope: (scope: VariableScope) => Variable[]
-  getVariableByName: (name: string) => Variable | undefined
+  generateVariableNodes: () => ASTNode[]
 
   // AST integration
   extractVariablesFromAST: (ast: RenpyScript) => void
-  generateVariableNodes: () => ASTNode[]
 }
 
 export const useVariableStore = create<VariableStore>((set, get) => ({
@@ -58,55 +128,60 @@ export const useVariableStore = create<VariableStore>((set, get) => ({
     const newVariable: Variable = {
       id: generateVariableId(),
       name: data.name,
+      value: data.value,
       scope: data.scope,
       type: data.type,
-      value: data.value,
       description: data.description || undefined,
     }
 
-    set((state) => ({
-      variables: [...state.variables, newVariable],
+    const newVariables = [...get().variables, newVariable]
+    
+    set({
+      variables: newVariables,
       dialogOpen: false,
       editingVariable: null,
-    }))
+    })
 
-    // Mark editor as modified (Requirement 1.4)
-    markAsModified()
+    // Sync to AST
+    syncVariablesToAST(newVariables)
 
     return newVariable
   },
 
   updateVariable: (id, data) => {
-    set((state) => ({
-      variables: state.variables.map((v) =>
-        v.id === id
-          ? {
-              ...v,
-              name: data.name,
-              scope: data.scope,
-              type: data.type,
-              value: data.value,
-              description: data.description || undefined,
-            }
-          : v
-      ),
+    const newVariables = get().variables.map((v) =>
+      v.id === id
+        ? { 
+            ...v, 
+            name: data.name, 
+            value: data.value, 
+            scope: data.scope,
+            type: data.type,
+            description: data.description || undefined,
+          }
+        : v
+    )
+    
+    set({
+      variables: newVariables,
       dialogOpen: false,
       editingVariable: null,
-    }))
+    })
 
-    // Mark editor as modified (Requirement 1.4)
-    markAsModified()
+    // Sync to AST
+    syncVariablesToAST(newVariables)
   },
 
   deleteVariable: (id) => {
-    set((state) => ({
-      variables: state.variables.filter((v) => v.id !== id),
-      selectedVariableId:
-        state.selectedVariableId === id ? null : state.selectedVariableId,
-    }))
+    const newVariables = get().variables.filter((v) => v.id !== id)
+    
+    set({ 
+      variables: newVariables,
+      selectedVariableId: get().selectedVariableId === id ? null : get().selectedVariableId,
+    })
 
-    // Mark editor as modified (Requirement 1.4)
-    markAsModified()
+    // Sync to AST
+    syncVariablesToAST(newVariables)
   },
 
   selectVariable: (id) => {
@@ -127,101 +202,71 @@ export const useVariableStore = create<VariableStore>((set, get) => ({
     })
   },
 
-  // Grouping helpers (Requirement 8.4)
+  // Query methods
   getVariablesByScope: (scope) => {
-    return get().variables.filter((v) => v.scope === scope)
+    return get().variables.filter(v => v.scope === scope)
   },
 
-  getVariableByName: (name) => {
-    return get().variables.find((v) => v.name === name)
+  generateVariableNodes: () => {
+    const { variables } = get()
+    return variables.map((v) => {
+      if (v.scope === 'define') {
+        return createDefineNode(v.name, v.value)
+      } else if (v.scope === 'persistent') {
+        return createDefaultNode(`persistent.${v.name}`, v.value)
+      } else {
+        return createDefaultNode(v.name, v.value)
+      }
+    })
   },
 
-  // Extract variables from AST (define and default statements)
+  // Extract variables from AST
   extractVariablesFromAST: (ast) => {
+    const existingVariables = get().variables
     const variables: Variable[] = []
 
-    const processNode = (node: ASTNode) => {
-      if (node.type === 'define') {
-        const defineNode = node as DefineNode
-        // Skip Character definitions (they start with Character()
-        if (!defineNode.value.startsWith('Character(')) {
+    for (const statement of ast.statements) {
+      if (statement.type === 'default') {
+        const node = statement as DefaultNode
+        // Check if it's a persistent variable
+        if (node.name.startsWith('persistent.')) {
+          const name = node.name.substring('persistent.'.length)
+          const existing = existingVariables.find(v => v.name === name && v.scope === 'persistent')
           variables.push({
-            id: generateVariableId(),
-            name: defineNode.name,
-            scope: 'define',
-            type: inferTypeFromValue(defineNode.value),
-            value: defineNode.value,
+            id: existing?.id || generateVariableId(),
+            name: name,
+            value: node.value,
+            scope: 'persistent',
+            type: existing?.type || 'any',
+            description: existing?.description,
+          })
+        } else {
+          const existing = existingVariables.find(v => v.name === node.name && v.scope === 'default')
+          variables.push({
+            id: existing?.id || generateVariableId(),
+            name: node.name,
+            value: node.value,
+            scope: 'default',
+            type: existing?.type || 'any',
+            description: existing?.description,
           })
         }
-      } else if (node.type === 'default') {
-        const defaultNode = node as DefaultNode
-        // Check if it's a persistent variable
-        const isPersistent = defaultNode.name.startsWith('persistent.')
-        const name = isPersistent 
-          ? defaultNode.name.replace('persistent.', '')
-          : defaultNode.name
-        
+      } else if (statement.type === 'define') {
+        const node = statement as DefineNode
+        // Skip Character() definitions
+        if (node.value.startsWith('Character(')) continue
+        const existing = existingVariables.find(v => v.name === node.name && v.scope === 'define')
         variables.push({
-          id: generateVariableId(),
-          name: name,
-          scope: isPersistent ? 'persistent' : 'default',
-          type: inferTypeFromValue(defaultNode.value),
-          value: defaultNode.value,
+          id: existing?.id || generateVariableId(),
+          name: node.name,
+          value: node.value,
+          scope: 'define',
+          type: existing?.type || 'any',
+          description: existing?.description,
         })
       }
     }
 
-    // Process top-level statements
-    for (const statement of ast.statements) {
-      processNode(statement)
-    }
-
     set({ variables })
   },
-
-  // Generate AST nodes for all variables (Requirement 8.6)
-  generateVariableNodes: () => {
-    const { variables } = get()
-    const nodes: ASTNode[] = []
-
-    for (const variable of variables) {
-      if (variable.scope === 'define') {
-        nodes.push(createDefineNode(variable.name, variable.value))
-      } else if (variable.scope === 'persistent') {
-        // Persistent variables use default with persistent. prefix
-        nodes.push(createDefaultNode(`persistent.${variable.name}`, variable.value))
-      } else {
-        // default scope
-        nodes.push(createDefaultNode(variable.name, variable.value))
-      }
-    }
-
-    return nodes
-  },
 }))
-
-/**
- * Get variable by name (for autocomplete)
- */
-export function getVariableByName(name: string): Variable | undefined {
-  return useVariableStore.getState().variables.find((v) => v.name === name)
-}
-
-/**
- * Get all variable names for autocomplete (Requirement 8.5)
- */
-export function getVariableNames(): string[] {
-  return useVariableStore.getState().variables.map((v) => v.name)
-}
-
-/**
- * Get variables grouped by scope (Requirement 8.4)
- */
-export function getVariablesGroupedByScope(): Record<VariableScope, Variable[]> {
-  const variables = useVariableStore.getState().variables
-  return {
-    default: variables.filter((v) => v.scope === 'default'),
-    define: variables.filter((v) => v.scope === 'define'),
-    persistent: variables.filter((v) => v.scope === 'persistent'),
-  }
-}

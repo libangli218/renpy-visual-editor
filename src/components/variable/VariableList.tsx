@@ -1,164 +1,103 @@
 /**
- * Variable List Component
+ * VariableList Component
  * 
- * Displays all variables grouped by scope with different colors.
- * Implements Requirements 8.1, 8.4
+ * Displays list of variables with add/delete actions.
+ * Figma-style design with colored scope indicators.
  */
 
 import React from 'react'
-import { useVariableStore } from './variableStore'
-import { Variable, VariableScope, SCOPE_INFO, TYPE_INFO } from './types'
+import { Variable, VariableScope } from './types'
 import './VariableList.css'
 
 interface VariableListProps {
-  onAddClick?: () => void
-  onEditClick?: (variable: Variable) => void
-  onDeleteClick?: (variable: Variable) => void
+  variables: Variable[]
+  onAdd: () => void
+  onEdit: (variable: Variable) => void
+  onDelete: (id: string) => void
+}
+
+/**
+ * Get color for variable scope indicator
+ */
+function getScopeColor(scope: VariableScope): string {
+  switch (scope) {
+    case 'default':
+      return '#0d99ff' // Figma blue
+    case 'define':
+      return '#ffcd29' // Warning yellow
+    case 'persistent':
+      return '#14ae5c' // Success green
+    default:
+      return '#0d99ff'
+  }
+}
+
+/**
+ * Get scope label for tooltip
+ */
+function getScopeLabel(scope: VariableScope): string {
+  switch (scope) {
+    case 'default':
+      return 'default'
+    case 'define':
+      return 'define'
+    case 'persistent':
+      return 'persistent'
+    default:
+      return scope
+  }
 }
 
 export const VariableList: React.FC<VariableListProps> = ({
-  onAddClick,
-  onEditClick,
-  onDeleteClick,
+  variables,
+  onAdd,
+  onEdit,
+  onDelete,
 }) => {
-  const { variables, selectedVariableId, selectVariable, openDialog, deleteVariable } = useVariableStore()
-
-  // Group variables by scope
-  const groupedVariables: Record<VariableScope, Variable[]> = {
-    default: variables.filter((v) => v.scope === 'default'),
-    define: variables.filter((v) => v.scope === 'define'),
-    persistent: variables.filter((v) => v.scope === 'persistent'),
-  }
-
-  const handleAddClick = () => {
-    if (onAddClick) {
-      onAddClick()
-    } else {
-      openDialog()
-    }
-  }
-
-  const handleEditClick = (variable: Variable) => {
-    if (onEditClick) {
-      onEditClick(variable)
-    } else {
-      openDialog(variable)
-    }
-  }
-
-  const handleDeleteClick = (variable: Variable, e: React.MouseEvent) => {
-    e.stopPropagation()
-    if (onDeleteClick) {
-      onDeleteClick(variable)
-    } else {
-      if (window.confirm(`Delete variable "${variable.name}"?`)) {
-        deleteVariable(variable.id)
-      }
-    }
-  }
-
-  const renderVariableItem = (variable: Variable) => {
-    const isSelected = selectedVariableId === variable.id
-    const scopeInfo = SCOPE_INFO[variable.scope]
-    const typeInfo = TYPE_INFO[variable.type]
-
-    return (
-      <div
-        key={variable.id}
-        className={`variable-item ${isSelected ? 'selected' : ''}`}
-        onClick={() => selectVariable(variable.id)}
-        onDoubleClick={() => handleEditClick(variable)}
-      >
-        <div className="variable-info">
-          <span 
-            className="variable-name"
-            style={{ color: scopeInfo.color }}
-          >
-            {variable.name}
-          </span>
-          <span className="variable-type">{typeInfo.label}</span>
-        </div>
-        <div className="variable-value" title={variable.value}>
-          {variable.value}
-        </div>
-        <div className="variable-actions">
-          <button
-            className="variable-action-btn edit"
-            onClick={(e) => {
-              e.stopPropagation()
-              handleEditClick(variable)
-            }}
-            title="Edit variable"
-          >
-            ✏️
-          </button>
-          <button
-            className="variable-action-btn delete"
-            onClick={(e) => handleDeleteClick(variable, e)}
-            title="Delete variable"
-          >
-            🗑️
-          </button>
-        </div>
-      </div>
-    )
-  }
-
-  const renderScopeGroup = (scope: VariableScope) => {
-    const scopeVariables = groupedVariables[scope]
-    const scopeInfo = SCOPE_INFO[scope]
-
-    if (scopeVariables.length === 0) {
-      return null
-    }
-
-    return (
-      <div key={scope} className="variable-scope-group">
-        <div 
-          className="scope-header"
-          style={{ borderLeftColor: scopeInfo.color }}
-        >
-          <span className="scope-label" style={{ color: scopeInfo.color }}>
-            {scopeInfo.label}
-          </span>
-          <span className="scope-count">{scopeVariables.length}</span>
-        </div>
-        <div className="scope-variables">
-          {scopeVariables.map(renderVariableItem)}
-        </div>
-      </div>
-    )
-  }
-
   return (
     <div className="variable-list">
-      <div className="variable-list-header">
-        <h3>Variables</h3>
-        <button 
-          className="add-variable-btn"
-          onClick={handleAddClick}
-          title="Add new variable"
-        >
-          + Add
-        </button>
-      </div>
+      <button className="add-variable-btn" onClick={onAdd}>
+        + 添加变量
+      </button>
       
-      <div className="variable-list-content">
-        {variables.length === 0 ? (
-          <div className="empty-state">
-            <p>No variables defined</p>
-            <button onClick={handleAddClick}>Add your first variable</button>
-          </div>
-        ) : (
-          <>
-            {renderScopeGroup('default')}
-            {renderScopeGroup('define')}
-            {renderScopeGroup('persistent')}
-          </>
-        )}
-      </div>
+      {variables.length === 0 ? (
+        <p className="section-empty">暂无变量</p>
+      ) : (
+        <ul className="variable-items">
+          {variables.map((variable) => (
+            <li 
+              key={variable.id} 
+              className="variable-item"
+              onClick={() => onEdit(variable)}
+              title={`${getScopeLabel(variable.scope)} ${variable.name} = ${variable.value}${variable.description ? `\n${variable.description}` : ''}`}
+            >
+              <span 
+                className="variable-icon"
+                style={{ backgroundColor: getScopeColor(variable.scope) }}
+              />
+              <div className="variable-info">
+                <span className="variable-name">{variable.name}</span>
+                <span className="variable-value">
+                  {variable.value.length > 20 
+                    ? variable.value.substring(0, 20) + '...' 
+                    : variable.value}
+                </span>
+              </div>
+              <button
+                className="variable-delete-btn"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onDelete(variable.id)
+                }}
+                title="删除变量"
+                aria-label={`删除 ${variable.name}`}
+              >
+                ×
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   )
 }
-
-export default VariableList

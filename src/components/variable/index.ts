@@ -6,5 +6,5 @@
 
 export * from './types'
 export * from './variableStore'
-export { VariableList } from './VariableList'
-export { VariableDialog } from './VariableDialog'
+export * from './VariableList'
+export * from './VariableDialog'

@@ -316,7 +316,7 @@
   display: flex;
   align-items: center;
   width: 100%;
-  padding: var(--spacing-sm);
+  padding: var(--spacing-xs) var(--spacing-sm);
   border: none;
   background-color: transparent;
   color: var(--text-secondary);
@@ -325,27 +325,19 @@
   font-size: var(--font-sm);
   text-align: left;
   transition: background-color 0.1s ease;
+  gap: var(--spacing-xs);
 }
 
 .section-header:hover {
   background-color: var(--bg-tertiary);
 }
 
-.section-icon {
-  margin-right: var(--spacing-sm);
-  font-size: var(--font-lg);
-  opacity: 0.8;
-}
-
-.section-label {
-  flex: 1;
-  font-weight: 500;
-  color: var(--text-primary);
-}
-
 .section-toggle {
   font-size: 10px;
   color: var(--text-muted);
+  width: 12px;
+  text-align: center;
+  flex-shrink: 0;
   transition: transform 0.15s ease;
 }
 
@@ -357,15 +349,41 @@
   transform: rotate(-90deg);
 }
 
+.section-icon {
+  font-size: var(--font-md);
+  opacity: 0.7;
+  flex-shrink: 0;
+}
+
+.section-label {
+  flex: 1;
+  font-weight: 500;
+  color: var(--text-primary);
+  font-size: var(--font-sm);
+}
+
 .section-content {
-  padding: var(--spacing-xs) 0 var(--spacing-sm) var(--spacing-xl);
+  padding: var(--spacing-xs) 0 var(--spacing-sm) 20px;
+  animation: sectionExpand 0.15s ease-out;
+}
+
+@keyframes sectionExpand {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .section-empty {
   color: var(--text-muted);
   font-size: var(--font-xs);
-  font-style: italic;
-  padding: var(--spacing-xs) 0;
+  font-style: normal;
+  padding: var(--spacing-sm) var(--spacing-xs);
+  text-align: center;
 }
 
 /* Resource List - Figma Layer Item Style */
@@ -373,16 +391,21 @@
   list-style: none;
   padding: 0;
   margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
 }
 
 .resource-item {
   display: flex;
   align-items: center;
+  gap: var(--spacing-sm);
   padding: var(--spacing-xs) var(--spacing-sm);
   border-radius: var(--radius-sm);
   cursor: pointer;
   transition: background-color 0.1s ease;
   font-size: var(--font-sm);
+  min-height: 28px;
 }
 
 .resource-item:hover {
@@ -394,9 +417,11 @@
 }
 
 .resource-icon {
-  margin-right: var(--spacing-sm);
   font-size: var(--font-md);
   opacity: 0.7;
+  flex-shrink: 0;
+  width: 16px;
+  text-align: center;
 }
 
 .resource-name {
@@ -405,6 +430,7 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  font-size: var(--font-sm);
 }
 
 /* Button Styles - Figma Style */
@@ -843,64 +869,6 @@
 .left-panel.collapsed .panel-empty,
 .right-panel.collapsed .panel-empty {
   display: none;
-}
-
-/* Section Header - Figma style with toggle on left */
-.section-header {
-  display: flex;
-  align-items: center;
-  width: 100%;
-  padding: var(--spacing-xs) var(--spacing-sm);
-  border: none;
-  background-color: transparent;
-  color: var(--text-secondary);
-  cursor: pointer;
-  border-radius: var(--radius-sm);
-  font-size: var(--font-sm);
-  text-align: left;
-  transition: background-color 0.1s ease;
-  gap: var(--spacing-xs);
-}
-
-.section-header:hover {
-  background-color: var(--bg-tertiary);
-}
-
-.section-toggle {
-  font-size: 10px;
-  color: var(--text-muted);
-  width: 12px;
-  text-align: center;
-  flex-shrink: 0;
-}
-
-.section-icon {
-  font-size: var(--font-md);
-  opacity: 0.8;
-  flex-shrink: 0;
-}
-
-.section-label {
-  flex: 1;
-  font-weight: 500;
-  color: var(--text-primary);
-}
-
-/* Section Content Animation */
-.section-content {
-  padding: var(--spacing-xs) 0 var(--spacing-sm) 24px;
-  animation: sectionExpand 0.15s ease-out;
-}
-
-@keyframes sectionExpand {
-  from {
-    opacity: 0;
-    transform: translateY(-4px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
 }
 
 /* Panel resize handle hint */
