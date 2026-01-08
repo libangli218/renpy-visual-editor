@@ -280,37 +280,52 @@ export const FlowBlock: React.FC<FlowBlockProps> = ({
    */
   const renderJumpContent = () => {
     const target = getSlotValue(block, 'target') as string
+    const isExpression = getSlotValue(block, 'expression') === true || getSlotValue(block, 'expression') === 'true'
     
     return (
       <div className="block-slots">
+        {/* Expression mode checkbox row */}
+        <div className="expression-mode-row">
+          <label className="expression-checkbox-label">
+            <input
+              type="checkbox"
+              checked={isExpression}
+              onChange={(e) => handleSlotChange('expression', e.target.checked ? 'true' : 'false')}
+              className="expression-checkbox"
+            />
+            <span>表达式模式</span>
+          </label>
+        </div>
+        
         <div className="flow-target-row">
           <span className="flow-target-label">跳转到:</span>
-          <select
-            className={`block-slot-input block-slot-select flow-target-select ${slotErrors['target'] ? 'has-error' : ''}`}
-            value={target || ''}
-            onChange={(e) => handleSlotChange('target', e.target.value)}
-            title={slotErrors['target']}
-          >
-            <option value="">选择目标 Label...</option>
-            {availableLabels.map(option => (
-              <option key={option.value} value={option.value}>
-                {option.icon ? `${option.icon} ${option.label}` : option.label}
-              </option>
-            ))}
-          </select>
+          {isExpression ? (
+            <input
+              type="text"
+              className={`block-slot-input flow-target-input ${slotErrors['target'] ? 'has-error' : ''}`}
+              value={target || ''}
+              onChange={(e) => handleSlotChange('target', e.target.value)}
+              placeholder="输入表达式，如: next_chapter"
+              title={slotErrors['target']}
+            />
+          ) : (
+            <select
+              className={`block-slot-input block-slot-select flow-target-select ${slotErrors['target'] ? 'has-error' : ''}`}
+              value={target || ''}
+              onChange={(e) => handleSlotChange('target', e.target.value)}
+              title={slotErrors['target']}
+            >
+              <option value="">选择目标 Label...</option>
+              {availableLabels.map(option => (
+                <option key={option.value} value={option.value}>
+                  {option.icon ? `${option.icon} ${option.label}` : option.label}
+                </option>
+              ))}
+            </select>
+          )}
         </div>
         {slotErrors['target'] && (
           <span className="slot-error-message">{slotErrors['target']}</span>
-        )}
-        
-        {/* Advanced Panel for Jump block */}
-        {advancedSlots.length > 0 && (
-          <AdvancedPanel
-            slots={advancedSlots}
-            onSlotChange={handleSlotChange}
-            slotErrors={slotErrors}
-            panelId={`jump-${block.id}`}
-          />
         )}
       </div>
     )
@@ -321,33 +336,58 @@ export const FlowBlock: React.FC<FlowBlockProps> = ({
    */
   const renderCallContent = () => {
     const target = getSlotValue(block, 'target') as string
+    const isExpression = getSlotValue(block, 'expression') === true || getSlotValue(block, 'expression') === 'true'
     
     return (
       <div className="block-slots">
+        {/* Expression mode checkbox row */}
+        <div className="expression-mode-row">
+          <label className="expression-checkbox-label">
+            <input
+              type="checkbox"
+              checked={isExpression}
+              onChange={(e) => handleSlotChange('expression', e.target.checked ? 'true' : 'false')}
+              className="expression-checkbox"
+            />
+            <span>表达式模式</span>
+          </label>
+        </div>
+        
         <div className="flow-target-row">
           <span className="flow-target-label">调用:</span>
-          <select
-            className={`block-slot-input block-slot-select flow-target-select ${slotErrors['target'] ? 'has-error' : ''}`}
-            value={target || ''}
-            onChange={(e) => handleSlotChange('target', e.target.value)}
-            title={slotErrors['target']}
-          >
-            <option value="">选择目标 Label...</option>
-            {availableLabels.map(option => (
-              <option key={option.value} value={option.value}>
-                {option.icon ? `${option.icon} ${option.label}` : option.label}
-              </option>
-            ))}
-          </select>
+          {isExpression ? (
+            <input
+              type="text"
+              className={`block-slot-input flow-target-input ${slotErrors['target'] ? 'has-error' : ''}`}
+              value={target || ''}
+              onChange={(e) => handleSlotChange('target', e.target.value)}
+              placeholder="输入表达式，如: target_label"
+              title={slotErrors['target']}
+            />
+          ) : (
+            <select
+              className={`block-slot-input block-slot-select flow-target-select ${slotErrors['target'] ? 'has-error' : ''}`}
+              value={target || ''}
+              onChange={(e) => handleSlotChange('target', e.target.value)}
+              title={slotErrors['target']}
+            >
+              <option value="">选择目标 Label...</option>
+              {availableLabels.map(option => (
+                <option key={option.value} value={option.value}>
+                  {option.icon ? `${option.icon} ${option.label}` : option.label}
+                </option>
+              ))}
+            </select>
+          )}
         </div>
         {slotErrors['target'] && (
           <span className="slot-error-message">{slotErrors['target']}</span>
         )}
         
-        {/* Advanced Panel for Call block */}
-        {advancedSlots.length > 0 && (
+        {/* Advanced Panel for Call block - excluding expression since it's now a checkbox */}
+        {advancedSlots.filter(s => s.name !== 'expression').length > 0 && (
           <AdvancedPanel
-            slots={advancedSlots}
+            slots={advancedSlots.filter(s => s.name !== 'expression')}
             onSlotChange={handleSlotChange}
             slotErrors={slotErrors}
             panelId={`call-${block.id}`}

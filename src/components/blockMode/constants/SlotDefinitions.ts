@@ -392,6 +392,19 @@ export const DEFAULT_SLOT_CONFIGS: Record<BlockType, BlockSlot[]> = {
       advanced: true,
       defaultValue: null,
     },
+    {
+      name: 'expression',
+      type: 'select',
+      value: null,
+      required: false,
+      placeholder: '表达式模式',
+      options: [
+        { value: 'true', label: '是（目标为表达式）' },
+        { value: 'false', label: '否（目标为标签名）' },
+      ],
+      advanced: true,
+      defaultValue: null,
+    },
   ],
 
   return: [

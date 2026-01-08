@@ -798,6 +798,8 @@ export const BlockModeEditor: React.FC<BlockModeEditorProps> = ({
                 renderBlock={renderBlock}
                 readOnly={readOnly}
                 selectedBlockId={selectedBlockId}
+                onSlotChange={handleSlotChange}
+                slotErrors={getSlotErrors(blockTree.id)}
               />
             ) : (
               <div className="block-mode-editor-loading">

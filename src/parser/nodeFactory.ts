@@ -241,7 +241,7 @@ export function createJumpNode(
  */
 export function createCallNode(
   target: string,
-  options: { arguments?: string[]; expression?: boolean; line?: number } = {}
+  options: { arguments?: string[]; expression?: boolean; from?: string; line?: number } = {}
 ): CallNode {
   return {
     id: generateNodeId(),
@@ -249,6 +249,7 @@ export function createCallNode(
     target,
     arguments: options.arguments,
     expression: options.expression,
+    from: options.from,
     line: options.line,
   }
 }

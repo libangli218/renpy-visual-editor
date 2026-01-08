@@ -940,14 +940,34 @@ export class BlockOperationHandler {
 
   private createCallNode(id: string, block: Block): CallNode {
     const targetSlot = block.slots.find(s => s.name === 'target')
+    const argumentsSlot = block.slots.find(s => s.name === 'arguments')
+    const fromLabelSlot = block.slots.find(s => s.name === 'fromLabel')
+    const expressionSlot = block.slots.find(s => s.name === 'expression')
     
-    return {
+    const node: CallNode = {
       id,
       type: 'call',
       target: targetSlot?.value as string ?? '',
     }
+    
+    // Add arguments if present
+    if (argumentsSlot?.value) {
+      const argStr = argumentsSlot.value as string
+      node.arguments = argStr.split(',').map(a => a.trim()).filter(a => a.length > 0)
+    }
+    
+    // Add from label if present
+    if (fromLabelSlot?.value) {
+      node.from = fromLabelSlot.value as string
+    }
+    
+    // Add expression mode if enabled
+    if (expressionSlot?.value === 'true' || expressionSlot?.value === true) {
+      node.expression = true
+    }
+    
+    return node
   }
-
   private createReturnNode(id: string): ReturnNode {
     return {
       id,
@@ -1298,6 +1318,8 @@ export class BlockOperationHandler {
 
     // Update based on block type and slot name
     switch (block.type) {
+      case 'label':
+        return this.updateLabelProperty(astNode as LabelNode, slotName, value)
       case 'dialogue':
         return this.updateDialogueProperty(astNode as DialogueNode, slotName, value)
       case 'scene':
@@ -1308,6 +1330,8 @@ export class BlockOperationHandler {
         return this.updateHideProperty(astNode as HideNode, slotName, value)
       case 'with':
         return this.updateWithProperty(astNode as WithNode, slotName, value)
+      case 'menu':
+        return this.updateMenuProperty(astNode as MenuNode, slotName, value)
       case 'jump':
         return this.updateJumpProperty(astNode as JumpNode, slotName, value)
       case 'call':
@@ -1330,11 +1354,32 @@ export class BlockOperationHandler {
     }
   }
 
+  private updateLabelProperty(node: LabelNode, slotName: string, value: unknown): { success: boolean; error?: string } {
+    if (slotName === 'name') {
+      node.name = value as string
+    } else if (slotName === 'parameters') {
+      // Parse comma-separated parameters string into array
+      let paramStr = value as string | null
+      if (paramStr && paramStr.trim()) {
+        // Remove any "parameters=" prefix if user accidentally included it
+        paramStr = paramStr.replace(/^parameters\s*=\s*["']?/, '').replace(/["']$/, '')
+        node.parameters = paramStr.split(',').map(p => p.trim()).filter(p => p.length > 0)
+      } else {
+        node.parameters = undefined
+      }
+    }
+    return { success: true }
+  }
+
   private updateDialogueProperty(node: DialogueNode, slotName: string, value: unknown): { success: boolean; error?: string } {
     if (slotName === 'speaker') {
       node.speaker = value as string | null
     } else if (slotName === 'text') {
       node.text = value as string
+    } else if (slotName === 'withTransition') {
+      node.withTransition = value as string | undefined
+    } else if (slotName === 'attributes') {
+      node.attributes = value ? (value as string).split(' ').filter(s => s.length > 0) : undefined
     }
     return { success: true }
   }
@@ -1342,6 +1387,10 @@ export class BlockOperationHandler {
   private updateSceneProperty(node: SceneNode, slotName: string, value: unknown): { success: boolean; error?: string } {
     if (slotName === 'image') {
       node.image = value as string
+    } else if (slotName === 'onLayer') {
+      node.onLayer = value as string | undefined
+    } else if (slotName === 'withTransition') {
+      node.withTransition = value as string | undefined
     }
     return { success: true }
   }
@@ -1353,6 +1402,16 @@ export class BlockOperationHandler {
       node.atPosition = value as string
     } else if (slotName === 'expression') {
       node.attributes = value ? [value as string] : undefined
+    } else if (slotName === 'asTag') {
+      node.asTag = value as string | undefined
+    } else if (slotName === 'behindTag') {
+      node.behindTag = value as string | undefined
+    } else if (slotName === 'onLayer') {
+      node.onLayer = value as string | undefined
+    } else if (slotName === 'zorder') {
+      node.zorder = value as number | undefined
+    } else if (slotName === 'withTransition') {
+      node.withTransition = value as string | undefined
     }
     return { success: true }
   }
@@ -1360,6 +1419,10 @@ export class BlockOperationHandler {
   private updateHideProperty(node: HideNode, slotName: string, value: unknown): { success: boolean; error?: string } {
     if (slotName === 'character') {
       node.image = value as string
+    } else if (slotName === 'onLayer') {
+      node.onLayer = value as string | undefined
+    } else if (slotName === 'withTransition') {
+      node.withTransition = value as string | undefined
     }
     return { success: true }
   }
@@ -1371,9 +1434,20 @@ export class BlockOperationHandler {
     return { success: true }
   }
 
+  private updateMenuProperty(node: MenuNode, slotName: string, value: unknown): { success: boolean; error?: string } {
+    if (slotName === 'setVar') {
+      node.setVar = value as string | undefined
+    } else if (slotName === 'screen') {
+      node.screen = value as string | undefined
+    }
+    return { success: true }
+  }
+
   private updateJumpProperty(node: JumpNode, slotName: string, value: unknown): { success: boolean; error?: string } {
     if (slotName === 'target') {
       node.target = value as string
+    } else if (slotName === 'expression') {
+      node.expression = value === 'true' || value === true
     }
     return { success: true }
   }
@@ -1381,6 +1455,20 @@ export class BlockOperationHandler {
   private updateCallProperty(node: CallNode, slotName: string, value: unknown): { success: boolean; error?: string } {
     if (slotName === 'target') {
       node.target = value as string
+    } else if (slotName === 'arguments') {
+      // Parse comma-separated arguments string into array
+      let argStr = value as string | null
+      if (argStr && argStr.trim()) {
+        // Remove any "arguments=" prefix if user accidentally included it
+        argStr = argStr.replace(/^arguments\s*=\s*["']?/, '').replace(/["']$/, '')
+        node.arguments = argStr.split(',').map(a => a.trim()).filter(a => a.length > 0)
+      } else {
+        node.arguments = undefined
+      }
+    } else if (slotName === 'fromLabel') {
+      node.from = value as string | undefined
+    } else if (slotName === 'expression') {
+      node.expression = value === 'true' || value === true
     }
     return { success: true }
   }
@@ -1406,6 +1494,12 @@ export class BlockOperationHandler {
       node.fadeIn = value as number | undefined
     } else if (slotName === 'loop') {
       node.loop = value === 'true' || value === true
+    } else if (slotName === 'fadeout') {
+      node.fadeOut = value as number | undefined
+    } else if (slotName === 'volume') {
+      node.volume = value as number | undefined
+    } else if (slotName === 'ifChanged') {
+      node.ifChanged = value === 'true' || value === true
     }
     return { success: true }
   }
@@ -1420,6 +1514,12 @@ export class BlockOperationHandler {
   private updatePlaySoundProperty(node: PlayNode, slotName: string, value: unknown): { success: boolean; error?: string } {
     if (slotName === 'file') {
       node.file = value as string
+    } else if (slotName === 'fadein') {
+      node.fadeIn = value as number | undefined
+    } else if (slotName === 'volume') {
+      node.volume = value as number | undefined
+    } else if (slotName === 'loop') {
+      node.loop = value === 'true' || value === true
     }
     return { success: true }
   }

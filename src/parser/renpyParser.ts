@@ -287,16 +287,18 @@ export class RenpyParser {
    * Format: call target(args) or call expression target
    */
   private parseCall(line: LineInfo): ASTNode | null {
-    const match = line.content.match(/^call\s+(expression\s+)?(\w+)(?:\s*\((.*?)\))?\s*$/)
+    // Updated regex to support 'from' clause: call target(args) from return_label
+    const match = line.content.match(/^call\s+(expression\s+)?(\w+)(?:\s*\((.*?)\))?(?:\s+from\s+(\w+))?\s*$/)
     if (!match) return null
     
     const expression = !!match[1]
     const target = match[2]
     const argsStr = match[3]
     const args = argsStr ? argsStr.split(',').map(a => a.trim()).filter(a => a) : undefined
+    const fromLabel = match[4]
     
     this.advance()
-    return createCallNode(target, { arguments: args, expression, line: line.lineNumber })
+    return createCallNode(target, { arguments: args, expression, from: fromLabel, line: line.lineNumber })
   }
 
   /**

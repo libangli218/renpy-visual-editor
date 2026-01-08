@@ -194,7 +194,7 @@ export class CodeGenerator {
     const indentStr = this.getIndent(indent)
     let line = `${indentStr}label ${node.name}`
     
-    if (node.parameters && node.parameters.length > 0) {
+    if (node.parameters && Array.isArray(node.parameters) && node.parameters.length > 0) {
       line += `(${node.parameters.join(', ')})`
     }
     
@@ -265,13 +265,30 @@ export class CodeGenerator {
     const indentStr = this.getIndent(indent)
     
     if (node.expression) {
-      return `${indentStr}call expression ${node.target}`
+      let line = `${indentStr}call expression ${node.target}`
+      
+      // For expression mode, arguments need 'pass' keyword
+      if (node.arguments && Array.isArray(node.arguments) && node.arguments.length > 0) {
+        line += ` pass (${node.arguments.join(', ')})`
+      }
+      
+      // Add from clause if specified
+      if (node.from) {
+        line += ` from ${node.from}`
+      }
+      
+      return line
     }
     
     let line = `${indentStr}call ${node.target}`
     
-    if (node.arguments && node.arguments.length > 0) {
+    if (node.arguments && Array.isArray(node.arguments) && node.arguments.length > 0) {
       line += `(${node.arguments.join(', ')})`
+    }
+    
+    // Add from clause if specified
+    if (node.from) {
+      line += ` from ${node.from}`
     }
     
     return line
@@ -425,6 +442,7 @@ export class CodeGenerator {
   /**
    * Generate hide statement
    * Order: hide image [onlayer layer] [with transition]
+   * Note: hide supports "with" clause per Ren'Py docs "With Clause of Scene, Show, and Hide Statements"
    */
   private generateHide(node: HideNode, indent: number): string {
     const indentStr = this.getIndent(indent)

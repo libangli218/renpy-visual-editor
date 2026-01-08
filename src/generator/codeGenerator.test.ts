@@ -109,6 +109,36 @@ describe('CodeGenerator', () => {
       expect(code).toBe('call greet(name, 42)')
     })
 
+    it('should generate call with from clause', () => {
+      const call = createCallNode('subroutine', { from: 'return_point' })
+      const code = generateNode(call, 0)
+      expect(code).toBe('call subroutine from return_point')
+    })
+
+    it('should generate call with arguments and from clause', () => {
+      const call = createCallNode('greet', { arguments: ['name', '42'], from: 'after_greet' })
+      const code = generateNode(call, 0)
+      expect(code).toBe('call greet(name, 42) from after_greet')
+    })
+
+    it('should generate call expression', () => {
+      const call = createCallNode('"sub" + "routine"', { expression: true })
+      const code = generateNode(call, 0)
+      expect(code).toBe('call expression "sub" + "routine"')
+    })
+
+    it('should generate call expression with arguments using pass keyword', () => {
+      const call = createCallNode('"sub" + "routine"', { expression: true, arguments: ['count=3'] })
+      const code = generateNode(call, 0)
+      expect(code).toBe('call expression "sub" + "routine" pass (count=3)')
+    })
+
+    it('should generate call expression with arguments and from clause', () => {
+      const call = createCallNode('target_var', { expression: true, arguments: ['1', '2'], from: 'return_here' })
+      const code = generateNode(call, 0)
+      expect(code).toBe('call expression target_var pass (1, 2) from return_here')
+    })
+
     it('should generate return statement', () => {
       const ret = createReturnNode()
       const code = generateNode(ret, 0)

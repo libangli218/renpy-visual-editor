@@ -364,6 +364,16 @@ export class BlockTreeBuilder {
       argumentsSlot.value = node.arguments.join(', ')
     }
 
+    const fromLabelSlot = slots.find(s => s.name === 'fromLabel')
+    if (fromLabelSlot && node.from) {
+      fromLabelSlot.value = node.from
+    }
+
+    const expressionSlot = slots.find(s => s.name === 'expression')
+    if (expressionSlot && node.expression !== undefined) {
+      expressionSlot.value = node.expression ? 'true' : 'false'
+    }
+
     return this.createBlock('call', node.id, slots)
   }
 

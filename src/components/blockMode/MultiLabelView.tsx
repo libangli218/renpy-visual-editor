@@ -1388,6 +1388,9 @@ export const MultiLabelView: React.FC<MultiLabelViewProps> = ({
                         renderBlock: createRenderBlock(labelData.name, labelData.blockTree),
                         readOnly,
                         canvasScale: transform.scale,
+                        onSlotChange: (blockId: string, slotName: string, value: unknown) =>
+                          handleSlotChange(labelData.name, labelData.blockTree, blockId, slotName, value),
+                        slotErrors: {},
                       }}
                     />
                   )

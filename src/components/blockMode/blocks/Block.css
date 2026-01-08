@@ -609,6 +609,39 @@
   flex: 1;
 }
 
+.flow-target-input {
+  flex: 1;
+}
+
+/* Expression mode checkbox */
+.expression-mode-row {
+  display: flex;
+  align-items: center;
+  margin-bottom: 8px;
+  padding: 4px 0;
+}
+
+.expression-checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  user-select: none;
+}
+
+.expression-checkbox-label:hover {
+  color: var(--text-primary);
+}
+
+.expression-checkbox {
+  width: 14px;
+  height: 14px;
+  cursor: pointer;
+  accent-color: var(--accent-primary);
+}
+
 /* If block branches */
 /* If block branches - C-shape (half-open) design
  * Inspired by Scratch: Only left border, right side open.

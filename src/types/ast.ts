@@ -113,6 +113,7 @@ export interface CallNode extends BaseNode {
   target: string
   arguments?: string[]
   expression?: boolean
+  from?: string  // Return label name for save compatibility
 }
 
 // Return node
