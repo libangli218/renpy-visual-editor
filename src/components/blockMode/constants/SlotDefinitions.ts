@@ -52,6 +52,17 @@ export const POSITION_OPTIONS: SlotOption[] = [
   { value: 'bottomright', label: '右下 (Bottom Right)' },
 ]
 
+/**
+ * 图层选项
+ * Layer options for onlayer property
+ */
+export const LAYER_OPTIONS: SlotOption[] = [
+  { value: 'master', label: '主图层 (Master)' },
+  { value: 'transient', label: '临时图层 (Transient)' },
+  { value: 'screens', label: '屏幕图层 (Screens)' },
+  { value: 'overlay', label: '覆盖图层 (Overlay)' },
+]
+
 
 /**
  * 默认属性槽配置映射
@@ -68,6 +79,7 @@ export const DEFAULT_SLOT_CONFIGS: Record<BlockType, BlockSlot[]> = {
       value: null,
       required: false,
       placeholder: '选择角色（留空为旁白）',
+      advanced: false,
     },
     {
       name: 'text',
@@ -75,6 +87,27 @@ export const DEFAULT_SLOT_CONFIGS: Record<BlockType, BlockSlot[]> = {
       value: '',
       required: true,
       placeholder: '输入对话内容...',
+      advanced: false,
+    },
+    // 高级属性 (Advanced properties)
+    {
+      name: 'withTransition',
+      type: 'transition',
+      value: null,
+      required: false,
+      placeholder: '选择过渡效果',
+      options: TRANSITION_OPTIONS,
+      advanced: true,
+      defaultValue: null,
+    },
+    {
+      name: 'attributes',
+      type: 'text',
+      value: null,
+      required: false,
+      placeholder: '角色属性（如表情标签）',
+      advanced: true,
+      defaultValue: null,
     },
   ],
 
@@ -88,6 +121,7 @@ export const DEFAULT_SLOT_CONFIGS: Record<BlockType, BlockSlot[]> = {
       value: '',
       required: true,
       placeholder: '选择背景图片',
+      advanced: false,
     },
     {
       name: 'transition',
@@ -96,6 +130,28 @@ export const DEFAULT_SLOT_CONFIGS: Record<BlockType, BlockSlot[]> = {
       required: false,
       placeholder: '选择过渡效果',
       options: TRANSITION_OPTIONS,
+      advanced: false,
+    },
+    // 高级属性 (Advanced properties)
+    {
+      name: 'onLayer',
+      type: 'select',
+      value: null,
+      required: false,
+      placeholder: '选择图层',
+      options: LAYER_OPTIONS,
+      advanced: true,
+      defaultValue: null,
+    },
+    {
+      name: 'withTransition',
+      type: 'transition',
+      value: null,
+      required: false,
+      placeholder: '选择高级过渡效果',
+      options: TRANSITION_OPTIONS,
+      advanced: true,
+      defaultValue: null,
     },
   ],
 
@@ -106,6 +162,7 @@ export const DEFAULT_SLOT_CONFIGS: Record<BlockType, BlockSlot[]> = {
       value: '',
       required: true,
       placeholder: '选择角色',
+      advanced: false,
     },
     {
       name: 'position',
@@ -114,6 +171,7 @@ export const DEFAULT_SLOT_CONFIGS: Record<BlockType, BlockSlot[]> = {
       required: false,
       placeholder: '选择位置',
       options: POSITION_OPTIONS,
+      advanced: false,
     },
     {
       name: 'expression',
@@ -122,6 +180,55 @@ export const DEFAULT_SLOT_CONFIGS: Record<BlockType, BlockSlot[]> = {
       required: false,
       placeholder: '选择表情',
       options: [], // 动态填充
+      advanced: false,
+    },
+    // 高级属性 (Advanced properties)
+    {
+      name: 'asTag',
+      type: 'text',
+      value: null,
+      required: false,
+      placeholder: '别名标签',
+      advanced: true,
+      defaultValue: null,
+    },
+    {
+      name: 'behindTag',
+      type: 'text',
+      value: null,
+      required: false,
+      placeholder: '显示在...后面',
+      advanced: true,
+      defaultValue: null,
+    },
+    {
+      name: 'onLayer',
+      type: 'select',
+      value: null,
+      required: false,
+      placeholder: '选择图层',
+      options: LAYER_OPTIONS,
+      advanced: true,
+      defaultValue: null,
+    },
+    {
+      name: 'zorder',
+      type: 'number',
+      value: null,
+      required: false,
+      placeholder: 'Z轴顺序',
+      advanced: true,
+      defaultValue: null,
+    },
+    {
+      name: 'withTransition',
+      type: 'transition',
+      value: null,
+      required: false,
+      placeholder: '选择过渡效果',
+      options: TRANSITION_OPTIONS,
+      advanced: true,
+      defaultValue: null,
     },
   ],
 
@@ -132,6 +239,28 @@ export const DEFAULT_SLOT_CONFIGS: Record<BlockType, BlockSlot[]> = {
       value: '',
       required: true,
       placeholder: '选择要隐藏的角色',
+      advanced: false,
+    },
+    // 高级属性 (Advanced properties)
+    {
+      name: 'onLayer',
+      type: 'select',
+      value: null,
+      required: false,
+      placeholder: '选择图层',
+      options: LAYER_OPTIONS,
+      advanced: true,
+      defaultValue: null,
+    },
+    {
+      name: 'withTransition',
+      type: 'transition',
+      value: null,
+      required: false,
+      placeholder: '选择过渡效果',
+      options: TRANSITION_OPTIONS,
+      advanced: true,
+      defaultValue: null,
     },
   ],
 
@@ -156,11 +285,41 @@ export const DEFAULT_SLOT_CONFIGS: Record<BlockType, BlockSlot[]> = {
       value: '',
       required: true,
       placeholder: '输入 Label 名称',
+      advanced: false,
+    },
+    // 高级属性 (Advanced properties)
+    {
+      name: 'parameters',
+      type: 'text',
+      value: null,
+      required: false,
+      placeholder: '参数列表（逗号分隔）',
+      advanced: true,
+      defaultValue: null,
     },
   ],
 
   menu: [
-    // Menu 无槽位，但可包含 choice 子积木
+    // Menu 无基本槽位，但可包含 choice 子积木
+    // 高级属性 (Advanced properties)
+    {
+      name: 'setVar',
+      type: 'text',
+      value: null,
+      required: false,
+      placeholder: '选项集变量名',
+      advanced: true,
+      defaultValue: null,
+    },
+    {
+      name: 'screen',
+      type: 'text',
+      value: null,
+      required: false,
+      placeholder: '自定义屏幕名称',
+      advanced: true,
+      defaultValue: null,
+    },
   ],
 
   choice: [
@@ -187,6 +346,21 @@ export const DEFAULT_SLOT_CONFIGS: Record<BlockType, BlockSlot[]> = {
       value: '',
       required: true,
       placeholder: '选择目标 Label',
+      advanced: false,
+    },
+    // 高级属性 (Advanced properties)
+    {
+      name: 'expression',
+      type: 'select',
+      value: null,
+      required: false,
+      placeholder: '表达式模式',
+      options: [
+        { value: 'true', label: '是（目标为表达式）' },
+        { value: 'false', label: '否（目标为标签名）' },
+      ],
+      advanced: true,
+      defaultValue: null,
     },
   ],
 
@@ -197,6 +371,26 @@ export const DEFAULT_SLOT_CONFIGS: Record<BlockType, BlockSlot[]> = {
       value: '',
       required: true,
       placeholder: '选择目标 Label',
+      advanced: false,
+    },
+    // 高级属性 (Advanced properties)
+    {
+      name: 'arguments',
+      type: 'text',
+      value: null,
+      required: false,
+      placeholder: '调用参数',
+      advanced: true,
+      defaultValue: null,
+    },
+    {
+      name: 'fromLabel',
+      type: 'text',
+      value: null,
+      required: false,
+      placeholder: '返回标签名',
+      advanced: true,
+      defaultValue: null,
     },
   ],
 
@@ -238,6 +432,7 @@ export const DEFAULT_SLOT_CONFIGS: Record<BlockType, BlockSlot[]> = {
       value: '',
       required: true,
       placeholder: '选择音乐文件',
+      advanced: false,
     },
     {
       name: 'fadein',
@@ -249,6 +444,7 @@ export const DEFAULT_SLOT_CONFIGS: Record<BlockType, BlockSlot[]> = {
         min: 0,
         max: 60,
       },
+      advanced: false,
     },
     {
       name: 'loop',
@@ -260,6 +456,47 @@ export const DEFAULT_SLOT_CONFIGS: Record<BlockType, BlockSlot[]> = {
         { value: 'true', label: '循环' },
         { value: 'false', label: '不循环' },
       ],
+      advanced: false,
+    },
+    // 高级属性 (Advanced properties)
+    {
+      name: 'fadeout',
+      type: 'number',
+      value: null,
+      required: false,
+      placeholder: '淡出时间（秒）',
+      validation: {
+        min: 0,
+        max: 60,
+      },
+      advanced: true,
+      defaultValue: null,
+    },
+    {
+      name: 'volume',
+      type: 'number',
+      value: null,
+      required: false,
+      placeholder: '音量 (0.0-1.0)',
+      validation: {
+        min: 0,
+        max: 1,
+      },
+      advanced: true,
+      defaultValue: null,
+    },
+    {
+      name: 'ifChanged',
+      type: 'select',
+      value: null,
+      required: false,
+      placeholder: '仅当改变时',
+      options: [
+        { value: 'true', label: '是' },
+        { value: 'false', label: '否' },
+      ],
+      advanced: true,
+      defaultValue: null,
     },
   ],
 
@@ -284,6 +521,47 @@ export const DEFAULT_SLOT_CONFIGS: Record<BlockType, BlockSlot[]> = {
       value: '',
       required: true,
       placeholder: '选择音效文件',
+      advanced: false,
+    },
+    // 高级属性 (Advanced properties)
+    {
+      name: 'fadein',
+      type: 'number',
+      value: null,
+      required: false,
+      placeholder: '淡入时间（秒）',
+      validation: {
+        min: 0,
+        max: 60,
+      },
+      advanced: true,
+      defaultValue: null,
+    },
+    {
+      name: 'volume',
+      type: 'number',
+      value: null,
+      required: false,
+      placeholder: '音量 (0.0-1.0)',
+      validation: {
+        min: 0,
+        max: 1,
+      },
+      advanced: true,
+      defaultValue: null,
+    },
+    {
+      name: 'loop',
+      type: 'select',
+      value: null,
+      required: false,
+      placeholder: '是否循环',
+      options: [
+        { value: 'true', label: '循环' },
+        { value: 'false', label: '不循环' },
+      ],
+      advanced: true,
+      defaultValue: null,
     },
   ],
 
