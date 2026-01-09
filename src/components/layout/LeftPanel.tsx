@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import { useEditorStore } from '../../store/editorStore'
 import { projectManager, electronFileSystem } from '../../project/ProjectManager'
-import { resourceManager } from '../../resource/ResourceManager'
+import { resourceManager, ImageTag } from '../../resource/ResourceManager'
 import {
   CharacterList,
   CharacterDialog,
@@ -19,6 +19,8 @@ import { NewProjectWizard, ProjectConfig } from '../project'
 import { findDefaultFile } from '../../utils/FileClassifier'
 import { useSettingsStore } from '../../settings/settingsStore'
 import { showUnsavedChangesDialog, showConfirmDialog } from '../../store/confirmDialogStore'
+import { ResourceSection } from '../resource/ResourceSection'
+import { useResourceStore, ResourceDragData } from '../../store/resourceStore'
 
 /**
  * LeftPanel component - Project browser panel (Figma-style collapsible)
@@ -33,7 +35,7 @@ import { showUnsavedChangesDialog, showConfirmDialog } from '../../store/confirm
  * - Variables
  */
 
-type PanelSection = 'labels' | 'characters' | 'backgrounds' | 'audio' | 'variables'
+type PanelSection = 'labels' | 'characters' | 'sprites' | 'backgrounds' | 'audio' | 'variables'
 
 interface SectionConfig {
   id: PanelSection
@@ -44,6 +46,7 @@ interface SectionConfig {
 const sections: SectionConfig[] = [
   { id: 'labels', label: 'Labels', icon: '🏷️' },
   { id: 'characters', label: 'Characters', icon: '👤' },
+  { id: 'sprites', label: 'Sprites', icon: '🎭' },
   { id: 'backgrounds', label: 'Backgrounds', icon: '🖼️' },
   { id: 'audio', label: 'Audio', icon: '🎵' },
   { id: 'variables', label: 'Variables', icon: '📊' },
@@ -68,9 +71,21 @@ export const LeftPanel: React.FC = () => {
   })
   
   // Resource state
-  const [backgrounds, setBackgrounds] = useState<string[]>([])
   const [audioFiles, setAudioFiles] = useState<string[]>([])
+  const [spriteTags, setSpriteTags] = useState<ImageTag[]>([])
+  const [backgroundTags, setBackgroundTags] = useState<ImageTag[]>([])
 
+  // Resource store for ResourceSection components
+  const {
+    expandedSections: resourceExpandedSections,
+    searchQueries,
+    thumbnailSize,
+    selectedResource,
+    toggleSection: toggleResourceSection,
+    setSearchQuery,
+    selectResource,
+    openPreview,
+  } = useResourceStore()
   // Character store
   const {
     characters,
@@ -145,8 +160,9 @@ export const LeftPanel: React.FC = () => {
   useEffect(() => {
     const scanResources = async () => {
       if (!projectPath) {
-        setBackgrounds([])
         setAudioFiles([])
+        setSpriteTags([])
+        setBackgroundTags([])
         return
       }
 
@@ -155,21 +171,20 @@ export const LeftPanel: React.FC = () => {
         
         // Get backgrounds
         const bgTags = resourceManager.getBackgroundTags()
-        const bgNames = bgTags.flatMap(tag => {
-          if (tag.attributes.length === 0) {
-            return [tag.tag]
-          }
-          return tag.attributes.map(attrs => `${tag.tag} ${attrs.join(' ')}`)
-        })
-        setBackgrounds(bgNames)
+        setBackgroundTags(bgTags)
+        
+        // Get sprites (non-background images)
+        const imgTags = resourceManager.getImageTags()
+        setSpriteTags(imgTags)
         
         // Get audio
         const audio = resourceManager.getResources('audio')
         setAudioFiles(audio.map(r => r.name))
       } catch (error) {
         console.error('Failed to scan resources:', error)
-        setBackgrounds([])
         setAudioFiles([])
+        setSpriteTags([])
+        setBackgroundTags([])
       }
     }
 
@@ -419,6 +434,40 @@ export const LeftPanel: React.FC = () => {
     }
   }
 
+  // Helper function to get image path from tag
+  const getImagePath = useCallback((imageTag: string): string | null => {
+    return resourceManager.getImagePath(imageTag)
+  }, [])
+
+  // Handle resource click
+  const handleResourceClick = useCallback((resource: ResourceDragData) => {
+    selectResource(resource)
+  }, [selectResource])
+
+  // Handle resource double-click (open preview)
+  const handleResourceDoubleClick = useCallback((resource: ResourceDragData) => {
+    openPreview(resource)
+  }, [openPreview])
+
+  // Handle resource context menu
+  const handleResourceContextMenu = useCallback((event: React.MouseEvent, resource: ResourceDragData) => {
+    // TODO: Implement context menu in task 10
+    event.preventDefault()
+    console.log('Context menu for:', resource)
+  }, [])
+
+  // Handle import for sprites
+  const handleImportSprites = useCallback(() => {
+    // TODO: Implement import in task 9
+    console.log('Import sprites')
+  }, [])
+
+  // Handle import for backgrounds
+  const handleImportBackgrounds = useCallback(() => {
+    // TODO: Implement import in task 9
+    console.log('Import backgrounds')
+  }, [])
+
   const renderSectionContent = (sectionId: PanelSection) => {
     switch (sectionId) {
       case 'characters':
@@ -431,20 +480,16 @@ export const LeftPanel: React.FC = () => {
             onDelete={handleDeleteCharacter}
           />
         )
+      case 'sprites':
+        // Use ResourceSection for sprites - implements Requirements 2.1, 2.2
+        // Note: ResourceSection handles its own expansion state via resourceStore
+        // This section header is just a placeholder - actual content is rendered by ResourceSection
+        return null
       case 'backgrounds':
-        if (backgrounds.length === 0) {
-          return <p className="section-empty">No backgrounds found</p>
-        }
-        return (
-          <ul className="resource-list">
-            {backgrounds.map((bg, index) => (
-              <li key={index} className="resource-item">
-                <span className="resource-icon">🖼️</span>
-                <span className="resource-name">{bg}</span>
-              </li>
-            ))}
-          </ul>
-        )
+        // Use ResourceSection for backgrounds - implements Requirements 2.1, 2.2
+        // Note: ResourceSection handles its own expansion state via resourceStore
+        // This section header is just a placeholder - actual content is rendered by ResourceSection
+        return null
       case 'audio':
         if (audioFiles.length === 0) {
           return <p className="section-empty">No audio found</p>
@@ -493,6 +538,40 @@ export const LeftPanel: React.FC = () => {
           </p>
         )
     }
+  }
+
+  // Check if a section should use ResourceSection component
+  const isResourceSection = (sectionId: PanelSection): boolean => {
+    return sectionId === 'sprites' || sectionId === 'backgrounds'
+  }
+
+  // Render ResourceSection for sprites or backgrounds
+  const renderResourceSection = (sectionId: 'sprites' | 'backgrounds') => {
+    const isSprites = sectionId === 'sprites'
+    const sectionType = isSprites ? 'sprites' : 'backgrounds'
+    const imageTags = isSprites ? spriteTags : backgroundTags
+    const sectionConfig = sections.find(s => s.id === sectionId)!
+    
+    return (
+      <ResourceSection
+        title={sectionConfig.label}
+        icon={sectionConfig.icon}
+        sectionType={sectionType}
+        imageTags={imageTags}
+        projectPath={projectPath || ''}
+        getImagePath={getImagePath}
+        expanded={resourceExpandedSections.has(sectionType)}
+        onToggle={() => toggleResourceSection(sectionType)}
+        onImport={isSprites ? handleImportSprites : handleImportBackgrounds}
+        searchQuery={searchQueries[sectionType]}
+        onSearchChange={(query) => setSearchQuery(sectionType, query)}
+        thumbnailSize={thumbnailSize}
+        onResourceClick={handleResourceClick}
+        onResourceDoubleClick={handleResourceDoubleClick}
+        onResourceContextMenu={handleResourceContextMenu}
+        selectedResource={selectedResource}
+      />
+    )
   }
 
   return (
@@ -581,26 +660,38 @@ export const LeftPanel: React.FC = () => {
             </div>
           ) : (
             <div className="panel-content">
-              {sections.map(({ id, label, icon }) => (
-                <div key={id} className="panel-section">
-                  <button
-                    className="section-header"
-                    onClick={() => toggleSection(id)}
-                    aria-expanded={expandedSections.has(id)}
-                  >
-                    <span className="section-toggle">
-                      {expandedSections.has(id) ? '▾' : '▸'}
-                    </span>
-                    <span className="section-icon">{icon}</span>
-                    <span className="section-label">{label}</span>
-                  </button>
-                  {expandedSections.has(id) && (
-                    <div className="section-content">
-                      {renderSectionContent(id)}
+              {sections.map(({ id, label, icon }) => {
+                // Use ResourceSection for sprites and backgrounds
+                if (isResourceSection(id)) {
+                  return (
+                    <div key={id} className="panel-section">
+                      {renderResourceSection(id as 'sprites' | 'backgrounds')}
                     </div>
-                  )}
-                </div>
-              ))}
+                  )
+                }
+                
+                // Regular section rendering for other sections
+                return (
+                  <div key={id} className="panel-section">
+                    <button
+                      className="section-header"
+                      onClick={() => toggleSection(id)}
+                      aria-expanded={expandedSections.has(id)}
+                    >
+                      <span className="section-toggle">
+                        {expandedSections.has(id) ? '▾' : '▸'}
+                      </span>
+                      <span className="section-icon">{icon}</span>
+                      <span className="section-label">{label}</span>
+                    </button>
+                    {expandedSections.has(id) && (
+                      <div className="section-content">
+                        {renderSectionContent(id)}
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
             </div>
           )}
         </>

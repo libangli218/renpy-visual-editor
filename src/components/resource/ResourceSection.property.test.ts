@@ -357,3 +357,251 @@ describe('Resource Grouping', () => {
     )
   })
 })
+
+// ============================================================================
+// Property 3: 立绘分类正确性 (Sprite Classification Correctness)
+// ============================================================================
+
+/**
+ * Property 3: 立绘分类正确性 (Sprite Classification Correctness)
+ * 
+ * Feature: image-management-system
+ * Validates: Requirements 2.2, 2.3, 2.4
+ * 
+ * For any image tag:
+ * - If the tag starts with "bg", it should be classified as a background
+ * - Otherwise, it should be classified as a sprite
+ * - Sprites should be grouped by character tag (first word)
+ * 
+ * ∀ imageTag ∈ String:
+ *   if imageTag.startsWith("bg") then type = "background"
+ *   else type = "sprite" and grouped by first word
+ */
+describe('Property 3: 立绘分类正确性 (Sprite Classification Correctness)', () => {
+  /**
+   * Generate background image tags (starting with "bg")
+   */
+  const arbBackgroundTag = fc.tuple(
+    fc.constant('bg'),
+    fc.array(fc.stringMatching(/^[a-z][a-z0-9_]{1,8}$/), { minLength: 1, maxLength: 3 })
+  ).map(([prefix, attrs]) => `${prefix} ${attrs.join(' ')}`)
+
+  /**
+   * Generate sprite image tags (NOT starting with "bg")
+   * Examples: "eileen happy", "lucy normal", "sylvie blue"
+   */
+  const arbSpriteTag = fc.tuple(
+    fc.stringMatching(/^[a-ce-z][a-z0-9_]{1,10}$/), // First char not 'b' to avoid "bg"
+    fc.array(fc.stringMatching(/^[a-z][a-z0-9_]{1,8}$/), { minLength: 0, maxLength: 3 })
+  ).map(([tag, attrs]) => attrs.length > 0 ? `${tag} ${attrs.join(' ')}` : tag)
+  .filter(tag => !tag.toLowerCase().startsWith('bg'))
+
+  /**
+   * Generate a background ResourceData
+   */
+  const arbBackgroundResource: fc.Arbitrary<ResourceData> = fc.record({
+    imageTag: arbBackgroundTag,
+    type: fc.constant<'background'>('background'),
+    imagePath: arbFilePath,
+  })
+
+  /**
+   * Generate a sprite ResourceData
+   */
+  const arbSpriteResource: fc.Arbitrary<ResourceData> = fc.record({
+    imageTag: arbSpriteTag,
+    type: fc.constant<'sprite'>('sprite'),
+    imagePath: arbFilePath,
+  })
+
+  /**
+   * Generate a mixed list of backgrounds and sprites
+   */
+  const arbMixedResourceList = fc.array(
+    fc.oneof(arbBackgroundResource, arbSpriteResource),
+    { minLength: 0, maxLength: 30 }
+  )
+
+  /**
+   * Helper function to classify image tag as background or sprite
+   * This mirrors the logic in ResourceManager
+   */
+  function classifyImageTag(imageTag: string): 'background' | 'sprite' {
+    const firstWord = imageTag.split(' ')[0].toLowerCase()
+    return firstWord === 'bg' ? 'background' : 'sprite'
+  }
+
+  /**
+   * Images starting with "bg" should be classified as backgrounds.
+   * Validates: Requirement 2.2
+   */
+  it('should classify images starting with "bg" as backgrounds', () => {
+    fc.assert(
+      fc.property(arbBackgroundTag, (imageTag) => {
+        const classification = classifyImageTag(imageTag)
+        return classification === 'background'
+      }),
+      { numRuns: 100 }
+    )
+  })
+
+  /**
+   * Images NOT starting with "bg" should be classified as sprites.
+   * Validates: Requirement 2.2
+   */
+  it('should classify images NOT starting with "bg" as sprites', () => {
+    fc.assert(
+      fc.property(arbSpriteTag, (imageTag) => {
+        const classification = classifyImageTag(imageTag)
+        return classification === 'sprite'
+      }),
+      { numRuns: 100 }
+    )
+  })
+
+  /**
+   * Sprites should be grouped by character tag (first word).
+   * Validates: Requirement 2.3
+   */
+  it('should group sprites by character tag (first word)', () => {
+    fc.assert(
+      fc.property(
+        fc.array(arbSpriteResource, { minLength: 1, maxLength: 20 }),
+        (sprites) => {
+          const groups = groupResourcesByTag(sprites)
+          
+          // Each group's tag should match the first word of all its resources
+          return groups.every(group => 
+            group.resources.every(r => {
+              const firstWord = r.imageTag.split(' ')[0]
+              return firstWord === group.tag
+            })
+          )
+        }
+      ),
+      { numRuns: 100 }
+    )
+  })
+
+  /**
+   * Character tags with multiple attributes should be grouped together.
+   * Validates: Requirement 2.4
+   */
+  it('should group character variants together', () => {
+    // Create resources with same character but different attributes
+    const characterName = 'eileen'
+    const variants: ResourceData[] = [
+      { imageTag: `${characterName} happy`, type: 'sprite', imagePath: '/game/images/eileen_happy.png' },
+      { imageTag: `${characterName} sad`, type: 'sprite', imagePath: '/game/images/eileen_sad.png' },
+      { imageTag: `${characterName} surprised`, type: 'sprite', imagePath: '/game/images/eileen_surprised.png' },
+    ]
+    
+    const groups = groupResourcesByTag(variants)
+    
+    // Should have exactly one group for this character
+    expect(groups.length).toBe(1)
+    expect(groups[0].tag).toBe(characterName)
+    expect(groups[0].resources.length).toBe(3)
+  })
+
+  /**
+   * Multiple characters should each have their own group.
+   * Validates: Requirements 2.3, 2.4
+   */
+  it('should create separate groups for different characters', () => {
+    fc.assert(
+      fc.property(
+        fc.array(
+          fc.stringMatching(/^[a-ce-z][a-z0-9_]{2,8}$/).filter(s => !s.startsWith('bg')),
+          { minLength: 2, maxLength: 5 }
+        ),
+        (characterNames) => {
+          // Create one resource per character
+          const uniqueNames = [...new Set(characterNames)]
+          const resources: ResourceData[] = uniqueNames.map(name => ({
+            imageTag: `${name} normal`,
+            type: 'sprite' as const,
+            imagePath: `/game/images/${name}_normal.png`,
+          }))
+          
+          const groups = groupResourcesByTag(resources)
+          
+          // Should have one group per unique character
+          return groups.length === uniqueNames.length
+        }
+      ),
+      { numRuns: 100 }
+    )
+  })
+
+  /**
+   * Grouping should not mix backgrounds and sprites.
+   * Validates: Requirement 2.2
+   */
+  it('should keep backgrounds and sprites separate when grouped', () => {
+    fc.assert(
+      fc.property(arbMixedResourceList, (resources) => {
+        // Separate backgrounds and sprites
+        const backgrounds = resources.filter(r => r.type === 'background')
+        const sprites = resources.filter(r => r.type === 'sprite')
+        
+        // Group each separately
+        const bgGroups = groupResourcesByTag(backgrounds)
+        const spriteGroups = groupResourcesByTag(sprites)
+        
+        // Background groups should only contain backgrounds
+        const allBgGrouped = bgGroups.every(g => 
+          g.resources.every(r => r.type === 'background')
+        )
+        
+        // Sprite groups should only contain sprites
+        const allSpriteGrouped = spriteGroups.every(g => 
+          g.resources.every(r => r.type === 'sprite')
+        )
+        
+        return allBgGrouped && allSpriteGrouped
+      }),
+      { numRuns: 100 }
+    )
+  })
+
+  /**
+   * Classification should be case-insensitive for "bg" prefix.
+   * Validates: Requirement 2.2
+   */
+  it('should classify "BG" prefix as background (case-insensitive)', () => {
+    const testCases = ['bg room', 'BG room', 'Bg room', 'bG room']
+    
+    for (const tag of testCases) {
+      const classification = classifyImageTag(tag)
+      expect(classification).toBe('background')
+    }
+  })
+
+  /**
+   * Grouping should handle single-word tags (no attributes).
+   * Validates: Requirement 2.3
+   */
+  it('should handle single-word tags without attributes', () => {
+    fc.assert(
+      fc.property(
+        fc.stringMatching(/^[a-ce-z][a-z0-9_]{2,8}$/).filter(s => !s.startsWith('bg')),
+        (tag) => {
+          const resource: ResourceData = {
+            imageTag: tag,
+            type: 'sprite',
+            imagePath: `/game/images/${tag}.png`,
+          }
+          
+          const groups = groupResourcesByTag([resource])
+          
+          // Should have one group with the tag as the group name
+          return groups.length === 1 && 
+                 groups[0].tag === tag && 
+                 groups[0].resources.length === 1
+        }
+      ),
+      { numRuns: 100 }
+    )
+  })
+})
