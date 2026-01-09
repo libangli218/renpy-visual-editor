@@ -131,8 +131,13 @@ export const DialogueBlock: React.FC<DialogueBlockProps> = ({
               title={speakerError}
             >
               {characterOptions.map(option => (
-                <option key={option.value} value={option.value}>
+                <option 
+                  key={option.value} 
+                  value={option.value}
+                  title={option.tooltip}
+                >
                   {option.icon ? `${option.icon} ${option.label}` : option.label}
+                  {option.tooltip ? ` (${option.tooltip.replace('来自: ', '')})` : ''}
                 </option>
               ))}
             </select>

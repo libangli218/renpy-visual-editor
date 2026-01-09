@@ -1,8 +1,45 @@
 import { create } from 'zustand'
 import { HistoryManager, HistoryEntry } from './HistoryManager'
 import { EditorMode, ComplexityLevel, EditorState } from '../types/editor'
-import { RenpyScript } from '../types/ast'
+import { RenpyScript, DefineNode, DefaultNode } from '../types/ast'
 import { projectManager } from '../project/ProjectManager'
+import { parseCharacterValue } from '../components/character/types'
+
+/**
+ * Aggregated character info with source file
+ * Implements Requirements 4.1, 4.5
+ */
+export interface AggregatedCharacter {
+  /** Character variable name */
+  name: string
+  /** Display name */
+  displayName: string
+  /** Character color */
+  color?: string
+  /** Image prefix */
+  imagePrefix?: string
+  /** Source file path */
+  sourceFile: string
+  /** Source file display name */
+  sourceFileName: string
+}
+
+/**
+ * Aggregated variable info with source file
+ * Implements Requirements 4.2, 4.5
+ */
+export interface AggregatedVariable {
+  /** Variable name */
+  name: string
+  /** Variable value */
+  value: string
+  /** Variable scope (define/default/persistent) */
+  scope: 'define' | 'default' | 'persistent'
+  /** Source file path */
+  sourceFile: string
+  /** Source file display name */
+  sourceFileName: string
+}
 
 /**
  * Script file information for the script selector
@@ -116,6 +153,10 @@ export interface EditorStore {
   isLoading: boolean
   loadingFile: string | null
   
+  // Aggregated resources from all scripts (Requirements 4.1, 4.2, 4.5)
+  allCharacters: AggregatedCharacter[]
+  allVariables: AggregatedVariable[]
+  
   // Actions
   setMode: (mode: EditorMode) => void
   setComplexity: (complexity: ComplexityLevel) => void
@@ -149,6 +190,9 @@ export interface EditorStore {
   switchToPrevScript: () => void
   createNewScript: (fileName: string) => Promise<boolean>
   reloadCurrentScript: () => Promise<void>
+  
+  // Cross-file resource aggregation (Requirements 4.1, 4.2, 4.5)
+  aggregateResources: () => void
   
   // Get current state snapshot
   getStateSnapshot: () => EditorState
@@ -207,6 +251,9 @@ export const useEditorStore = create<EditorStore>((set, get) => {
     scriptStates: new Map<string, ScriptState>(),
     isLoading: false,
     loadingFile: null,
+    // Aggregated resources from all scripts (Requirements 4.1, 4.2, 4.5)
+    allCharacters: [],
+    allVariables: [],
     
     // Actions that modify state and push to history
     setMode: (mode) => {
@@ -662,6 +709,86 @@ label ${labelName}:
         console.error('Failed to reload script:', error)
         set({ isLoading: false, loadingFile: null })
       }
+    },
+    
+    /**
+     * Aggregate characters and variables from all script files
+     * Implements Requirements 4.1, 4.2, 4.5
+     */
+    aggregateResources: () => {
+      const project = projectManager.getProject()
+      if (!project) {
+        set({ allCharacters: [], allVariables: [] })
+        return
+      }
+      
+      const allCharacters: AggregatedCharacter[] = []
+      const allVariables: AggregatedVariable[] = []
+      
+      // Helper to extract filename from path
+      const getFileName = (path: string): string => {
+        const parts = path.split(/[/\\]/)
+        return parts[parts.length - 1] || path
+      }
+      
+      // Iterate through all scripts in the project
+      for (const [filePath, ast] of project.scripts.entries()) {
+        const fileName = getFileName(filePath)
+        
+        // Process each statement in the AST
+        for (const statement of ast.statements) {
+          if (statement.type === 'define') {
+            const defineNode = statement as DefineNode
+            
+            // Check if it's a Character definition
+            if (defineNode.value.startsWith('Character(')) {
+              const parsed = parseCharacterValue(defineNode.value)
+              if (parsed) {
+                allCharacters.push({
+                  name: defineNode.name,
+                  displayName: parsed.displayName || defineNode.name,
+                  color: parsed.color,
+                  imagePrefix: parsed.imagePrefix,
+                  sourceFile: filePath,
+                  sourceFileName: fileName,
+                })
+              }
+            } else {
+              // Regular define variable (not a Character)
+              allVariables.push({
+                name: defineNode.name,
+                value: defineNode.value,
+                scope: 'define',
+                sourceFile: filePath,
+                sourceFileName: fileName,
+              })
+            }
+          } else if (statement.type === 'default') {
+            const defaultNode = statement as DefaultNode
+            
+            // Check if it's a persistent variable
+            if (defaultNode.name.startsWith('persistent.')) {
+              allVariables.push({
+                name: defaultNode.name.substring('persistent.'.length),
+                value: defaultNode.value,
+                scope: 'persistent',
+                sourceFile: filePath,
+                sourceFileName: fileName,
+              })
+            } else {
+              allVariables.push({
+                name: defaultNode.name,
+                value: defaultNode.value,
+                scope: 'default',
+                sourceFile: filePath,
+                sourceFileName: fileName,
+              })
+            }
+          }
+        }
+      }
+      
+      set({ allCharacters, allVariables })
     },
   }
 })

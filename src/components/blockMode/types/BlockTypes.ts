@@ -68,6 +68,10 @@ export interface SlotOption {
   value: string
   label: string
   icon?: string
+  /** Tooltip text to show on hover (e.g., source file info) */
+  tooltip?: string
+  /** Color for visual indicator */
+  color?: string
 }
 
 /**

@@ -19,7 +19,7 @@ import { DragPreview } from './DragPreview'
 import { useMultiLabelViewStore } from './stores/multiLabelViewStore'
 import { useBlockEditorStore } from './stores/blockEditorStore'
 import { useCanvasLayoutStore, Point, Rect, LabelBounds } from '../../store/canvasLayoutStore'
-import { ScriptFileInfo } from '../../store/editorStore'
+import { ScriptFileInfo, AggregatedCharacter } from '../../store/editorStore'
 import { useCanvasLayoutPersistence } from '../../store/useCanvasLayoutPersistence'
 import { mergeWithAutoLayout, findNonOverlappingPosition, DEFAULT_CARD_WIDTH, DEFAULT_CARD_HEIGHT } from '../../store/autoLayout'
 import { screenToCanvas } from '../../store/canvasUtils'
@@ -48,8 +48,10 @@ export interface MultiLabelViewProps {
   onAstChange?: (ast: RenpyScript) => void
   /** Available labels for jump/call targets */
   availableLabels?: string[]
-  /** Available characters */
+  /** Available characters (simple names for backward compatibility) */
   availableCharacters?: string[]
+  /** Aggregated characters with source file info (Requirements 4.1, 4.3, 4.5) */
+  aggregatedCharacters?: AggregatedCharacter[]
   /** Available image resources */
   availableImages?: string[]
   /** Available audio resources */
@@ -114,6 +116,7 @@ export const MultiLabelView: React.FC<MultiLabelViewProps> = ({
   onAstChange,
   availableLabels = [],
   availableCharacters = [],
+  aggregatedCharacters = [],
   availableImages = [],
   availableAudio = [],
   imageTags = [],
@@ -1068,13 +1071,24 @@ export const MultiLabelView: React.FC<MultiLabelViewProps> = ({
     }
   }, [selectedBlockId, readOnly, clipboard, findBlockAndLabel, handleDeleteBlock, setSelectedBlockId, handleCopyBlock, handlePasteBlock, handleCutBlock])
 
-  // Build character options
+  // Build character options with source file info (Requirements 4.3, 4.5)
   const characterOptions: SlotOption[] = useMemo(() => {
+    // If we have aggregated characters with source info, use them
+    if (aggregatedCharacters.length > 0) {
+      return aggregatedCharacters.map(char => ({
+        value: char.name,
+        label: char.displayName || char.name,
+        // Include source file in tooltip
+        tooltip: `来自: ${char.sourceFileName}`,
+        color: char.color,
+      }))
+    }
+    // Fallback to simple character names
     return availableCharacters.map(char => ({
       value: char,
       label: char,
     }))
-  }, [availableCharacters])
+  }, [aggregatedCharacters, availableCharacters])
 
   // Build image tag options
   const imageTagOptions: SlotOption[] = useMemo(() => {

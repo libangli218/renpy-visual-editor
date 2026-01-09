@@ -1,5 +1,5 @@
 import React, { useCallback, useMemo, useEffect, useState } from 'react'
-import { useEditorStore } from '../../store/editorStore'
+import { useEditorStore, AggregatedCharacter, AggregatedVariable } from '../../store/editorStore'
 import { PreviewPanel } from './PreviewPanel'
 import { StoryModeEditor } from '../storyMode'
 import { MultiLabelView } from '../blockMode'
@@ -35,6 +35,10 @@ export const EditorArea: React.FC = () => {
     reloadCurrentScript,
     createNewScript,
     refreshScriptFiles,
+    // Aggregated resources (Requirements 4.1, 4.2, 4.5)
+    allCharacters,
+    allVariables,
+    aggregateResources,
   } = useEditorStore()
   
   // State for available resources
@@ -52,6 +56,14 @@ export const EditorArea: React.FC = () => {
       refreshScriptFiles()
     }
   }, [projectPath, refreshScriptFiles])
+
+  // Aggregate resources from all scripts when project changes or AST changes
+  // Implements Requirements 4.1, 4.2, 4.5
+  useEffect(() => {
+    if (projectPath) {
+      aggregateResources()
+    }
+  }, [projectPath, ast, aggregateResources])
 
   // Scan resources when project path changes
   useEffect(() => {
@@ -179,23 +191,13 @@ export const EditorArea: React.FC = () => {
   }, [ast])
 
   /**
-   * Get available characters from AST
+   * Get available characters from all scripts (aggregated)
+   * Implements Requirements 4.1, 4.3, 4.5
    */
   const availableCharacters = useMemo(() => {
-    if (!ast) return []
-    const characters = new Set<string>()
-    // Extract character names from define statements
-    ast.statements.forEach(s => {
-      if (s.type === 'define' && 'value' in s) {
-        // Check if it's a Character definition
-        const value = s.value as string
-        if (value && value.includes('Character')) {
-          characters.add(s.name)
-        }
-      }
-    })
-    return Array.from(characters)
-  }, [ast])
+    // Use aggregated characters from all files
+    return allCharacters.map(char => char.name)
+  }, [allCharacters])
 
   // Render Multi-Label View when in multi-label mode (default)
   // Implements Requirement 7.1: Default to Multi-Label View
@@ -207,6 +209,7 @@ export const EditorArea: React.FC = () => {
           onAstChange={handleAstChange}
           availableLabels={availableLabels}
           availableCharacters={availableCharacters}
+          aggregatedCharacters={allCharacters}
           availableImages={availableImages}
           availableAudio={availableAudio}
           imageTags={imageTags}
