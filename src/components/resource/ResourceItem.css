@@ -370,3 +370,57 @@
     transition-delay: 0s;
   }
 }
+
+
+/* ============================================
+   Fixed Position Tooltip (Portal)
+   ============================================ */
+
+.resource-preview-tooltip-fixed {
+  background-color: var(--bg-elevated, #3a3a3a);
+  border: 1px solid var(--border-color, #555);
+  border-radius: var(--radius-md, 6px);
+  box-shadow: var(--shadow-lg, 0 8px 24px rgba(0, 0, 0, 0.4));
+  padding: var(--spacing-sm, 8px);
+  pointer-events: none;
+  min-width: 120px;
+  max-width: 200px;
+  animation: tooltipFadeIn 0.15s ease-out;
+}
+
+@keyframes tooltipFadeIn {
+  from {
+    opacity: 0;
+    transform: translateX(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.resource-preview-tooltip-fixed .preview-image-container {
+  width: 180px;
+  height: 120px;
+  border-radius: var(--radius-sm, 4px);
+  background-color: var(--bg-tertiary, #2a2a2a);
+  margin-bottom: var(--spacing-xs, 4px);
+}
+
+.resource-preview-tooltip-fixed .preview-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.resource-preview-tooltip-fixed .preview-tag {
+  font-size: var(--font-xs, 11px);
+  color: var(--text-primary, #ffffff);
+  font-weight: 500;
+  word-break: break-word;
+}
+
+.resource-preview-tooltip-fixed .preview-type {
+  font-size: 10px;
+  color: var(--text-muted, #888);
+}

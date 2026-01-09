@@ -12,6 +12,7 @@
  */
 
 import React, { useState, useEffect, useCallback, useRef } from 'react'
+import ReactDOM from 'react-dom'
 import { thumbnailService, generatePlaceholder } from '../../resource/ThumbnailService'
 import {
   ResourceDragData,
@@ -358,23 +359,94 @@ export const ResourceItem: React.FC<ResourceItemProps> = ({
         {displayName}
       </span>
 
-      {/* Hover preview tooltip - shown on hover */}
-      <div className="resource-preview-tooltip">
-        <div 
-          className="preview-image-container"
-          style={{
-            backgroundImage: `url(${previewUrl || thumbnailUrl})`,
-            backgroundSize: 'contain',
-            backgroundPosition: 'center',
-            backgroundRepeat: 'no-repeat',
-          }}
-        />
-        <div className="preview-info">
-          <span className="preview-tag">{imageTag}</span>
-          <span className="preview-type">{type === 'background' ? '背景' : '立绘'}</span>
-        </div>
-      </div>
+      {/* Hover preview tooltip - rendered with fixed position via portal */}
+      {isHovering && itemRef.current && (
+        <TooltipPortal targetRef={itemRef}>
+          <div 
+            className="preview-image-container"
+            style={{
+              backgroundImage: `url(${previewUrl || thumbnailUrl})`,
+              backgroundSize: 'contain',
+              backgroundPosition: 'center',
+              backgroundRepeat: 'no-repeat',
+            }}
+          />
+          <div className="preview-info">
+            <span className="preview-tag">{imageTag}</span>
+            <span className="preview-type">{type === 'background' ? '背景' : '立绘'}</span>
+          </div>
+        </TooltipPortal>
+      )}
     </div>
+  )
+}
+
+/**
+ * TooltipPortal - Renders tooltip with fixed positioning outside of overflow containers
+ */
+interface TooltipPortalProps {
+  targetRef: React.RefObject<HTMLDivElement>
+  children: React.ReactNode
+}
+
+const TooltipPortal: React.FC<TooltipPortalProps> = ({ targetRef, children }) => {
+  const [position, setPosition] = useState({ top: 0, left: 0 })
+  
+  useEffect(() => {
+    if (!targetRef.current) return
+    
+    const updatePosition = () => {
+      const rect = targetRef.current?.getBoundingClientRect()
+      if (!rect) return
+      
+      // Position tooltip to the right of the item
+      const tooltipWidth = 200
+      const tooltipHeight = 180
+      const gap = 8
+      
+      let left = rect.right + gap
+      let top = rect.top + (rect.height / 2) - (tooltipHeight / 2)
+      
+      // If tooltip would go off right edge, show on left side
+      if (left + tooltipWidth > window.innerWidth - 10) {
+        left = rect.left - tooltipWidth - gap
+      }
+      
+      // Keep tooltip within vertical bounds
+      if (top < 10) {
+        top = 10
+      } else if (top + tooltipHeight > window.innerHeight - 10) {
+        top = window.innerHeight - tooltipHeight - 10
+      }
+      
+      setPosition({ top, left })
+    }
+    
+    updatePosition()
+    
+    // Update on scroll/resize
+    window.addEventListener('scroll', updatePosition, true)
+    window.addEventListener('resize', updatePosition)
+    
+    return () => {
+      window.removeEventListener('scroll', updatePosition, true)
+      window.removeEventListener('resize', updatePosition)
+    }
+  }, [targetRef])
+  
+  return ReactDOM.createPortal(
+    <div 
+      className="resource-preview-tooltip-fixed"
+      style={{
+        position: 'fixed',
+        top: position.top,
+        left: position.left,
+        zIndex: 10000,
+      }}
+    >
+      {children}
+    </div>,
+    document.body
   )
 }
 
