@@ -451,3 +451,366 @@ describe('Property 14: Resource Search Correctness', () => {
     )
   })
 })
+
+
+// ============================================================================
+// Property 4: Script-Defined Image Discovery
+// Validates: Requirements 2.6, 2.7
+// ============================================================================
+
+import { RenpyScript, RawNode } from '../types/ast'
+
+/**
+ * Generate a valid image tag (e.g., "eileen happy", "bg room")
+ */
+const arbImageTag = fc.tuple(
+  fc.stringMatching(/^[a-z][a-z0-9_]{1,10}$/),
+  fc.option(fc.stringMatching(/^[a-z][a-z0-9_]{1,10}$/), { nil: undefined })
+).map(([base, attr]) => attr ? `${base} ${attr}` : base)
+
+/**
+ * Generate a valid image path
+ */
+const arbImagePath = fc.stringMatching(/^[a-z][a-z0-9_\/]{1,20}\.png$/)
+
+/**
+ * Generate an image statement as raw content
+ */
+const arbImageStatement = fc.tuple(arbImageTag, arbImagePath).map(
+  ([tag, path]) => `image ${tag} = "${path}"`
+)
+
+/**
+ * Generate a RawNode representing an image statement
+ */
+const arbImageRawNode = fc.tuple(
+  fc.uuid(),
+  arbImageStatement,
+  fc.integer({ min: 1, max: 1000 })
+).map(([id, content, line]): RawNode => ({
+  id,
+  type: 'raw',
+  content,
+  line,
+}))
+
+/**
+ * Generate a non-image RawNode (e.g., a comment or other statement)
+ */
+const arbNonImageRawNode = fc.tuple(
+  fc.uuid(),
+  fc.stringMatching(/^# [a-z ]{1,20}$/),
+  fc.integer({ min: 1, max: 1000 })
+).map(([id, content, line]): RawNode => ({
+  id,
+  type: 'raw',
+  content,
+  line,
+}))
+
+/**
+ * Generate a RenpyScript with image statements
+ */
+const arbScriptWithImages = fc.tuple(
+  fc.array(arbImageRawNode, { minLength: 0, maxLength: 10 }),
+  fc.array(arbNonImageRawNode, { minLength: 0, maxLength: 5 })
+).map(([imageNodes, otherNodes]): RenpyScript => ({
+  type: 'script',
+  statements: [...imageNodes, ...otherNodes],
+  metadata: {
+    filePath: 'test.rpy',
+    parseTime: new Date(),
+    version: '1.0',
+  },
+}))
+
+/**
+ * Generate a file path for a script
+ */
+const arbFilePath = fc.stringMatching(/^game\/[a-z][a-z0-9_]{1,10}\.rpy$/)
+
+describe('Property 4: Script-Defined Image Discovery', () => {
+  /**
+   * Feature: image-management-system, Property 4: Script-Defined Image Discovery
+   * Validates: Requirements 2.6, 2.7
+   * 
+   * For any script file containing `image` statements, the system should discover
+   * and display these script-defined images using their defined tag names.
+   */
+  it('should discover all image statements in scripts', () => {
+    fc.assert(
+      fc.property(
+        fc.array(fc.tuple(arbFilePath, arbScriptWithImages), { minLength: 1, maxLength: 5 }),
+        (scriptEntries) => {
+          const mockFs = createMockFileSystem([], [])
+          const manager = new ResourceManager(mockFs)
+
+          // Create a Map of scripts
+          const scripts = new Map<string, RenpyScript>()
+          for (const [filePath, script] of scriptEntries) {
+            scripts.set(filePath, script)
+          }
+
+          // Scan script-defined images
+          const discovered = manager.scanScriptDefinedImages(scripts)
+
+          // Count expected image statements
+          let expectedCount = 0
+          const expectedTags = new Set<string>()
+          
+          for (const [, script] of scripts) {
+            for (const statement of script.statements) {
+              if (statement.type === 'raw') {
+                const rawNode = statement as RawNode
+                const match = rawNode.content.match(/^image\s+([a-zA-Z_][a-zA-Z0-9_\s]*?)\s*=\s*["']([^"']+)["']/)
+                if (match) {
+                  const tag = match[1].trim()
+                  // Only count unique tags (later definitions override earlier ones)
+                  if (!expectedTags.has(tag)) {
+                    expectedTags.add(tag)
+                    expectedCount++
+                  }
+                }
+              }
+            }
+          }
+
+          // All discovered images should have valid tags
+          for (const image of discovered) {
+            if (!image.tag || image.tag.trim() === '') {
+              return false
+            }
+            if (!image.path || image.path.trim() === '') {
+              return false
+            }
+            if (!image.sourceFile || image.sourceFile.trim() === '') {
+              return false
+            }
+          }
+
+          // The number of discovered images should match expected unique tags
+          return discovered.length === expectedCount
+        }
+      ),
+      { numRuns: 100 }
+    )
+  })
+
+  it('should correctly parse image tag and path from image statements', () => {
+    fc.assert(
+      fc.property(arbImageTag, arbImagePath, (tag, path) => {
+        const mockFs = createMockFileSystem([], [])
+        const manager = new ResourceManager(mockFs)
+
+        const script: RenpyScript = {
+          type: 'script',
+          statements: [{
+            id: 'test-id',
+            type: 'raw',
+            content: `image ${tag} = "${path}"`,
+            line: 1,
+          }],
+          metadata: {
+            filePath: 'test.rpy',
+            parseTime: new Date(),
+            version: '1.0',
+          },
+        }
+
+        const scripts = new Map<string, RenpyScript>()
+        scripts.set('test.rpy', script)
+
+        const discovered = manager.scanScriptDefinedImages(scripts)
+
+        // Should discover exactly one image
+        if (discovered.length !== 1) {
+          return false
+        }
+
+        // Tag and path should match
+        const image = discovered[0]
+        return image.tag === tag && image.path === path
+      }),
+      { numRuns: 100 }
+    )
+  })
+
+  it('should update image tags when onScriptChange is called', () => {
+    fc.assert(
+      fc.property(arbImageTag, arbImagePath, arbFilePath, (tag, path, filePath) => {
+        const mockFs = createMockFileSystem([], [])
+        const manager = new ResourceManager(mockFs)
+
+        // Initial script with one image
+        const initialScript: RenpyScript = {
+          type: 'script',
+          statements: [{
+            id: 'test-id',
+            type: 'raw',
+            content: `image ${tag} = "${path}"`,
+            line: 1,
+          }],
+          metadata: {
+            filePath,
+            parseTime: new Date(),
+            version: '1.0',
+          },
+        }
+
+        const scripts = new Map<string, RenpyScript>()
+        scripts.set(filePath, initialScript)
+        manager.scanScriptDefinedImages(scripts)
+
+        // Verify initial state
+        let discovered = manager.getScriptDefinedImages()
+        if (discovered.length !== 1 || discovered[0].tag !== tag) {
+          return false
+        }
+
+        // Update script with a different image
+        const newTag = tag + '_new'
+        const newPath = path.replace('.png', '_new.png')
+        const updatedScript: RenpyScript = {
+          type: 'script',
+          statements: [{
+            id: 'test-id-2',
+            type: 'raw',
+            content: `image ${newTag} = "${newPath}"`,
+            line: 1,
+          }],
+          metadata: {
+            filePath,
+            parseTime: new Date(),
+            version: '1.0',
+          },
+        }
+
+        // Call onScriptChange
+        manager.onScriptChange(filePath, updatedScript)
+
+        // Verify updated state
+        discovered = manager.getScriptDefinedImages()
+        
+        // Should have exactly one image with the new tag
+        if (discovered.length !== 1) {
+          return false
+        }
+        
+        return discovered[0].tag === newTag && discovered[0].path === newPath
+      }),
+      { numRuns: 100 }
+    )
+  })
+
+  it('should remove old definitions when script changes', () => {
+    fc.assert(
+      fc.property(arbFilePath, (filePath) => {
+        const mockFs = createMockFileSystem([], [])
+        const manager = new ResourceManager(mockFs)
+
+        // Initial script with multiple images
+        const initialScript: RenpyScript = {
+          type: 'script',
+          statements: [
+            {
+              id: 'id1',
+              type: 'raw',
+              content: 'image eileen happy = "eileen_happy.png"',
+              line: 1,
+            },
+            {
+              id: 'id2',
+              type: 'raw',
+              content: 'image eileen sad = "eileen_sad.png"',
+              line: 2,
+            },
+          ],
+          metadata: {
+            filePath,
+            parseTime: new Date(),
+            version: '1.0',
+          },
+        }
+
+        const scripts = new Map<string, RenpyScript>()
+        scripts.set(filePath, initialScript)
+        manager.scanScriptDefinedImages(scripts)
+
+        // Verify initial state has 2 images
+        let discovered = manager.getScriptDefinedImages()
+        if (discovered.length !== 2) {
+          return false
+        }
+
+        // Update script with only one image
+        const updatedScript: RenpyScript = {
+          type: 'script',
+          statements: [{
+            id: 'id3',
+            type: 'raw',
+            content: 'image lucy normal = "lucy_normal.png"',
+            line: 1,
+          }],
+          metadata: {
+            filePath,
+            parseTime: new Date(),
+            version: '1.0',
+          },
+        }
+
+        manager.onScriptChange(filePath, updatedScript)
+
+        // Should now have only 1 image
+        discovered = manager.getScriptDefinedImages()
+        if (discovered.length !== 1) {
+          return false
+        }
+
+        // The old images should be gone, only the new one should exist
+        return discovered[0].tag === 'lucy normal'
+      }),
+      { numRuns: 100 }
+    )
+  })
+
+  it('should add discovered images to image tags for consistency', () => {
+    fc.assert(
+      fc.property(arbImageTag, arbImagePath, (tag, path) => {
+        const mockFs = createMockFileSystem([], [])
+        const manager = new ResourceManager(mockFs)
+
+        const script: RenpyScript = {
+          type: 'script',
+          statements: [{
+            id: 'test-id',
+            type: 'raw',
+            content: `image ${tag} = "${path}"`,
+            line: 1,
+          }],
+          metadata: {
+            filePath: 'test.rpy',
+            parseTime: new Date(),
+            version: '1.0',
+          },
+        }
+
+        const scripts = new Map<string, RenpyScript>()
+        scripts.set('test.rpy', script)
+        manager.scanScriptDefinedImages(scripts)
+
+        // The base tag should be added to image tags
+        const baseTag = tag.split(' ')[0]
+        const isBackground = baseTag.toLowerCase() === 'bg'
+        
+        const imageTags = isBackground 
+          ? manager.getBackgroundTags() 
+          : manager.getImageTags()
+
+        // Should find the base tag in the appropriate list
+        const found = imageTags.some(t => t.tag === baseTag)
+        return found
+      }),
+      { numRuns: 100 }
+    )
+  })
+})

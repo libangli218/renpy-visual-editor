@@ -56,7 +56,7 @@ const sections: SectionConfig[] = [
 const PANEL_COLLAPSED_KEY = 'left-panel-collapsed'
 
 export const LeftPanel: React.FC = () => {
-  const { projectPath, setProjectPath, setAst, setCurrentFile, resetHistory, ast } = useEditorStore()
+  const { projectPath, setProjectPath, setAst, setCurrentFile, resetHistory, ast, currentFile } = useEditorStore()
   const [expandedSections, setExpandedSections] = useState<Set<PanelSection>>(
     new Set(['labels', 'characters'])
   )
@@ -161,6 +161,22 @@ export const LeftPanel: React.FC = () => {
     }
   }, [ast, extractCharactersFromAST, extractVariablesFromAST])
 
+  // Update script-defined images when AST changes
+  // Implements Requirement 2.7: Incremental update on script changes
+  useEffect(() => {
+    if (ast && currentFile) {
+      // Call onScriptChange to incrementally update script-defined images
+      resourceManager.onScriptChange(currentFile, ast)
+      
+      // Update the image tags state to reflect any changes
+      const bgTags = resourceManager.getBackgroundTags()
+      setBackgroundTags(bgTags)
+      
+      const imgTags = resourceManager.getImageTags()
+      setSpriteTags(imgTags)
+    }
+  }, [ast, currentFile])
+
   // Scan resources when project path changes
   useEffect(() => {
     const scanResources = async () => {
@@ -173,6 +189,13 @@ export const LeftPanel: React.FC = () => {
 
       try {
         await resourceManager.scanResources(projectPath)
+        
+        // Scan script-defined images from all loaded scripts
+        // Implements Requirement 2.6: Scan script files for `image` statements
+        const project = projectManager.getProject()
+        if (project && project.scripts.size > 0) {
+          resourceManager.scanScriptDefinedImages(project.scripts)
+        }
         
         // Get backgrounds
         const bgTags = resourceManager.getBackgroundTags()
