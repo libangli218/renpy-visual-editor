@@ -3,3 +3,4 @@
  */
 
 export * from './ResourceManager'
+export * from './ThumbnailService'
