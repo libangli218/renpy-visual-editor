@@ -53,6 +53,8 @@ export const EditorArea: React.FC = () => {
   // Refresh script files when project path changes
   useEffect(() => {
     if (projectPath) {
+      // refreshScriptFiles is now async, but we don't need to await it here
+      // as it handles its own state updates
       refreshScriptFiles()
     }
   }, [projectPath, refreshScriptFiles])

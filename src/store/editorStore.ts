@@ -183,8 +183,8 @@ export interface EditorStore {
   pushToHistory: () => void
   resetHistory: () => void
   
-  // Multi-script actions (Requirements 1.2, 1.6, 1.9, 3.1-3.8)
-  refreshScriptFiles: () => void
+  // Multi-script actions (Requirements 1.2, 1.6, 1.7, 1.8, 1.9, 3.1-3.8)
+  refreshScriptFiles: () => Promise<void>
   switchScript: (filePath: string) => Promise<void>
   switchToNextScript: () => void
   switchToPrevScript: () => void
@@ -424,9 +424,56 @@ export const useEditorStore = create<EditorStore>((set, get) => {
     
     /**
      * Refresh the script files list from ProjectManager
-     * Implements Requirements 1.2, 1.6, 1.9
+     * Implements Requirements 1.2, 1.6, 1.7, 1.8, 1.9
+     * 
+     * This method also detects externally deleted files and handles them gracefully.
      */
-    refreshScriptFiles: () => {
+    refreshScriptFiles: async () => {
+      const state = get()
+      
+      // First, check for deleted files and rescan for new files
+      try {
+        const { removed } = await projectManager.rescanScriptFiles()
+        
+        // If current file was deleted, we need to switch to another file
+        if (state.currentFile && removed.includes(state.currentFile)) {
+          // Remove from scriptStates cache
+          const newScriptStates = new Map(state.scriptStates)
+          for (const filePath of removed) {
+            newScriptStates.delete(filePath)
+          }
+          set({ scriptStates: newScriptStates })
+          
+          // Get remaining script files
+          const remainingFiles = projectManager.getScriptFiles()
+          
+          if (remainingFiles.length > 0) {
+            // Switch to the first available file
+            await get().switchScript(remainingFiles[0])
+          } else {
+            // No files left, clear the current state
+            set({
+              currentFile: null,
+              ast: null,
+              selectedNodeId: null,
+              selectedBlockId: null,
+            })
+          }
+        } else {
+          // Just remove deleted files from cache
+          if (removed.length > 0) {
+            const newScriptStates = new Map(state.scriptStates)
+            for (const filePath of removed) {
+              newScriptStates.delete(filePath)
+            }
+            set({ scriptStates: newScriptStates })
+          }
+        }
+      } catch (error) {
+        console.error('Failed to rescan script files:', error)
+      }
+      
+      // Now get the updated script files list
       const scriptPaths = projectManager.getScriptFiles()
       
       // Convert to ScriptFileInfo format
@@ -439,8 +486,8 @@ export const useEditorStore = create<EditorStore>((set, get) => {
         const modified = projectManager.isScriptModified(path)
         
         // Check for errors in scriptStates
-        const state = get()
-        const scriptState = state.scriptStates.get(path)
+        const currentState = get()
+        const scriptState = currentState.scriptStates.get(path)
         
         return {
           path,
@@ -465,7 +512,9 @@ export const useEditorStore = create<EditorStore>((set, get) => {
     
     /**
      * Switch to a different script file
-     * Implements Requirements 3.1, 3.2, 3.3, 3.4, 3.6
+     * Implements Requirements 3.1, 3.2, 3.3, 3.4, 3.6, 3.7
+     * 
+     * This method handles parse errors gracefully and marks files with errors.
      */
     switchScript: async (filePath: string) => {
       const state = get()
@@ -521,7 +570,8 @@ export const useEditorStore = create<EditorStore>((set, get) => {
         let errorMessage: string | undefined
         
         const cachedState = state.scriptStates.get(filePath)
-        if (cachedState?.ast) {
+        if (cachedState?.ast && !cachedState.hasError) {
+          // Use cached AST if available and not in error state
           newAst = cachedState.ast
           hasError = cachedState.hasError
           errorMessage = cachedState.errorMessage
@@ -531,9 +581,21 @@ export const useEditorStore = create<EditorStore>((set, get) => {
           if (scriptAst) {
             newAst = scriptAst
           } else {
-            // Script not in ProjectManager, this shouldn't happen normally
-            hasError = true
-            errorMessage = `Script not found: ${filePath}`
+            // Script not in ProjectManager - try to reload from disk
+            try {
+              const reloadedAst = await projectManager.reloadScript(filePath)
+              if (reloadedAst) {
+                newAst = reloadedAst
+              } else {
+                hasError = true
+                errorMessage = `无法加载脚本: ${filePath}`
+              }
+            } catch (parseError) {
+              hasError = true
+              errorMessage = parseError instanceof Error 
+                ? `解析错误: ${parseError.message}` 
+                : `解析错误: ${filePath}`
+            }
           }
         }
         
@@ -572,12 +634,13 @@ export const useEditorStore = create<EditorStore>((set, get) => {
           canRedo: false,
         })
         
-        // Refresh script files to update modified indicators
-        get().refreshScriptFiles()
+        // Refresh script files to update modified/error indicators
+        await get().refreshScriptFiles()
         
       } catch (error) {
         console.error('Failed to switch script:', error)
         set({ isLoading: false, loadingFile: null })
+        throw error // Re-throw so the UI can handle it
       }
     },
     
@@ -662,7 +725,9 @@ label ${labelName}:
     
     /**
      * Reload the current script from disk
-     * Implements Requirement 3.8
+     * Implements Requirements 3.7, 3.8
+     * 
+     * This method reloads the script from disk and handles parse errors gracefully.
      */
     reloadCurrentScript: async () => {
       const state = get()
@@ -673,11 +738,11 @@ label ${labelName}:
       set({ isLoading: true, loadingFile: state.currentFile })
       
       try {
-        // Get fresh AST from ProjectManager
-        const ast = projectManager.getScript(state.currentFile)
+        // Use ProjectManager's reloadScript which handles parsing
+        const ast = await projectManager.reloadScript(state.currentFile)
         
         if (ast) {
-          // Update script state cache
+          // Successfully reloaded - clear error state
           const newScriptStates = new Map(state.scriptStates)
           newScriptStates.set(state.currentFile, {
             ast: JSON.parse(JSON.stringify(ast)),
@@ -685,6 +750,7 @@ label ${labelName}:
             lastAccessed: Date.now(),
             modified: false,
             hasError: false,
+            errorMessage: undefined,
           })
           
           // Reset history
@@ -702,12 +768,54 @@ label ${labelName}:
             canRedo: false,
           })
           
-          // Refresh script files to update modified indicators
-          get().refreshScriptFiles()
+          // Refresh script files to update modified/error indicators
+          await get().refreshScriptFiles()
+        } else {
+          // File might have been deleted or failed to parse
+          // Mark as error state
+          const newScriptStates = new Map(state.scriptStates)
+          newScriptStates.set(state.currentFile, {
+            ast: null,
+            undoHistory: { past: [], future: [] },
+            lastAccessed: Date.now(),
+            modified: false,
+            hasError: true,
+            errorMessage: '无法加载脚本文件，文件可能已被删除或包含语法错误',
+          })
+          
+          set({
+            ast: null,
+            scriptStates: newScriptStates,
+            isLoading: false,
+            loadingFile: null,
+          })
+          
+          // Refresh script files to update error indicators
+          await get().refreshScriptFiles()
         }
       } catch (error) {
         console.error('Failed to reload script:', error)
-        set({ isLoading: false, loadingFile: null })
+        
+        // Mark as error state with the error message
+        const errorMsg = error instanceof Error ? error.message : '重新加载失败'
+        const newScriptStates = new Map(state.scriptStates)
+        newScriptStates.set(state.currentFile, {
+          ast: state.ast ? JSON.parse(JSON.stringify(state.ast)) : null,
+          undoHistory: { past: [], future: [] },
+          lastAccessed: Date.now(),
+          modified: projectManager.isScriptModified(state.currentFile),
+          hasError: true,
+          errorMessage: errorMsg,
+        })
+        
+        set({ 
+          scriptStates: newScriptStates,
+          isLoading: false, 
+          loadingFile: null 
+        })
+        
+        // Refresh script files to update error indicators
+        await get().refreshScriptFiles()
       }
     },
     

@@ -777,6 +777,130 @@ export class ProjectManager {
       missing,
     }
   }
+
+  /**
+   * Check if a script file exists on disk
+   * Implements Requirement 1.7: Handle external file deletion
+   */
+  async checkFileExists(filePath: string): Promise<boolean> {
+    try {
+      return await this.fs.exists(filePath)
+    } catch {
+      return false
+    }
+  }
+
+  /**
+   * Check which script files have been deleted externally
+   * Returns array of deleted file paths
+   * Implements Requirement 1.7: Handle external file deletion
+   */
+  async checkDeletedFiles(): Promise<string[]> {
+    if (!this.currentProject) {
+      return []
+    }
+
+    const deletedFiles: string[] = []
+    const scriptPaths = Array.from(this.currentProject.scripts.keys())
+
+    for (const filePath of scriptPaths) {
+      const exists = await this.checkFileExists(filePath)
+      if (!exists) {
+        deletedFiles.push(filePath)
+      }
+    }
+
+    return deletedFiles
+  }
+
+  /**
+   * Remove a script from the project (used when file is deleted externally)
+   * Implements Requirement 1.7: Handle external file deletion
+   */
+  removeScript(filePath: string): void {
+    if (!this.currentProject) {
+      return
+    }
+
+    this.currentProject.scripts.delete(filePath)
+    this.modifiedScripts.delete(filePath)
+    this.originalContents.delete(filePath)
+  }
+
+  /**
+   * Reload a script from disk
+   * Implements Requirement 3.8: Reload current file from disk
+   */
+  async reloadScript(filePath: string): Promise<RenpyScript | null> {
+    if (!this.currentProject) {
+      return null
+    }
+
+    try {
+      const exists = await this.fs.exists(filePath)
+      if (!exists) {
+        return null
+      }
+
+      const content = await this.fs.readFile(filePath)
+      this.originalContents.set(filePath, content)
+      
+      const parseResult = parse(content, filePath)
+      this.currentProject.scripts.set(filePath, parseResult.ast)
+      
+      // Clear modified flag since we just loaded from disk
+      this.modifiedScripts.delete(filePath)
+      
+      return parseResult.ast
+    } catch (error) {
+      console.error(`Failed to reload script ${filePath}:`, error)
+      return null
+    }
+  }
+
+  /**
+   * Rescan project for new script files
+   * Returns newly discovered files
+   * Implements Requirement 1.7: Handle external file changes
+   */
+  async rescanScriptFiles(): Promise<{ added: string[]; removed: string[] }> {
+    if (!this.currentProject) {
+      return { added: [], removed: [] }
+    }
+
+    const currentFiles = new Set(this.currentProject.scripts.keys())
+    const scanResult = await this.scanRpyFiles(this.currentProject.path)
+    const diskFiles = new Set(scanResult.files)
+
+    const added: string[] = []
+    const removed: string[] = []
+
+    // Find new files
+    for (const filePath of diskFiles) {
+      if (!currentFiles.has(filePath)) {
+        added.push(filePath)
+        // Parse and add new file
+        try {
+          const content = await this.fs.readFile(filePath)
+          this.originalContents.set(filePath, content)
+          const parseResult = parse(content, filePath)
+          this.currentProject.scripts.set(filePath, parseResult.ast)
+        } catch (error) {
+          console.warn(`Failed to parse new file ${filePath}:`, error)
+        }
+      }
+    }
+
+    // Find removed files
+    for (const filePath of currentFiles) {
+      if (!diskFiles.has(filePath)) {
+        removed.push(filePath)
+        this.removeScript(filePath)
+      }
+    }
+
+    return { added, removed }
+  }
 }
 
 // Export a singleton instance for convenience
