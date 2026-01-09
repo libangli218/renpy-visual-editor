@@ -9,9 +9,10 @@
  * - 3.1, 3.2: Import buttons for Backgrounds and Sprites sections
  * - 7.1, 7.2: Search input for Backgrounds and Sprites sections
  * - 2.3, 2.4: Group sprites by character tag
+ * - Accessibility: Keyboard navigation for resource lists
  */
 
-import React, { useState, useCallback, useMemo } from 'react'
+import React, { useState, useCallback, useMemo, useRef } from 'react'
 import { ResourceItem } from './ResourceItem'
 import { ImageTag } from '../../resource/ResourceManager'
 import {
@@ -25,6 +26,7 @@ import {
   ImportResultDialog,
 } from './ImportDialog'
 import { useResourceImport } from '../../hooks/useResourceImport'
+import { useResourceKeyboardNav } from '../../hooks/useResourceKeyboardNav'
 import './ResourceSection.css'
 
 /**
@@ -201,6 +203,9 @@ export const ResourceSection: React.FC<ResourceSectionProps> = ({
   // Track expanded groups for sprites
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set())
   
+  // Ref for keyboard navigation container
+  const resourceListRef = useRef<HTMLDivElement>(null)
+  
   // Import hook
   const {
     state: importState,
@@ -223,6 +228,29 @@ export const ResourceSection: React.FC<ResourceSectionProps> = ({
     () => filterResources(allResources, searchQuery),
     [allResources, searchQuery]
   )
+  
+  // Convert filtered resources to ResourceDragData for keyboard nav
+  const filteredResourcesAsDragData = useMemo(
+    () => filteredResources.map(r => ({
+      type: r.type as 'background' | 'sprite',
+      imageTag: r.imageTag,
+      imagePath: r.imagePath,
+    })),
+    [filteredResources]
+  )
+  
+  // Keyboard navigation hook
+  const {
+    focusIndex,
+    handleKeyDown: handleKeyboardNav,
+    getItemProps,
+  } = useResourceKeyboardNav({
+    resources: filteredResourcesAsDragData,
+    onSelect: onResourceClick,
+    onPreview: onResourceDoubleClick,
+    enabled: expanded,
+    containerRef: resourceListRef,
+  })
   
   // Group resources for sprites
   const groupedResources = useMemo(
@@ -298,55 +326,81 @@ export const ResourceSection: React.FC<ResourceSectionProps> = ({
     }
   }, [onResourceContextMenu])
   
-  // Check if a resource is selected
-  const isResourceSelected = useCallback((resource: ResourceData) => {
-    return selectedResource?.imageTag === resource.imageTag
-  }, [selectedResource])
+  // Check if a resource is selected (by click or keyboard focus)
+  const isResourceSelected = useCallback((resource: ResourceData, index: number) => {
+    // Selected by click
+    if (selectedResource?.imageTag === resource.imageTag) {
+      return true
+    }
+    // Selected by keyboard focus
+    if (focusIndex === index) {
+      return true
+    }
+    return false
+  }, [selectedResource, focusIndex])
   
-  // Render a single resource item
-  const renderResourceItem = useCallback((resource: ResourceData) => (
-    <ResourceItem
-      key={resource.imageTag}
-      imageTag={resource.imageTag}
-      type={resource.type}
-      imagePath={resource.imagePath}
-      thumbnailSize={thumbnailSize}
-      selected={isResourceSelected(resource)}
-      onClick={() => handleResourceClick(resource)}
-      onDoubleClick={() => handleResourceDoubleClick(resource)}
-      onContextMenu={(e) => handleResourceContextMenu(e, resource)}
-    />
-  ), [thumbnailSize, isResourceSelected, handleResourceClick, handleResourceDoubleClick, handleResourceContextMenu])
+  // Render a single resource item with keyboard navigation support
+  const renderResourceItem = useCallback((resource: ResourceData, index: number) => {
+    const itemProps = getItemProps(index)
+    return (
+      <ResourceItem
+        key={resource.imageTag}
+        imageTag={resource.imageTag}
+        type={resource.type}
+        imagePath={resource.imagePath}
+        thumbnailSize={thumbnailSize}
+        selected={isResourceSelected(resource, index)}
+        onClick={() => handleResourceClick(resource)}
+        onDoubleClick={() => handleResourceDoubleClick(resource)}
+        onContextMenu={(e) => handleResourceContextMenu(e, resource)}
+        className={focusIndex === index ? 'keyboard-focused' : ''}
+        {...itemProps}
+      />
+    )
+  }, [thumbnailSize, isResourceSelected, handleResourceClick, handleResourceDoubleClick, handleResourceContextMenu, getItemProps, focusIndex])
   
   // Render grouped resources (for sprites)
+  // Note: For grouped resources, we need to track global index across groups
   const renderGroupedResources = useCallback(() => {
     if (!groupedResources) return null
     
+    // Build a flat index map for keyboard navigation
+    let globalIndex = 0
+    
     return (
       <div className="resource-groups">
-        {groupedResources.map(group => (
-          <div key={group.tag} className="resource-group">
-            <button
-              className="resource-group-header"
-              onClick={() => toggleGroup(group.tag)}
-              aria-expanded={expandedGroups.has(group.tag)}
-            >
-              <span className="group-toggle">
-                {expandedGroups.has(group.tag) ? '▾' : '▸'}
-              </span>
-              <span className="group-icon">👤</span>
-              <span className="group-name">{group.tag}</span>
-              <span className="group-count">{group.resources.length}</span>
-            </button>
-            {expandedGroups.has(group.tag) && (
-              <div className="resource-group-content">
-                <div className="resource-grid">
-                  {group.resources.map(renderResourceItem)}
+        {groupedResources.map(group => {
+          const groupStartIndex = globalIndex
+          const groupItems = group.resources.map((resource, localIndex) => {
+            const currentIndex = groupStartIndex + localIndex
+            return renderResourceItem(resource, currentIndex)
+          })
+          globalIndex += group.resources.length
+          
+          return (
+            <div key={group.tag} className="resource-group">
+              <button
+                className="resource-group-header"
+                onClick={() => toggleGroup(group.tag)}
+                aria-expanded={expandedGroups.has(group.tag)}
+              >
+                <span className="group-toggle">
+                  {expandedGroups.has(group.tag) ? '▾' : '▸'}
+                </span>
+                <span className="group-icon">👤</span>
+                <span className="group-name">{group.tag}</span>
+                <span className="group-count">{group.resources.length}</span>
+              </button>
+              {expandedGroups.has(group.tag) && (
+                <div className="resource-group-content">
+                  <div className="resource-grid">
+                    {groupItems}
+                  </div>
                 </div>
-              </div>
-            )}
-          </div>
-        ))}
+              )}
+            </div>
+          )
+        })}
       </div>
     )
   }, [groupedResources, expandedGroups, toggleGroup, renderResourceItem])
@@ -363,7 +417,7 @@ export const ResourceSection: React.FC<ResourceSectionProps> = ({
     
     return (
       <div className="resource-grid">
-        {filteredResources.map(renderResourceItem)}
+        {filteredResources.map((resource, index) => renderResourceItem(resource, index))}
       </div>
     )
   }, [filteredResources, searchQuery, renderResourceItem])
@@ -419,8 +473,15 @@ export const ResourceSection: React.FC<ResourceSectionProps> = ({
             </button>
           </div>
           
-          {/* Resource List */}
-          <div className="resource-list-container">
+          {/* Resource List - with keyboard navigation */}
+          <div 
+            ref={resourceListRef}
+            className="resource-list-container"
+            onKeyDown={handleKeyboardNav}
+            tabIndex={0}
+            role="listbox"
+            aria-label={`${title} list`}
+          >
             {sectionType === 'sprites' ? renderGroupedResources() : renderFlatResources()}
           </div>
         </div>

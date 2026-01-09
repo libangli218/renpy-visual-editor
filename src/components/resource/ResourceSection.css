@@ -175,6 +175,17 @@
   margin-left: 20px;
   max-height: 400px;
   overflow-y: auto;
+  outline: none;
+}
+
+/* Focus state for keyboard navigation */
+.resource-list-container:focus {
+  outline: none;
+}
+
+.resource-list-container:focus-visible {
+  box-shadow: inset 0 0 0 1px var(--accent, #4a9eff);
+  border-radius: var(--radius-sm);
 }
 
 /* Resource Grid */

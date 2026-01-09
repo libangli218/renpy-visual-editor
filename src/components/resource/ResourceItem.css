@@ -35,6 +35,16 @@
   box-shadow: var(--shadow-focus, 0 0 0 2px rgba(74, 158, 255, 0.4));
 }
 
+/* Keyboard focus state - more prominent than regular focus */
+.resource-item-thumbnail.keyboard-focused {
+  background-color: var(--accent-muted, rgba(74, 158, 255, 0.15));
+  box-shadow: var(--shadow-focus, 0 0 0 2px rgba(74, 158, 255, 0.6));
+}
+
+.resource-item-thumbnail.keyboard-focused .resource-name-label {
+  color: var(--text-primary, #ffffff);
+}
+
 .resource-item-thumbnail.selected {
   background-color: var(--accent-muted, rgba(74, 158, 255, 0.15));
 }
