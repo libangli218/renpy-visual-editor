@@ -378,7 +378,7 @@ export const ResourceItem: React.FC<ResourceItemProps> = ({
 
       {/* Hover preview tooltip - rendered with fixed position via portal */}
       {isHovering && itemRef.current && (
-        <TooltipPortal targetRef={itemRef}>
+        <TooltipPortal targetRef={itemRef} resourceType={type}>
           <div 
             className="preview-image-container"
             style={{
@@ -403,11 +403,17 @@ export const ResourceItem: React.FC<ResourceItemProps> = ({
  */
 interface TooltipPortalProps {
   targetRef: React.RefObject<HTMLDivElement>
+  resourceType: 'sprite' | 'background'
   children: React.ReactNode
 }
 
-const TooltipPortal: React.FC<TooltipPortalProps> = ({ targetRef, children }) => {
+const TooltipPortal: React.FC<TooltipPortalProps> = ({ targetRef, resourceType, children }) => {
   const [position, setPosition] = useState({ top: 0, left: 0 })
+  
+  // Different sizes for different resource types
+  const isBackground = resourceType === 'background'
+  const tooltipWidth = isBackground ? 260 : 160
+  const tooltipHeight = isBackground ? 200 : 280
   
   useEffect(() => {
     if (!targetRef.current) return
@@ -416,9 +422,6 @@ const TooltipPortal: React.FC<TooltipPortalProps> = ({ targetRef, children }) =>
       const rect = targetRef.current?.getBoundingClientRect()
       if (!rect) return
       
-      // Position tooltip to the right of the item
-      const tooltipWidth = 180
-      const tooltipHeight = 260 // Taller for portrait sprites
       const gap = 8
       
       let left = rect.right + gap
@@ -449,11 +452,11 @@ const TooltipPortal: React.FC<TooltipPortalProps> = ({ targetRef, children }) =>
       window.removeEventListener('scroll', updatePosition, true)
       window.removeEventListener('resize', updatePosition)
     }
-  }, [targetRef])
+  }, [targetRef, tooltipWidth, tooltipHeight])
   
   return ReactDOM.createPortal(
     <div 
-      className="resource-preview-tooltip-fixed"
+      className={`resource-preview-tooltip-fixed ${resourceType}-preview`}
       style={{
         position: 'fixed',
         top: position.top,

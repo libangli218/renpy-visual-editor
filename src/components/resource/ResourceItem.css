@@ -400,11 +400,23 @@
 }
 
 .resource-preview-tooltip-fixed .preview-image-container {
-  width: 160px;
-  height: 200px;
+  width: 200px;
+  height: 150px;
   border-radius: var(--radius-sm, 4px);
   background-color: var(--bg-tertiary, #2a2a2a);
   margin-bottom: var(--spacing-xs, 4px);
+}
+
+/* Sprite preview - taller for portrait images */
+.resource-preview-tooltip-fixed.sprite-preview .preview-image-container {
+  width: 140px;
+  height: 220px;
+}
+
+/* Background preview - wider for landscape images */
+.resource-preview-tooltip-fixed.background-preview .preview-image-container {
+  width: 240px;
+  height: 150px;
 }
 
 .resource-preview-tooltip-fixed .preview-info {
