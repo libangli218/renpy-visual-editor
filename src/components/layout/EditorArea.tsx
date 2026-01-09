@@ -1,5 +1,6 @@
 import React, { useCallback, useMemo, useEffect, useState } from 'react'
 import { useEditorStore, AggregatedCharacter, AggregatedVariable } from '../../store/editorStore'
+import { useResourceStore } from '../../store/resourceStore'
 import { PreviewPanel } from './PreviewPanel'
 import { StoryModeEditor } from '../storyMode'
 import { MultiLabelView } from '../blockMode'
@@ -41,6 +42,9 @@ export const EditorArea: React.FC = () => {
     aggregateResources,
   } = useEditorStore()
   
+  // Get resource refresh version from resource store
+  const resourceRefreshVersion = useResourceStore((state) => state.resourceRefreshVersion)
+  
   // State for available resources
   const [availableImages, setAvailableImages] = useState<string[]>([])
   const [availableAudio, setAvailableAudio] = useState<string[]>([])
@@ -67,7 +71,7 @@ export const EditorArea: React.FC = () => {
     }
   }, [projectPath, ast, aggregateResources])
 
-  // Scan resources when project path changes
+  // Scan resources when project path changes or when refresh is triggered
   useEffect(() => {
     const scanResources = async () => {
       if (!projectPath) {
@@ -119,7 +123,7 @@ export const EditorArea: React.FC = () => {
     }
 
     scanResources()
-  }, [projectPath])
+  }, [projectPath, resourceRefreshVersion])
 
   /**
    * Handle AST changes from Multi-Label View

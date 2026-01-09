@@ -465,8 +465,10 @@ export class ThumbnailService {
 
       // Use local-file:// protocol (registered in Electron main process)
       // Format: local-file:///F:/path/to/file.jpg
+      // Note: We need to encode the path to handle spaces and special characters
       const normalizedPath = imagePath.replace(/\\/g, '/')
-      img.src = `local-file:///${normalizedPath}`
+      const encodedPath = normalizedPath.split('/').map(segment => encodeURIComponent(segment)).join('/')
+      img.src = `local-file:///${encodedPath}`
     })
   }
 

@@ -86,6 +86,9 @@ export interface ResourceState {
   
   /** Context menu state */
   contextMenu: ContextMenuState
+  
+  /** Resource refresh version - incremented when resources need to be rescanned */
+  resourceRefreshVersion: number
 }
 
 /**
@@ -128,6 +131,9 @@ export interface ResourceActions {
   /** Close context menu */
   closeContextMenu: () => void
   
+  /** Trigger resource refresh - increments version to notify listeners */
+  triggerResourceRefresh: () => void
+  
   /** Reset all state to defaults */
   reset: () => void
 }
@@ -155,6 +161,7 @@ const initialState: ResourceState = {
     position: { x: 0, y: 0 },
     resource: null,
   },
+  resourceRefreshVersion: 0,
 }
 
 // ============================================================================
@@ -305,6 +312,16 @@ export const useResourceStore = create<ResourceStore>((set, get) => ({
   },
 
   /**
+   * Trigger resource refresh
+   * Increments version to notify listeners (like EditorArea) to rescan resources
+   */
+  triggerResourceRefresh: () => {
+    set((state) => ({
+      resourceRefreshVersion: state.resourceRefreshVersion + 1,
+    }))
+  },
+
+  /**
    * Reset all state to defaults
    */
   reset: () => {
@@ -331,6 +348,7 @@ export function getResourceState(): ResourceState {
     selectedResource: state.selectedResource,
     previewOpen: state.previewOpen,
     contextMenu: state.contextMenu,
+    resourceRefreshVersion: state.resourceRefreshVersion,
   }
 }
 

@@ -116,13 +116,59 @@ export const ResourcePreviewPanel: React.FC<ResourcePreviewPanelProps> = ({
   const [metadata, setMetadata] = useState<ImageMetadata | null>(null)
   const [imageLoaded, setImageLoaded] = useState(false)
   const [imageError, setImageError] = useState(false)
+  const [imageUrl, setImageUrl] = useState<string>('')
 
-  // Reset state when resource changes
+  // Load image using IPC when resource changes
   useEffect(() => {
-    setMetadata(null)
-    setImageLoaded(false)
-    setImageError(false)
-  }, [resource?.imagePath])
+    if (!open || !resource?.imagePath) {
+      setImageUrl('')
+      setMetadata(null)
+      setImageLoaded(false)
+      setImageError(false)
+      return
+    }
+
+    let mounted = true
+
+    const loadImage = async () => {
+      setImageLoaded(false)
+      setImageError(false)
+      setImageUrl('')
+
+      // Try to load image using Electron's IPC API (most reliable)
+      const electronAPI = (window as unknown as { 
+        electronAPI?: { 
+          readFileAsBase64?: (path: string) => Promise<string | null> 
+        } 
+      }).electronAPI
+
+      if (electronAPI?.readFileAsBase64) {
+        try {
+          const dataUrl = await electronAPI.readFileAsBase64(resource.imagePath)
+          if (mounted && dataUrl) {
+            setImageUrl(dataUrl)
+            setImageError(false) // Ensure error is cleared on successful load
+            return
+          }
+        } catch (error) {
+          console.warn('Failed to load image via IPC:', error)
+        }
+      }
+
+      // Fallback: try using local-file:// protocol
+      if (mounted) {
+        const normalizedPath = resource.imagePath.replace(/\\/g, '/')
+        const encodedPath = normalizedPath.split('/').map(segment => encodeURIComponent(segment)).join('/')
+        setImageUrl(`local-file:///${encodedPath}`)
+      }
+    }
+
+    loadImage()
+
+    return () => {
+      mounted = false
+    }
+  }, [open, resource?.imagePath])
 
   // Handle Escape key to close
   useEffect(() => {
@@ -150,6 +196,7 @@ export const ResourcePreviewPanel: React.FC<ResourcePreviewPanelProps> = ({
   const handleImageLoad = useCallback((e: React.SyntheticEvent<HTMLImageElement>) => {
     const img = e.currentTarget
     setImageLoaded(true)
+    setImageError(false) // Clear any previous error state
     
     // Get image dimensions
     const width = img.naturalWidth
@@ -205,11 +252,6 @@ export const ResourcePreviewPanel: React.FC<ResourcePreviewPanelProps> = ({
   if (!open || !resource) {
     return null
   }
-
-  // Build image URL using local-file:// protocol (registered in Electron main process)
-  // Format: local-file:///F:/path/to/file.jpg
-  const normalizedPath = resource.imagePath.replace(/\\/g, '/')
-  const imageUrl = `local-file:///${normalizedPath}`
 
   return (
     <div 

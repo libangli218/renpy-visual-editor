@@ -40,8 +40,9 @@
   border: 1px solid var(--border-color, #3c3c3c);
   border-radius: var(--radius-lg, 8px);
   box-shadow: var(--shadow-xl, 0 16px 48px rgba(0, 0, 0, 0.6));
-  width: 90vw;
-  max-width: 800px;
+  width: auto;
+  min-width: 400px;
+  max-width: 90vw;
   max-height: 90vh;
   display: flex;
   flex-direction: column;
@@ -118,19 +119,31 @@
 
 .preview-image-container {
   position: relative;
-  flex: 1;
-  min-height: 200px;
-  max-height: 50vh;
+  flex: 0 0 auto;
+  min-height: 120px;
+  max-height: calc(85vh - 280px); /* Reserve more space for header, metadata, and actions */
   display: flex;
   align-items: center;
   justify-content: center;
   background: var(--bg-tertiary, #1e1e1e);
   overflow: hidden;
+  /* Checkerboard pattern for transparent images */
+  background-image: 
+    linear-gradient(45deg, #2a2a2a 25%, transparent 25%),
+    linear-gradient(-45deg, #2a2a2a 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, #2a2a2a 75%),
+    linear-gradient(-45deg, transparent 75%, #2a2a2a 75%);
+  background-size: 16px 16px;
+  background-position: 0 0, 0 8px, 8px -8px, -8px 0px;
+  background-color: #1e1e1e;
 }
 
 .preview-image {
-  max-width: 100%;
-  max-height: 100%;
+  display: block;
+  max-width: min(500px, 80vw);
+  max-height: calc(85vh - 280px); /* Match container max-height */
+  width: auto;
+  height: auto;
   object-fit: contain;
   opacity: 0;
   transition: opacity 0.2s ease;

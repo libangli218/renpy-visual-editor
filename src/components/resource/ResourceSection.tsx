@@ -364,6 +364,22 @@ export const ResourceSection: React.FC<ResourceSectionProps> = ({
   const renderGroupedResources = useCallback(() => {
     if (!groupedResources) return null
     
+    // If there's a search query, show flat list instead of groups for better UX
+    if (searchQuery && searchQuery.trim() !== '') {
+      if (filteredResources.length === 0) {
+        return (
+          <p className="section-empty">
+            No matching resources
+          </p>
+        )
+      }
+      return (
+        <div className="resource-grid">
+          {filteredResources.map((resource, index) => renderResourceItem(resource, index))}
+        </div>
+      )
+    }
+    
     // Build a flat index map for keyboard navigation
     let globalIndex = 0
     
@@ -403,7 +419,7 @@ export const ResourceSection: React.FC<ResourceSectionProps> = ({
         })}
       </div>
     )
-  }, [groupedResources, expandedGroups, toggleGroup, renderResourceItem])
+  }, [groupedResources, expandedGroups, toggleGroup, renderResourceItem, searchQuery, filteredResources])
   
   // Render flat resource list (for backgrounds)
   const renderFlatResources = useCallback(() => {

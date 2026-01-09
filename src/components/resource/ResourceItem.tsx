@@ -168,51 +168,64 @@ export const ResourceItem: React.FC<ResourceItemProps> = ({
     event.dataTransfer.setData('text/plain', imageTag)
     event.dataTransfer.effectAllowed = 'copy'
 
-    // Create drag preview using canvas
-    const canvas = document.createElement('canvas')
-    const previewSize = 64
-    canvas.width = previewSize
-    canvas.height = previewSize + 20 // Extra space for label
-    const ctx = canvas.getContext('2d')
-
-    if (ctx) {
-      // Draw background
-      ctx.fillStyle = '#2d2d2d'
-      ctx.fillRect(0, 0, previewSize, previewSize)
-
-      // Draw border
-      ctx.strokeStyle = type === 'background' ? '#4a9eff' : '#ff9f4a'
-      ctx.lineWidth = 2
-      ctx.strokeRect(1, 1, previewSize - 2, previewSize - 2)
-
-      // Draw thumbnail if available - use the thumbnail image element from DOM
-      if (thumbnailUrl && !hasError && itemRef.current) {
-        const thumbnailImg = itemRef.current.querySelector('.thumbnail-image') as HTMLImageElement
-        if (thumbnailImg && thumbnailImg.complete && thumbnailImg.naturalWidth > 0) {
-          try {
-            ctx.drawImage(thumbnailImg, 2, 2, previewSize - 4, previewSize - 4)
-          } catch {
-            // Ignore draw errors
-          }
-        }
-      }
-
-      // Draw label
-      ctx.fillStyle = '#ffffff'
-      ctx.font = '10px sans-serif'
-      ctx.textAlign = 'center'
-      ctx.textBaseline = 'top'
-      
-      // Truncate label if too long
-      let label = imageTag
-      const maxWidth = previewSize - 4
-      while (ctx.measureText(label).width > maxWidth && label.length > 3) {
-        label = label.slice(0, -4) + '...'
-      }
-      ctx.fillText(label, previewSize / 2, previewSize + 4)
+    // Create a custom drag preview element
+    const dragPreview = document.createElement('div')
+    dragPreview.style.cssText = `
+      position: absolute;
+      top: -1000px;
+      left: -1000px;
+      width: 64px;
+      height: 84px;
+      background-color: #2d2d2d;
+      border: 2px solid ${type === 'background' ? '#4a9eff' : '#ff9f4a'};
+      border-radius: 4px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 2px;
+      box-sizing: border-box;
+      pointer-events: none;
+      z-index: 10000;
+    `
+    
+    // Add thumbnail image
+    if (thumbnailUrl && !hasError) {
+      const img = document.createElement('img')
+      img.src = thumbnailUrl
+      img.style.cssText = `
+        width: 56px;
+        height: 56px;
+        object-fit: cover;
+        border-radius: 2px;
+      `
+      dragPreview.appendChild(img)
     }
-
-    event.dataTransfer.setDragImage(canvas, previewSize / 2, previewSize / 2)
+    
+    // Add label
+    const label = document.createElement('span')
+    label.textContent = imageTag.length > 10 ? imageTag.slice(0, 8) + '...' : imageTag
+    label.style.cssText = `
+      font-size: 10px;
+      color: white;
+      text-align: center;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      max-width: 60px;
+      margin-top: 2px;
+    `
+    dragPreview.appendChild(label)
+    
+    // Append to body temporarily
+    document.body.appendChild(dragPreview)
+    
+    // Set as drag image
+    event.dataTransfer.setDragImage(dragPreview, 32, 42)
+    
+    // Remove after a short delay (after drag image is captured)
+    requestAnimationFrame(() => {
+      document.body.removeChild(dragPreview)
+    })
 
     setIsDragging(true)
 

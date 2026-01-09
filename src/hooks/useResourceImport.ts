@@ -16,6 +16,7 @@ import {
   ConflictResolution,
   validateFileName,
 } from '../resource/ImportService'
+import { useResourceStore } from '../store/resourceStore'
 
 // ============================================================================
 // Types
@@ -263,7 +264,10 @@ export function useResourceImport(
         result,
       }))
       
-      // Trigger refresh callback
+      // Trigger global resource refresh (for EditorArea to update block dropdowns)
+      useResourceStore.getState().triggerResourceRefresh()
+      
+      // Trigger refresh callback (for LeftPanel to update resource list)
       if (onImportComplete) {
         onImportComplete()
       }
