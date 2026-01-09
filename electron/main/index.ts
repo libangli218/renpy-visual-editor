@@ -4,8 +4,13 @@ import { pathToFileURL } from 'url'
 import { MenuManager } from './menuManager'
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
-if (require('electron-squirrel-startup')) {
-  app.quit()
+// Only needed for Squirrel installer, not for NSIS
+try {
+  if (require('electron-squirrel-startup')) {
+    app.quit()
+  }
+} catch {
+  // electron-squirrel-startup not available, ignore (using NSIS installer)
 }
 
 // Register custom protocol as privileged BEFORE app is ready

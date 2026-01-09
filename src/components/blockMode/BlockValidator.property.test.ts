@@ -509,7 +509,7 @@ describe('Property 3: 积木验证正确性 (Block Validation Correctness)', () 
         fc.array(
           fc.record({
             blockId: arbitraryIdentifier,
-            slotName: fc.option(arbitraryIdentifier),
+            slotName: fc.option(arbitraryIdentifier, { nil: undefined }),
             type: fc.constantFrom('required', 'invalid-target', 'missing-resource', 'syntax') as fc.Arbitrary<ValidationError['type']>,
             message: arbitrarySimpleText,
           }),
@@ -543,7 +543,7 @@ describe('Property 3: 积木验证正确性 (Block Validation Correctness)', () 
         fc.array(
           fc.record({
             blockId: arbitraryIdentifier,
-            slotName: fc.option(arbitraryIdentifier),
+            slotName: fc.option(arbitraryIdentifier, { nil: undefined }),
             type: fc.constantFrom('required', 'invalid-target', 'missing-resource', 'syntax') as fc.Arbitrary<ValidationError['type']>,
             message: arbitrarySimpleText,
           }),

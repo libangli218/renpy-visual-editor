@@ -52,6 +52,7 @@ declare global {
       openDirectory: () => Promise<string | null>
       selectDirectory: (title?: string) => Promise<string | null>
       selectRenpySdk: () => Promise<string | null>
+      selectImages: (title?: string) => Promise<string[] | null>
       launchGame: (projectPath: string, sdkPath: string) => Promise<{ success: boolean; pid?: number; error?: string }>
       stopGame: () => Promise<{ success: boolean; error?: string }>
       isGameRunning: () => Promise<boolean>

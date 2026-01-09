@@ -83,6 +83,7 @@ const arbitraryUnmodifiedEditorState: fc.Arbitrary<EditorState> = fc.record({
   selectedNodeId: fc.option(fc.uuid(), { nil: null }),
   selectedBlockId: fc.option(fc.uuid(), { nil: null }),
   ast: fc.option(arbitraryRenpyScript, { nil: null }),
+  currentBlockLabel: fc.constant(null),
 })
 
 /**
