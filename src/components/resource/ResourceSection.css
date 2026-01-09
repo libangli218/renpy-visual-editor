@@ -83,12 +83,14 @@
   align-items: center;
   gap: var(--spacing-xs);
   padding: 0 var(--spacing-sm) var(--spacing-xs);
-  margin-left: 20px;
+  margin-left: 16px;
+  min-width: 0; /* Allow flex items to shrink */
 }
 
 /* Search Input */
 .resource-search {
   flex: 1;
+  min-width: 0; /* Allow shrinking */
   display: flex;
   align-items: center;
   background-color: var(--bg-tertiary);
@@ -145,6 +147,7 @@
 .resource-import-btn {
   width: 26px;
   height: 26px;
+  min-width: 26px; /* Prevent shrinking */
   display: flex;
   align-items: center;
   justify-content: center;
@@ -172,7 +175,7 @@
 /* Resource List Container */
 .resource-list-container {
   padding: 0 var(--spacing-sm);
-  margin-left: 20px;
+  margin-left: 16px;
   max-height: 400px;
   overflow-y: auto;
   outline: none;

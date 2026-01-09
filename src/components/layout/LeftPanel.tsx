@@ -37,6 +37,22 @@ import { useResourceStore, ResourceDragData } from '../../store/resourceStore'
 
 type PanelSection = 'labels' | 'characters' | 'sprites' | 'backgrounds' | 'audio' | 'variables'
 
+// Tab definitions for the new tabbed layout
+type PanelTab = 'project' | 'resources' | 'data'
+
+interface TabConfig {
+  id: PanelTab
+  label: string
+  icon: string
+  sections: PanelSection[]
+}
+
+const tabs: TabConfig[] = [
+  { id: 'project', label: '项目', icon: '📁', sections: ['labels'] },
+  { id: 'resources', label: '资源', icon: '🎨', sections: ['sprites', 'backgrounds', 'audio'] },
+  { id: 'data', label: '数据', icon: '📊', sections: ['characters', 'variables'] },
+]
+
 interface SectionConfig {
   id: PanelSection
   label: string
@@ -52,13 +68,14 @@ const sections: SectionConfig[] = [
   { id: 'variables', label: 'Variables', icon: '📊' },
 ]
 
-// Storage key for panel collapsed state
+// Storage keys
 const PANEL_COLLAPSED_KEY = 'left-panel-collapsed'
+const PANEL_ACTIVE_TAB_KEY = 'left-panel-active-tab'
 
 export const LeftPanel: React.FC = () => {
   const { projectPath, setProjectPath, setAst, setCurrentFile, resetHistory, ast, currentFile } = useEditorStore()
   const [expandedSections, setExpandedSections] = useState<Set<PanelSection>>(
-    new Set(['labels', 'characters'])
+    new Set(['labels', 'characters', 'sprites', 'backgrounds', 'variables'])
   )
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -68,6 +85,12 @@ export const LeftPanel: React.FC = () => {
   const [isCollapsed, setIsCollapsed] = useState(() => {
     const stored = localStorage.getItem(PANEL_COLLAPSED_KEY)
     return stored === 'true'
+  })
+  
+  // Active tab state
+  const [activeTab, setActiveTab] = useState<PanelTab>(() => {
+    const stored = localStorage.getItem(PANEL_ACTIVE_TAB_KEY)
+    return (stored as PanelTab) || 'project'
   })
   
   // Resource state
@@ -133,6 +156,11 @@ export const LeftPanel: React.FC = () => {
   useEffect(() => {
     localStorage.setItem(PANEL_COLLAPSED_KEY, String(isCollapsed))
   }, [isCollapsed])
+
+  // Save active tab state
+  useEffect(() => {
+    localStorage.setItem(PANEL_ACTIVE_TAB_KEY, activeTab)
+  }, [activeTab])
 
   // Listen for menu:newProject event to open new project wizard
   useEffect(() => {
@@ -612,37 +640,58 @@ export const LeftPanel: React.FC = () => {
     )
   }
 
+  // Get sections for current active tab
+  const currentTabSections = tabs.find(t => t.id === activeTab)?.sections || []
+
   return (
     <aside 
       className={`left-panel ${isCollapsed ? 'collapsed' : ''}`} 
       aria-label="Project browser"
     >
-      {/* Panel Header */}
-      <div 
-        className="panel-header"
-        onDoubleClick={toggleCollapse}
-      >
-        {!isCollapsed && <h2>Project</h2>}
-        <button
-          className="panel-collapse-btn"
-          onClick={toggleCollapse}
-          title={isCollapsed ? '展开面板' : '折叠面板'}
-          aria-expanded={!isCollapsed}
+      {/* Panel Header with Tabs */}
+      <div className="panel-header-container">
+        <div 
+          className="panel-header"
+          onDoubleClick={toggleCollapse}
         >
-          {isCollapsed ? '»' : '«'}
-        </button>
+          <button
+            className="panel-collapse-btn"
+            onClick={toggleCollapse}
+            title={isCollapsed ? '展开面板' : '折叠面板'}
+            aria-expanded={!isCollapsed}
+          >
+            {isCollapsed ? '»' : '«'}
+          </button>
+        </div>
+        
+        {/* Tab Bar - only show when expanded and project is open */}
+        {!isCollapsed && projectPath && (
+          <div className="panel-tabs">
+            {tabs.map(tab => (
+              <button
+                key={tab.id}
+                className={`panel-tab ${activeTab === tab.id ? 'active' : ''}`}
+                onClick={() => setActiveTab(tab.id)}
+                title={tab.label}
+              >
+                <span className="tab-icon">{tab.icon}</span>
+                <span className="tab-label">{tab.label}</span>
+              </button>
+            ))}
+          </div>
+        )}
       </div>
       
-      {/* Collapsed View - Show icons only */}
+      {/* Collapsed View - Show tab icons only */}
       {isCollapsed ? (
         <div className="panel-collapsed-content">
-          {projectPath && sections.map(({ id, icon, label }) => (
+          {projectPath && tabs.map(({ id, icon, label }) => (
             <button
               key={id}
-              className="collapsed-section-btn"
+              className={`collapsed-section-btn ${activeTab === id ? 'active' : ''}`}
               onClick={() => {
                 setIsCollapsed(false)
-                setExpandedSections(prev => new Set([...prev, id]))
+                setActiveTab(id)
               }}
               title={label}
             >
@@ -698,38 +747,41 @@ export const LeftPanel: React.FC = () => {
             </div>
           ) : (
             <div className="panel-content">
-              {sections.map(({ id, label, icon }) => {
-                // Use ResourceSection for sprites and backgrounds
-                if (isResourceSection(id)) {
+              {/* Only render sections that belong to the active tab */}
+              {sections
+                .filter(({ id }) => currentTabSections.includes(id))
+                .map(({ id, label, icon }) => {
+                  // Use ResourceSection for sprites and backgrounds
+                  if (isResourceSection(id)) {
+                    return (
+                      <div key={id} className="panel-section">
+                        {renderResourceSection(id as 'sprites' | 'backgrounds')}
+                      </div>
+                    )
+                  }
+                  
+                  // Regular section rendering for other sections
                   return (
                     <div key={id} className="panel-section">
-                      {renderResourceSection(id as 'sprites' | 'backgrounds')}
+                      <button
+                        className="section-header"
+                        onClick={() => toggleSection(id)}
+                        aria-expanded={expandedSections.has(id)}
+                      >
+                        <span className="section-toggle">
+                          {expandedSections.has(id) ? '▾' : '▸'}
+                        </span>
+                        <span className="section-icon">{icon}</span>
+                        <span className="section-label">{label}</span>
+                      </button>
+                      {expandedSections.has(id) && (
+                        <div className="section-content">
+                          {renderSectionContent(id)}
+                        </div>
+                      )}
                     </div>
                   )
-                }
-                
-                // Regular section rendering for other sections
-                return (
-                  <div key={id} className="panel-section">
-                    <button
-                      className="section-header"
-                      onClick={() => toggleSection(id)}
-                      aria-expanded={expandedSections.has(id)}
-                    >
-                      <span className="section-toggle">
-                        {expandedSections.has(id) ? '▾' : '▸'}
-                      </span>
-                      <span className="section-icon">{icon}</span>
-                      <span className="section-label">{label}</span>
-                    </button>
-                    {expandedSections.has(id) && (
-                      <div className="section-content">
-                        {renderSectionContent(id)}
-                      </div>
-                    )}
-                  </div>
-                )
-              })}
+                })}
             </div>
           )}
         </>

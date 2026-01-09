@@ -284,8 +284,8 @@
    ============================================ */
 .left-panel {
   width: var(--panel-width);
-  min-width: 200px;
-  max-width: 320px;
+  min-width: 260px;
+  max-width: 400px;
   background-color: var(--bg-secondary);
   display: flex;
   flex-direction: column;
@@ -293,13 +293,17 @@
   border-right: 1px solid var(--border-subtle);
 }
 
+.panel-header-container {
+  flex-shrink: 0;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
 .panel-header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: var(--spacing-sm) var(--spacing-md);
-  border-bottom: 1px solid var(--border-subtle);
-  min-height: 36px;
+  justify-content: flex-end;
+  padding: var(--spacing-xs) var(--spacing-sm);
+  min-height: 28px;
 }
 
 .panel-header h2 {
@@ -309,6 +313,48 @@
   letter-spacing: 0.5px;
   color: var(--text-tertiary);
   margin: 0;
+}
+
+/* Tab Bar Styles */
+.panel-tabs {
+  display: flex;
+  gap: 2px;
+  padding: 0 var(--spacing-sm) var(--spacing-xs);
+}
+
+.panel-tab {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border: none;
+  background: transparent;
+  color: var(--text-tertiary);
+  font-size: var(--font-xs);
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  transition: all 0.15s ease;
+}
+
+.panel-tab:hover {
+  background: var(--bg-hover);
+  color: var(--text-secondary);
+}
+
+.panel-tab.active {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+.panel-tab .tab-icon {
+  font-size: 14px;
+}
+
+.panel-tab .tab-label {
+  font-size: var(--font-xs);
 }
 
 .panel-content {
@@ -924,6 +970,11 @@
   color: var(--text-primary);
 }
 
+.collapsed-section-btn.active {
+  background-color: var(--bg-tertiary);
+  color: var(--accent-primary);
+}
+
 .collapsed-section-btn:focus {
   outline: none;
   box-shadow: var(--shadow-focus);
@@ -933,7 +984,8 @@
 .left-panel.collapsed .panel-content,
 .right-panel.collapsed .panel-content,
 .left-panel.collapsed .panel-empty,
-.right-panel.collapsed .panel-empty {
+.right-panel.collapsed .panel-empty,
+.left-panel.collapsed .panel-tabs {
   display: none;
 }
 
