@@ -12,3 +12,6 @@ export type { ResourceSectionProps, ResourceData, GroupedResources } from './Res
 
 export { ResourceContextMenu, useResourceContextMenu } from './ResourceContextMenu'
 export type { ResourceContextMenuProps } from './ResourceContextMenu'
+
+export { ResourcePreviewPanel, useResourcePreview, formatFileSize, getFileFormat, getFileName } from './ResourcePreviewPanel'
+export type { ResourcePreviewPanelProps, ImageMetadata } from './ResourcePreviewPanel'
