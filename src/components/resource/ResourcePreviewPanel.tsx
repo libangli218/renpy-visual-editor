@@ -28,10 +28,6 @@ export interface ResourcePreviewPanelProps {
   resource: ResourceDragData | null
   /** Close callback */
   onClose: () => void
-  /** Insert to scene callback (for backgrounds) */
-  onInsertToScene?: (imageTag: string) => void
-  /** Insert to show callback (for sprites) */
-  onInsertToShow?: (imageTag: string) => void
 }
 
 /**
@@ -103,14 +99,11 @@ export function getFileName(path: string): string {
  * - Image scaled to fit the panel
  * - Metadata: dimensions, format, file size
  * - Ren'Py image tag
- * - Insert buttons based on resource type
  */
 export const ResourcePreviewPanel: React.FC<ResourcePreviewPanelProps> = ({
   open,
   resource,
   onClose,
-  onInsertToScene,
-  onInsertToShow,
 }) => {
   const panelRef = useRef<HTMLDivElement>(null)
   const [metadata, setMetadata] = useState<ImageMetadata | null>(null)
@@ -221,22 +214,6 @@ export const ResourcePreviewPanel: React.FC<ResourcePreviewPanelProps> = ({
     setImageError(true)
     setImageLoaded(false)
   }, [])
-
-  // Handle insert to scene
-  const handleInsertToScene = useCallback(() => {
-    if (resource && onInsertToScene) {
-      onInsertToScene(resource.imageTag)
-      onClose()
-    }
-  }, [resource, onInsertToScene, onClose])
-
-  // Handle insert to show
-  const handleInsertToShow = useCallback(() => {
-    if (resource && onInsertToShow) {
-      onInsertToShow(resource.imageTag)
-      onClose()
-    }
-  }, [resource, onInsertToShow, onClose])
 
   // Handle copy tag to clipboard
   const handleCopyTag = useCallback(async () => {
@@ -359,30 +336,6 @@ export const ResourcePreviewPanel: React.FC<ResourcePreviewPanelProps> = ({
 
         {/* Actions */}
         <div className="preview-actions">
-          {resource.type === 'background' && onInsertToScene && (
-            <button
-              className="preview-action-btn primary"
-              onClick={handleInsertToScene}
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" fill="currentColor"/>
-              </svg>
-              插入到场景
-            </button>
-          )}
-          
-          {resource.type === 'sprite' && onInsertToShow && (
-            <button
-              className="preview-action-btn primary"
-              onClick={handleInsertToShow}
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" fill="currentColor"/>
-              </svg>
-              插入到显示
-            </button>
-          )}
-          
           <button
             className="preview-action-btn secondary"
             onClick={onClose}

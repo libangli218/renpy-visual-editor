@@ -506,48 +506,6 @@ export const LeftPanel: React.FC = () => {
     }
   }, [projectPath])
 
-  /**
-   * Handle insert to scene (for backgrounds)
-   * Implements Requirement 6.5
-   * 
-   * Dispatches a custom event that the block editor can listen to.
-   * Also copies the image tag to clipboard as a fallback.
-   */
-  const handleInsertToScene = useCallback(async (imageTag: string) => {
-    // Dispatch custom event for block editor to handle
-    window.dispatchEvent(new CustomEvent('resource:insertScene', {
-      detail: { imageTag }
-    }))
-    
-    // Also copy to clipboard as fallback
-    try {
-      await navigator.clipboard.writeText(imageTag)
-    } catch (error) {
-      console.error('Failed to copy tag to clipboard:', error)
-    }
-  }, [])
-
-  /**
-   * Handle insert to show (for sprites)
-   * Implements Requirement 6.6
-   * 
-   * Dispatches a custom event that the block editor can listen to.
-   * Also copies the image tag to clipboard as a fallback.
-   */
-  const handleInsertToShow = useCallback(async (imageTag: string) => {
-    // Dispatch custom event for block editor to handle
-    window.dispatchEvent(new CustomEvent('resource:insertShow', {
-      detail: { imageTag }
-    }))
-    
-    // Also copy to clipboard as fallback
-    try {
-      await navigator.clipboard.writeText(imageTag)
-    } catch (error) {
-      console.error('Failed to copy tag to clipboard:', error)
-    }
-  }, [])
-
   const renderSectionContent = (sectionId: PanelSection) => {
     switch (sectionId) {
       case 'characters':
@@ -816,8 +774,6 @@ export const LeftPanel: React.FC = () => {
         open={previewOpen}
         resource={selectedResource}
         onClose={closePreview}
-        onInsertToScene={handleInsertToScene}
-        onInsertToShow={handleInsertToShow}
       />
     </aside>
   )
