@@ -1,0 +1,342 @@
+/**
+ * ResourceItem Styles
+ * 
+ * Styles for the resource item component with thumbnail display.
+ * Supports three thumbnail sizes: small (32px), medium (48px), large (64px).
+ * 
+ * Implements Requirements:
+ * - 1.5: Configurable thumbnail size
+ * - 1.6: Hover preview tooltip
+ */
+
+/* ============================================
+   Resource Item Container
+   ============================================ */
+
+.resource-item-thumbnail {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-xs, 4px);
+  padding: var(--spacing-xs, 4px);
+  border-radius: var(--radius-sm, 4px);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  position: relative;
+  user-select: none;
+  outline: none;
+}
+
+.resource-item-thumbnail:hover {
+  background-color: var(--bg-hover, rgba(255, 255, 255, 0.06));
+}
+
+.resource-item-thumbnail:focus {
+  box-shadow: var(--shadow-focus, 0 0 0 2px rgba(74, 158, 255, 0.4));
+}
+
+.resource-item-thumbnail.selected {
+  background-color: var(--accent-muted, rgba(74, 158, 255, 0.15));
+}
+
+.resource-item-thumbnail.selected:hover {
+  background-color: var(--accent-muted, rgba(74, 158, 255, 0.2));
+}
+
+/* Dragging state */
+.resource-item-thumbnail.dragging {
+  opacity: 0.5;
+  transform: scale(0.95);
+}
+
+/* Error state */
+.resource-item-thumbnail.error .resource-thumbnail {
+  border-color: var(--error, #f44336);
+}
+
+/* ============================================
+   Thumbnail Container
+   ============================================ */
+
+.resource-thumbnail {
+  position: relative;
+  border-radius: var(--radius-sm, 4px);
+  overflow: hidden;
+  background-color: var(--bg-tertiary, #2a2a2a);
+  border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.1));
+  flex-shrink: 0;
+}
+
+.thumbnail-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* Loading state */
+.thumbnail-loading {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--bg-tertiary, #2a2a2a);
+}
+
+.loading-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--border-color, #444);
+  border-top-color: var(--accent-primary, #4a9eff);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Type indicator badge */
+.type-indicator {
+  position: absolute;
+  bottom: 2px;
+  right: 2px;
+  font-size: 10px;
+  line-height: 1;
+  padding: 1px;
+  background-color: rgba(0, 0, 0, 0.6);
+  border-radius: 2px;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.resource-item-thumbnail:hover .type-indicator {
+  opacity: 1;
+}
+
+.type-indicator.background {
+  color: #4a9eff;
+}
+
+.type-indicator.sprite {
+  color: #ff9f4a;
+}
+
+/* ============================================
+   Resource Name Label
+   ============================================ */
+
+.resource-name-label {
+  font-size: var(--font-xs, 11px);
+  color: var(--text-secondary, #b0b0b0);
+  text-align: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+  line-height: 1.2;
+}
+
+.resource-item-thumbnail.selected .resource-name-label {
+  color: var(--text-primary, #ffffff);
+}
+
+/* ============================================
+   Size Variants
+   ============================================ */
+
+/* Small: 32px */
+.resource-item-thumbnail.size-small {
+  width: 48px;
+}
+
+.resource-item-thumbnail.size-small .resource-thumbnail {
+  width: 32px;
+  height: 32px;
+}
+
+.resource-item-thumbnail.size-small .resource-name-label {
+  font-size: 9px;
+  max-width: 44px;
+}
+
+.resource-item-thumbnail.size-small .type-indicator {
+  font-size: 8px;
+}
+
+/* Medium: 48px */
+.resource-item-thumbnail.size-medium {
+  width: 64px;
+}
+
+.resource-item-thumbnail.size-medium .resource-thumbnail {
+  width: 48px;
+  height: 48px;
+}
+
+.resource-item-thumbnail.size-medium .resource-name-label {
+  font-size: 10px;
+  max-width: 60px;
+}
+
+/* Large: 64px */
+.resource-item-thumbnail.size-large {
+  width: 80px;
+}
+
+.resource-item-thumbnail.size-large .resource-thumbnail {
+  width: 64px;
+  height: 64px;
+}
+
+.resource-item-thumbnail.size-large .resource-name-label {
+  font-size: 11px;
+  max-width: 76px;
+}
+
+/* ============================================
+   Hover Preview Tooltip
+   ============================================ */
+
+.resource-preview-tooltip {
+  position: absolute;
+  left: calc(100% + 8px);
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 1000;
+  background-color: var(--bg-elevated, #3a3a3a);
+  border: 1px solid var(--border-color, #555);
+  border-radius: var(--radius-md, 6px);
+  box-shadow: var(--shadow-lg, 0 8px 24px rgba(0, 0, 0, 0.4));
+  padding: var(--spacing-sm, 8px);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 0.2s ease, visibility 0.2s ease;
+  min-width: 120px;
+  max-width: 200px;
+}
+
+/* Show tooltip on hover with delay */
+.resource-item-thumbnail:hover .resource-preview-tooltip {
+  opacity: 1;
+  visibility: visible;
+  transition-delay: 0.5s; /* Delay before showing */
+}
+
+/* Tooltip arrow */
+.resource-preview-tooltip::before {
+  content: '';
+  position: absolute;
+  left: -6px;
+  top: 50%;
+  transform: translateY(-50%);
+  border: 6px solid transparent;
+  border-right-color: var(--border-color, #555);
+}
+
+.resource-preview-tooltip::after {
+  content: '';
+  position: absolute;
+  left: -5px;
+  top: 50%;
+  transform: translateY(-50%);
+  border: 5px solid transparent;
+  border-right-color: var(--bg-elevated, #3a3a3a);
+}
+
+/* Preview image in tooltip */
+.resource-preview-tooltip .preview-image {
+  width: 100%;
+  max-width: 180px;
+  max-height: 120px;
+  object-fit: contain;
+  border-radius: var(--radius-sm, 4px);
+  background-color: var(--bg-tertiary, #2a2a2a);
+  display: block;
+  margin-bottom: var(--spacing-xs, 4px);
+}
+
+/* Preview info */
+.preview-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.preview-tag {
+  font-size: var(--font-xs, 11px);
+  color: var(--text-primary, #ffffff);
+  font-weight: 500;
+  word-break: break-word;
+}
+
+.preview-type {
+  font-size: 10px;
+  color: var(--text-muted, #888);
+}
+
+/* ============================================
+   Drag State Styles
+   ============================================ */
+
+/* Global drag preview styles (created dynamically) */
+.resource-drag-preview {
+  position: fixed;
+  pointer-events: none;
+  z-index: 10000;
+  background-color: var(--bg-elevated, #3a3a3a);
+  border: 2px solid var(--accent-primary, #4a9eff);
+  border-radius: var(--radius-sm, 4px);
+  padding: var(--spacing-xs, 4px);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs, 4px);
+  box-shadow: var(--shadow-lg, 0 8px 24px rgba(0, 0, 0, 0.4));
+}
+
+.resource-drag-preview .drag-icon {
+  font-size: 16px;
+}
+
+.resource-drag-preview .drag-label {
+  font-size: var(--font-sm, 12px);
+  color: var(--text-primary, #ffffff);
+  white-space: nowrap;
+}
+
+/* ============================================
+   Accessibility
+   ============================================ */
+
+/* High contrast mode */
+@media (prefers-contrast: high) {
+  .resource-item-thumbnail {
+    border: 1px solid transparent;
+  }
+
+  .resource-item-thumbnail:focus {
+    border-color: var(--accent-primary, #4a9eff);
+  }
+
+  .resource-item-thumbnail.selected {
+    border-color: var(--accent-primary, #4a9eff);
+  }
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .resource-item-thumbnail,
+  .resource-preview-tooltip,
+  .loading-spinner {
+    transition: none;
+    animation: none;
+  }
+
+  .resource-item-thumbnail:hover .resource-preview-tooltip {
+    transition-delay: 0s;
+  }
+}
