@@ -1,0 +1,281 @@
+/**
+ * ResourceSection Component Styles
+ * 
+ * Styles for the collapsible resource section with search, import,
+ * and thumbnail grid display.
+ * 
+ * Implements Requirements:
+ * - 1.7: Lazy loading visual feedback
+ * - 3.1, 3.2: Import button styling
+ * - 7.1, 7.2: Search input styling
+ * - 2.3, 2.4: Grouped sprite display
+ */
+
+/* Resource Section Container */
+.resource-section {
+  margin-bottom: 2px;
+}
+
+/* Section Header - Extends base .section-header from MainLayout.css */
+.resource-section .section-header {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border: none;
+  background-color: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  font-size: var(--font-sm);
+  text-align: left;
+  transition: background-color var(--transition-fast);
+  gap: var(--spacing-xs);
+}
+
+.resource-section .section-header:hover {
+  background-color: var(--bg-hover);
+}
+
+.resource-section .section-toggle {
+  font-size: 10px;
+  color: var(--text-muted);
+  width: 12px;
+  text-align: center;
+  flex-shrink: 0;
+  transition: transform var(--transition-normal);
+}
+
+.resource-section .section-icon {
+  font-size: var(--font-md);
+  color: var(--text-tertiary);
+  flex-shrink: 0;
+  width: 16px;
+  text-align: center;
+}
+
+.resource-section .section-label {
+  flex: 1;
+  font-weight: 500;
+  color: var(--text-primary);
+  font-size: var(--font-sm);
+}
+
+.resource-section .section-count {
+  font-size: var(--font-xs);
+  color: var(--text-muted);
+  background-color: var(--bg-tertiary);
+  padding: 1px 6px;
+  border-radius: var(--radius-full);
+  min-width: 20px;
+  text-align: center;
+}
+
+/* Section Content */
+.resource-section-content {
+  padding: var(--spacing-xs) 0 var(--spacing-sm) 0;
+  animation: sectionExpand var(--transition-normal);
+}
+
+/* Resource Toolbar (Search + Import) */
+.resource-toolbar {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  padding: 0 var(--spacing-sm) var(--spacing-xs);
+  margin-left: 20px;
+}
+
+/* Search Input */
+.resource-search {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  background-color: var(--bg-tertiary);
+  border-radius: var(--radius-sm);
+  padding: 0 var(--spacing-xs);
+  height: 26px;
+  border: 1px solid transparent;
+  transition: border-color var(--transition-fast), background-color var(--transition-fast);
+}
+
+.resource-search:focus-within {
+  border-color: var(--accent);
+  background-color: var(--bg-secondary);
+}
+
+.resource-search .search-icon {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-right: var(--spacing-xs);
+  flex-shrink: 0;
+}
+
+.resource-search .search-input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  color: var(--text-primary);
+  font-size: var(--font-xs);
+  outline: none;
+  min-width: 0;
+}
+
+.resource-search .search-input::placeholder {
+  color: var(--text-muted);
+}
+
+.resource-search .search-clear {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 2px 4px;
+  font-size: 10px;
+  border-radius: var(--radius-sm);
+  transition: color var(--transition-fast), background-color var(--transition-fast);
+}
+
+.resource-search .search-clear:hover {
+  color: var(--text-primary);
+  background-color: var(--bg-hover);
+}
+
+/* Import Button */
+.resource-import-btn {
+  width: 26px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--bg-tertiary);
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: 500;
+  transition: all var(--transition-fast);
+  flex-shrink: 0;
+}
+
+.resource-import-btn:hover {
+  background-color: var(--accent);
+  color: white;
+  border-color: var(--accent);
+}
+
+.resource-import-btn:active {
+  transform: scale(0.95);
+}
+
+/* Resource List Container */
+.resource-list-container {
+  padding: 0 var(--spacing-sm);
+  margin-left: 20px;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+/* Resource Grid */
+.resource-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-xs) 0;
+}
+
+/* Resource Groups (for Sprites) */
+.resource-groups {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.resource-group {
+  margin-bottom: 2px;
+}
+
+.resource-group-header {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border: none;
+  background-color: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  font-size: var(--font-sm);
+  text-align: left;
+  transition: background-color var(--transition-fast);
+  gap: var(--spacing-xs);
+}
+
+.resource-group-header:hover {
+  background-color: var(--bg-hover);
+}
+
+.resource-group-header .group-toggle {
+  font-size: 10px;
+  color: var(--text-muted);
+  width: 12px;
+  text-align: center;
+  flex-shrink: 0;
+  transition: transform var(--transition-normal);
+}
+
+.resource-group-header .group-icon {
+  font-size: var(--font-sm);
+  color: var(--text-tertiary);
+  flex-shrink: 0;
+}
+
+.resource-group-header .group-name {
+  flex: 1;
+  font-weight: 500;
+  color: var(--text-primary);
+  font-size: var(--font-sm);
+}
+
+.resource-group-header .group-count {
+  font-size: var(--font-xs);
+  color: var(--text-muted);
+  background-color: var(--bg-tertiary);
+  padding: 1px 6px;
+  border-radius: var(--radius-full);
+  min-width: 18px;
+  text-align: center;
+}
+
+.resource-group-content {
+  padding-left: var(--spacing-md);
+  animation: sectionExpand var(--transition-normal);
+}
+
+/* Empty State */
+.resource-section .section-empty {
+  color: var(--text-muted);
+  font-size: var(--font-xs);
+  font-style: normal;
+  padding: var(--spacing-sm) var(--spacing-xs);
+  text-align: center;
+}
+
+/* Scrollbar Styling */
+.resource-list-container::-webkit-scrollbar {
+  width: 6px;
+}
+
+.resource-list-container::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.resource-list-container::-webkit-scrollbar-thumb {
+  background-color: var(--bg-tertiary);
+  border-radius: 3px;
+}
+
+.resource-list-container::-webkit-scrollbar-thumb:hover {
+  background-color: var(--text-muted);
+}
