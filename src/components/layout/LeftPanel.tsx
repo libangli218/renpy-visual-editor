@@ -19,7 +19,7 @@ import { NewProjectWizard, ProjectConfig } from '../project'
 import { findDefaultFile } from '../../utils/FileClassifier'
 import { useSettingsStore } from '../../settings/settingsStore'
 import { showUnsavedChangesDialog, showConfirmDialog } from '../../store/confirmDialogStore'
-import { ResourceSection } from '../resource/ResourceSection'
+import { ResourceSection, ResourceContextMenu } from '../resource'
 import { useResourceStore, ResourceDragData } from '../../store/resourceStore'
 
 /**
@@ -81,10 +81,13 @@ export const LeftPanel: React.FC = () => {
     searchQueries,
     thumbnailSize,
     selectedResource,
+    contextMenu,
     toggleSection: toggleResourceSection,
     setSearchQuery,
     selectResource,
     openPreview,
+    openContextMenu,
+    closeContextMenu,
   } = useResourceStore()
   // Character store
   const {
@@ -451,10 +454,9 @@ export const LeftPanel: React.FC = () => {
 
   // Handle resource context menu
   const handleResourceContextMenu = useCallback((event: React.MouseEvent, resource: ResourceDragData) => {
-    // TODO: Implement context menu in task 10
     event.preventDefault()
-    console.log('Context menu for:', resource)
-  }, [])
+    openContextMenu({ x: event.clientX, y: event.clientY }, resource)
+  }, [openContextMenu])
 
   // Handle import for sprites
   const handleImportSprites = useCallback(() => {
@@ -467,6 +469,29 @@ export const LeftPanel: React.FC = () => {
     // TODO: Implement import in task 9
     console.log('Import backgrounds')
   }, [])
+
+  // Handle resource refresh (after rename/delete operations)
+  const handleResourceRefresh = useCallback(async () => {
+    if (!projectPath) return
+    
+    try {
+      await resourceManager.scanResources(projectPath)
+      
+      // Get backgrounds
+      const bgTags = resourceManager.getBackgroundTags()
+      setBackgroundTags(bgTags)
+      
+      // Get sprites (non-background images)
+      const imgTags = resourceManager.getImageTags()
+      setSpriteTags(imgTags)
+      
+      // Get audio
+      const audio = resourceManager.getResources('audio')
+      setAudioFiles(audio.map(r => r.name))
+    } catch (error) {
+      console.error('Failed to refresh resources:', error)
+    }
+  }, [projectPath])
 
   const renderSectionContent = (sectionId: PanelSection) => {
     switch (sectionId) {
@@ -563,6 +588,7 @@ export const LeftPanel: React.FC = () => {
         expanded={resourceExpandedSections.has(sectionType)}
         onToggle={() => toggleResourceSection(sectionType)}
         onImport={isSprites ? handleImportSprites : handleImportBackgrounds}
+        onRefresh={handleResourceRefresh}
         searchQuery={searchQueries[sectionType]}
         onSearchChange={(query) => setSearchQuery(sectionType, query)}
         thumbnailSize={thumbnailSize}
@@ -720,6 +746,15 @@ export const LeftPanel: React.FC = () => {
         isOpen={showNewProjectDialog}
         onComplete={handleCreateProject}
         onCancel={() => setShowNewProjectDialog(false)}
+      />
+
+      {/* Resource Context Menu */}
+      <ResourceContextMenu
+        open={contextMenu.open}
+        position={contextMenu.position}
+        resource={contextMenu.resource}
+        onClose={closeContextMenu}
+        onRefresh={handleResourceRefresh}
       />
     </aside>
   )

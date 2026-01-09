@@ -1,0 +1,288 @@
+/**
+ * ResourceContextMenu Styles
+ * 
+ * Figma-style context menu for resource items.
+ * Implements Requirements 5.1-5.5
+ */
+
+/* ============================================================================
+   Context Menu
+   ============================================================================ */
+
+.resource-context-menu {
+  position: fixed;
+  z-index: 1500;
+  min-width: 180px;
+  background: var(--bg-secondary, #252526);
+  border: 1px solid var(--border-color, #3c3c3c);
+  border-radius: var(--radius-md, 6px);
+  box-shadow: var(--shadow-lg, 0 8px 24px rgba(0, 0, 0, 0.5));
+  padding: var(--spacing-xs, 4px) 0;
+  animation: contextMenuFadeIn 0.1s ease-out;
+}
+
+@keyframes contextMenuFadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Menu Item */
+.resource-context-menu-item {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm, 8px);
+  width: 100%;
+  padding: var(--spacing-sm, 8px) var(--spacing-md, 12px);
+  background: transparent;
+  border: none;
+  color: var(--text-primary, #ffffff);
+  font-size: var(--font-md, 13px);
+  text-align: left;
+  cursor: pointer;
+  transition: background-color var(--transition-fast, 0.1s);
+}
+
+.resource-context-menu-item:hover {
+  background: var(--bg-hover, rgba(255, 255, 255, 0.05));
+}
+
+.resource-context-menu-item:focus {
+  outline: none;
+  background: var(--bg-hover, rgba(255, 255, 255, 0.05));
+}
+
+.resource-context-menu-item:focus-visible {
+  box-shadow: inset 0 0 0 2px var(--accent-primary, #0d99ff);
+}
+
+.resource-context-menu-item:active {
+  background: var(--bg-active, rgba(255, 255, 255, 0.08));
+}
+
+/* Menu Item Icon */
+.menu-item-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  color: var(--text-secondary, #cccccc);
+}
+
+.resource-context-menu-item:hover .menu-item-icon {
+  color: var(--text-primary, #ffffff);
+}
+
+/* Menu Item Label */
+.menu-item-label {
+  flex: 1;
+}
+
+/* Menu Separator */
+.resource-context-menu-separator {
+  height: 1px;
+  margin: var(--spacing-xs, 4px) 0;
+  background: var(--border-subtle, #2e2e2e);
+}
+
+/* ============================================================================
+   Dialog Overlay
+   ============================================================================ */
+
+.context-menu-dialog-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  animation: dialogFadeIn var(--transition-normal, 0.15s) ease-out;
+}
+
+@keyframes dialogFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* ============================================================================
+   Dialog Container
+   ============================================================================ */
+
+.context-menu-dialog {
+  background: var(--bg-secondary, #252526);
+  border: 1px solid var(--border-color, #3c3c3c);
+  border-radius: var(--radius-lg, 8px);
+  box-shadow: var(--shadow-lg, 0 8px 24px rgba(0, 0, 0, 0.5));
+  width: 360px;
+  max-width: 90vw;
+  padding: var(--spacing-xl, 24px);
+  animation: dialogSlideUp var(--transition-slow, 0.2s) ease-out;
+}
+
+@keyframes dialogSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Dialog Icon */
+.context-menu-dialog-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-full, 9999px);
+  margin: 0 auto var(--spacing-lg, 16px);
+}
+
+.context-menu-dialog-icon.danger {
+  background: var(--error-muted, rgba(242, 72, 34, 0.15));
+  color: var(--error, #f24822);
+}
+
+.context-menu-dialog-icon svg {
+  width: 28px;
+  height: 28px;
+}
+
+/* Dialog Title */
+.context-menu-dialog-title {
+  margin: 0 0 var(--spacing-md, 12px) 0;
+  font-size: var(--font-xl, 16px);
+  font-weight: 600;
+  color: var(--text-primary, #ffffff);
+  text-align: center;
+}
+
+/* Dialog Message */
+.context-menu-dialog-message {
+  margin: 0 0 var(--spacing-lg, 16px) 0;
+  font-size: var(--font-md, 13px);
+  color: var(--text-secondary, #cccccc);
+  text-align: center;
+  line-height: 1.5;
+}
+
+.context-menu-dialog-message strong {
+  color: var(--text-primary, #ffffff);
+  font-weight: 600;
+}
+
+/* Dialog Input */
+.context-menu-dialog-input {
+  width: 100%;
+  padding: var(--spacing-sm, 8px) var(--spacing-md, 12px);
+  background: var(--bg-tertiary, #2d2d2d);
+  border: 1px solid var(--border-color, #3c3c3c);
+  border-radius: var(--radius-md, 6px);
+  color: var(--text-primary, #ffffff);
+  font-size: var(--font-md, 13px);
+  margin-bottom: var(--spacing-lg, 16px);
+  box-sizing: border-box;
+}
+
+.context-menu-dialog-input:focus {
+  outline: none;
+  border-color: var(--accent-primary, #0d99ff);
+  box-shadow: 0 0 0 2px rgba(13, 153, 255, 0.15);
+}
+
+.context-menu-dialog-input::placeholder {
+  color: var(--text-muted, #666666);
+}
+
+/* Dialog Actions */
+.context-menu-dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--spacing-sm, 8px);
+}
+
+/* Dialog Buttons */
+.context-menu-dialog-btn {
+  padding: var(--spacing-sm, 8px) var(--spacing-lg, 16px);
+  border-radius: var(--radius-md, 6px);
+  font-size: var(--font-md, 13px);
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition-normal, 0.15s);
+  border: none;
+  min-width: 72px;
+}
+
+.context-menu-dialog-btn:focus {
+  outline: none;
+  box-shadow: var(--shadow-focus, 0 0 0 2px rgba(13, 153, 255, 0.15));
+}
+
+.context-menu-dialog-btn:focus-visible {
+  box-shadow: 0 0 0 2px var(--accent-primary, #0d99ff);
+}
+
+.context-menu-dialog-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Primary Button */
+.context-menu-dialog-btn-primary {
+  background: var(--accent-primary, #0d99ff);
+  color: white;
+}
+
+.context-menu-dialog-btn-primary:hover:not(:disabled) {
+  background: var(--accent-hover, #18a0fb);
+}
+
+.context-menu-dialog-btn-primary:active:not(:disabled) {
+  background: var(--accent-secondary, #0c8ce9);
+}
+
+/* Secondary Button */
+.context-menu-dialog-btn-secondary {
+  background: var(--bg-tertiary, #2d2d2d);
+  color: var(--text-primary, #ffffff);
+  border: 1px solid var(--border-color, #3c3c3c);
+}
+
+.context-menu-dialog-btn-secondary:hover:not(:disabled) {
+  background: var(--bg-hover, rgba(255, 255, 255, 0.05));
+  border-color: var(--text-muted, #666666);
+}
+
+.context-menu-dialog-btn-secondary:active:not(:disabled) {
+  background: var(--bg-active, rgba(255, 255, 255, 0.08));
+}
+
+/* Danger Button */
+.context-menu-dialog-btn-danger {
+  background: var(--error, #f24822);
+  color: white;
+}
+
+.context-menu-dialog-btn-danger:hover:not(:disabled) {
+  background: #e03d18;
+}
+
+.context-menu-dialog-btn-danger:active:not(:disabled) {
+  background: #cc3614;
+}
