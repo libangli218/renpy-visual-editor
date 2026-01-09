@@ -62,6 +62,9 @@ export * from './MultiLabelView'
 // Script Selector
 export * from './ScriptSelector'
 
+// New Script Dialog
+export * from './NewScriptDialog'
+
 // Drag-Drop System
 export * from './DragDropContext'
 export * from './SnapIndicator'
