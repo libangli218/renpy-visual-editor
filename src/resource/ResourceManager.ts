@@ -693,11 +693,9 @@ export class ResourceManager {
         throw new Error(`File already exists: ${newFileName}`)
       }
       
-      // Read old file
-      const content = await this.fs.readFile(oldPath)
-      
-      // Write to new path
-      await this.fs.writeFile(newPath, content)
+      // Use copyFile for binary files (images), then delete old file
+      // This preserves binary data correctly unlike readFile/writeFile which are for text
+      await this.fs.copyFile(oldPath, newPath)
       
       // Delete old file using Electron API directly
       if (typeof window !== 'undefined') {
