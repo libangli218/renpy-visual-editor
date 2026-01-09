@@ -4,6 +4,11 @@
  * Provider component that sets up keyboard shortcuts for the application.
  * Should wrap the main app component.
  * Implements Requirements 17.1, 17.3
+ * 
+ * Multi-script editing shortcuts (Requirements 6.1, 6.2, 6.3):
+ * - Alt+]: Switch to next script
+ * - Alt+[: Switch to previous script
+ * - Ctrl+N: Open new script dialog
  */
 
 import React, { useEffect } from 'react'
@@ -200,6 +205,46 @@ export const KeyboardShortcutProvider: React.FC<KeyboardShortcutProviderProps> =
       'file',
       () => {
         window.dispatchEvent(new CustomEvent('editor:stop-game'))
+      }
+    ))
+    
+    // Multi-script navigation shortcuts (Requirements 6.1, 6.2, 6.3)
+    
+    // Alt+]: Switch to next script (Requirement 6.1)
+    registerShortcut(createShortcut(
+      'next-script',
+      ']',
+      { alt: true },
+      '下一个脚本',
+      'navigation',
+      () => {
+        const state = useEditorStore.getState()
+        state.switchToNextScript()
+      }
+    ))
+    
+    // Alt+[: Switch to previous script (Requirement 6.2)
+    registerShortcut(createShortcut(
+      'prev-script',
+      '[',
+      { alt: true },
+      '上一个脚本',
+      'navigation',
+      () => {
+        const state = useEditorStore.getState()
+        state.switchToPrevScript()
+      }
+    ))
+    
+    // Ctrl+N: Open new script dialog (Requirement 6.3)
+    registerShortcut(createShortcut(
+      'new-script',
+      'n',
+      { ctrl: true },
+      '新建脚本',
+      'file',
+      () => {
+        window.dispatchEvent(new CustomEvent('editor:new-script'))
       }
     ))
   }, [registerShortcut, toggleHelpPanel, closeHelpPanel])

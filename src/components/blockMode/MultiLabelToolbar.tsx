@@ -13,7 +13,7 @@
  * Requirements: 1.1, 2.1, 4.3, 5.1, 5.2, 6.1, 6.4
  */
 
-import React, { useCallback, useState, memo } from 'react'
+import React, { useCallback, useState, memo, useEffect } from 'react'
 import { LayoutMode } from './stores/multiLabelViewStore'
 import { ScriptSelector } from './ScriptSelector'
 import { NewScriptDialog } from './NewScriptDialog'
@@ -198,6 +198,22 @@ export const MultiLabelToolbar: React.FC<MultiLabelToolbarProps> = memo(({
   const handleNewScriptClick = useCallback(() => {
     setShowNewScriptDialog(true)
   }, [])
+
+  // Listen for keyboard shortcut event (Requirement 6.3)
+  useEffect(() => {
+    const handleNewScriptEvent = () => {
+      // Only open dialog if multi-script support is enabled and not in read-only mode
+      if (onCreateScript && !readOnly && !isScriptLoading) {
+        setShowNewScriptDialog(true)
+      }
+    }
+    
+    window.addEventListener('editor:new-script', handleNewScriptEvent)
+    
+    return () => {
+      window.removeEventListener('editor:new-script', handleNewScriptEvent)
+    }
+  }, [onCreateScript, readOnly, isScriptLoading])
 
   // Handle new script dialog close
   const handleNewScriptDialogClose = useCallback(() => {

@@ -3,6 +3,11 @@
  * 
  * React hook for registering and managing keyboard shortcuts.
  * Implements Requirements 17.1, 17.3
+ * 
+ * Multi-script editing shortcuts (Requirements 6.1, 6.2, 6.3):
+ * - Alt+]: Switch to next script
+ * - Alt+[: Switch to previous script
+ * - Ctrl+N: Open new script dialog
  */
 
 import { useEffect } from 'react'
@@ -264,4 +269,68 @@ export function useShortcuts(): KeyboardShortcut[] {
  */
 export function useHelpPanelOpen(): boolean {
   return useKeyboardStore((state) => state.helpPanelOpen)
+}
+
+/**
+ * Hook to register script navigation shortcuts
+ * Implements Requirements 6.1, 6.2, 6.3
+ * 
+ * Shortcuts:
+ * - Alt+]: Switch to next script (Requirement 6.1)
+ * - Alt+[: Switch to previous script (Requirement 6.2)
+ * - Ctrl+N: Open new script dialog (Requirement 6.3)
+ * 
+ * @param onNewScript - Optional callback for new script action (if not provided, dispatches event)
+ */
+export function useScriptNavigationShortcuts(onNewScript?: () => void): void {
+  const { registerShortcut, unregisterShortcut } = useKeyboardStore()
+  const { switchToNextScript, switchToPrevScript } = useEditorStore()
+  
+  useEffect(() => {
+    // Alt+]: Switch to next script (Requirement 6.1)
+    registerShortcut(createShortcut(
+      'next-script',
+      ']',
+      { alt: true },
+      '下一个脚本',
+      'navigation',
+      () => {
+        switchToNextScript()
+      }
+    ))
+    
+    // Alt+[: Switch to previous script (Requirement 6.2)
+    registerShortcut(createShortcut(
+      'prev-script',
+      '[',
+      { alt: true },
+      '上一个脚本',
+      'navigation',
+      () => {
+        switchToPrevScript()
+      }
+    ))
+    
+    // Ctrl+N: Open new script dialog (Requirement 6.3)
+    registerShortcut(createShortcut(
+      'new-script',
+      'n',
+      { ctrl: true },
+      '新建脚本',
+      'file',
+      () => {
+        if (onNewScript) {
+          onNewScript()
+        } else {
+          window.dispatchEvent(new CustomEvent('editor:new-script'))
+        }
+      }
+    ))
+    
+    return () => {
+      unregisterShortcut('next-script')
+      unregisterShortcut('prev-script')
+      unregisterShortcut('new-script')
+    }
+  }, [registerShortcut, unregisterShortcut, switchToNextScript, switchToPrevScript, onNewScript])
 }
