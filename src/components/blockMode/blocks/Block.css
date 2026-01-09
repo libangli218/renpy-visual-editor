@@ -1150,3 +1150,76 @@
 .python-code-area::placeholder {
   color: var(--text-muted);
 }
+
+
+/* ========================================
+ * Resource Drop Target Styles
+ * Implements Requirements 4.4, 4.5, 4.7
+ * ======================================== */
+
+/* Scene/Show block content wrapper for drop handling */
+.scene-block-content {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+/* Drop target state - visual feedback */
+.scene-block.resource-drop-target {
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 0 2px var(--accent-primary), var(--shadow-md);
+}
+
+.scene-block-content.drop-active {
+  background-color: rgba(74, 158, 255, 0.08);
+  border-radius: var(--radius-sm);
+}
+
+/* Drop indicator overlay */
+.resource-drop-indicator {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-sm);
+  background-color: rgba(74, 158, 255, 0.15);
+  border: 2px dashed var(--accent-primary);
+  border-radius: var(--radius-sm);
+  pointer-events: none;
+  z-index: 10;
+  animation: drop-pulse 1s ease-in-out infinite;
+}
+
+@keyframes drop-pulse {
+  0%, 100% {
+    background-color: rgba(74, 158, 255, 0.15);
+  }
+  50% {
+    background-color: rgba(74, 158, 255, 0.25);
+  }
+}
+
+.drop-indicator-icon {
+  font-size: 24px;
+}
+
+.drop-indicator-text {
+  font-size: var(--font-sm);
+  font-weight: 500;
+  color: var(--accent-primary);
+}
+
+/* Not allowed cursor for incompatible drops */
+.scene-block.drop-not-allowed {
+  cursor: not-allowed;
+}
+
+.scene-block.drop-not-allowed .scene-block-content {
+  opacity: 0.6;
+}

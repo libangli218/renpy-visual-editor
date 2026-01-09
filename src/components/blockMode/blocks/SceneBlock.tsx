@@ -6,6 +6,7 @@
  * Hide (character), and With (transition).
  * 
  * Requirements: 4.1-4.6, 1.1, 1.4, 2.1, 3.1 (Advanced Properties)
+ * Requirements: 4.4, 4.6, 4.7 (Resource drag-drop for Scene block)
  */
 
 import React, { useCallback, useMemo } from 'react'
@@ -14,6 +15,7 @@ import { TRANSITION_OPTIONS, POSITION_OPTIONS } from '../constants'
 import { BaseBlock, BaseBlockProps } from './BaseBlock'
 import { AdvancedPanel } from './AdvancedPanel'
 import { ImageTag } from '../../../resource/ResourceManager'
+import { useResourceDrop } from '../../../hooks/useResourceDrop'
 import './Block.css'
 
 /**
@@ -90,6 +92,65 @@ export const SceneBlock: React.FC<SceneBlockProps> = ({
     // Clear expression when character changes
     onSlotChange?.(block.id, 'expression', null)
   }, [block.id, onSlotChange])
+  
+  /**
+   * Handle background image drop from resource panel
+   * Implements Requirements 4.4, 4.6
+   */
+  const handleBackgroundDrop = useCallback((imageTag: string) => {
+    onSlotChange?.(block.id, 'image', imageTag)
+  }, [block.id, onSlotChange])
+  
+  /**
+   * Handle sprite image drop from resource panel
+   * Implements Requirements 4.5, 4.6
+   */
+  const handleSpriteDrop = useCallback((imageTag: string) => {
+    // For show block, we need to parse the image tag
+    // Format: "character expression" e.g., "eileen happy"
+    const parts = imageTag.split(' ')
+    if (parts.length >= 1) {
+      const character = parts[0]
+      const expression = parts.length > 1 ? parts.slice(1).join(' ') : null
+      
+      onSlotChange?.(block.id, 'character', character)
+      if (expression) {
+        onSlotChange?.(block.id, 'expression', expression)
+      }
+    }
+  }, [block.id, onSlotChange])
+  
+  // Use resource drop hook for scene block (background images)
+  const {
+    isOver: isBackgroundOver,
+    canDrop: canDropBackground,
+    dropHandlers: backgroundDropHandlers,
+  } = useResourceDrop({
+    acceptType: 'background',
+    onDrop: handleBackgroundDrop,
+    enabled: block.type === 'scene',
+  })
+  
+  // Use resource drop hook for show block (sprite images)
+  const {
+    isOver: isSpriteOver,
+    canDrop: canDropSprite,
+    dropHandlers: spriteDropHandlers,
+  } = useResourceDrop({
+    acceptType: 'sprite',
+    onDrop: handleSpriteDrop,
+    enabled: block.type === 'show',
+  })
+  
+  // Determine which drop handlers to use based on block type
+  const activeDropHandlers = block.type === 'scene' 
+    ? backgroundDropHandlers 
+    : block.type === 'show' 
+      ? spriteDropHandlers 
+      : undefined
+  
+  const isDropTarget = (block.type === 'scene' && isBackgroundOver && canDropBackground) ||
+                       (block.type === 'show' && isSpriteOver && canDropSprite)
   
   // Check for errors
   const hasSlotErrors = Object.keys(slotErrors).length > 0
@@ -389,9 +450,25 @@ export const SceneBlock: React.FC<SceneBlockProps> = ({
       {...baseProps}
       block={block}
       hasError={hasError}
-      className={`scene-block scene-block-${block.type} ${baseProps.className || ''}`}
+      className={`scene-block scene-block-${block.type} ${isDropTarget ? 'resource-drop-target' : ''} ${baseProps.className || ''}`}
     >
-      {renderContent()}
+      <div 
+        className={`scene-block-content ${isDropTarget ? 'drop-active' : ''}`}
+        {...activeDropHandlers}
+      >
+        {renderContent()}
+        {/* Drop indicator overlay */}
+        {isDropTarget && (
+          <div className="resource-drop-indicator">
+            <span className="drop-indicator-icon">
+              {block.type === 'scene' ? '🖼️' : '👤'}
+            </span>
+            <span className="drop-indicator-text">
+              {block.type === 'scene' ? '放置背景图片' : '放置立绘'}
+            </span>
+          </div>
+        )}
+      </div>
     </BaseBlock>
   )
 }
