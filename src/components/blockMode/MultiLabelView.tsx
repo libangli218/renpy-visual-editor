@@ -19,6 +19,7 @@ import { DragPreview } from './DragPreview'
 import { useMultiLabelViewStore } from './stores/multiLabelViewStore'
 import { useBlockEditorStore } from './stores/blockEditorStore'
 import { useCanvasLayoutStore, Point, Rect, LabelBounds } from '../../store/canvasLayoutStore'
+import { ScriptFileInfo } from '../../store/editorStore'
 import { useCanvasLayoutPersistence } from '../../store/useCanvasLayoutPersistence'
 import { mergeWithAutoLayout, findNonOverlappingPosition, DEFAULT_CARD_WIDTH, DEFAULT_CARD_HEIGHT } from '../../store/autoLayout'
 import { screenToCanvas } from '../../store/canvasUtils'
@@ -63,6 +64,24 @@ export interface MultiLabelViewProps {
   readOnly?: boolean
   /** Custom class name */
   className?: string
+  
+  // Multi-script props (Requirements 1.1, 2.1, 6.4)
+  /** Current script file path */
+  currentFile?: string | null
+  /** All available script files */
+  scriptFiles?: ScriptFileInfo[]
+  /** Callback when script is changed */
+  onScriptChange?: (filePath: string) => void | Promise<void>
+  /** Callback to reload current script */
+  onScriptReload?: () => void | Promise<void>
+  /** Callback to create new script */
+  onCreateScript?: (fileName: string) => void | Promise<void>
+  /** Whether script operations are loading */
+  isScriptLoading?: boolean
+  /** Error message for script switch failures */
+  scriptSwitchError?: string | null
+  /** Callback to clear script switch error */
+  onClearScriptError?: () => void
 }
 
 /**
@@ -102,6 +121,15 @@ export const MultiLabelView: React.FC<MultiLabelViewProps> = ({
   projectPath = null,
   readOnly = false,
   className = '',
+  // Multi-script props
+  currentFile = null,
+  scriptFiles = [],
+  onScriptChange,
+  onScriptReload,
+  onCreateScript,
+  isScriptLoading = false,
+  scriptSwitchError = null,
+  onClearScriptError,
 }) => {
   // Multi-label view store
   const {
@@ -1290,6 +1318,15 @@ export const MultiLabelView: React.FC<MultiLabelViewProps> = ({
           zoomLevel={zoomPercentage}
           onResetZoom={handleResetZoom}
           onFitAll={handleFitAll}
+          // Multi-script props (Requirements 1.1, 2.1, 6.4)
+          currentFile={currentFile}
+          scriptFiles={scriptFiles}
+          onScriptChange={onScriptChange}
+          onScriptReload={onScriptReload}
+          onCreateScript={onCreateScript}
+          isScriptLoading={isScriptLoading}
+          scriptSwitchError={scriptSwitchError}
+          onClearScriptError={onClearScriptError}
         />
 
         {/* Main Content */}

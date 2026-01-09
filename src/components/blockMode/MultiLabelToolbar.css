@@ -54,6 +54,14 @@
   height: 100%;
 }
 
+/* Script Section - Left-most with separator (Requirements 1.1, 2.1) */
+.toolbar-scripts {
+  flex: 0 0 auto;
+  padding-right: var(--toolbar-gap);
+  border-right: 1px solid var(--toolbar-separator);
+  margin-right: var(--toolbar-gap);
+}
+
 .toolbar-left {
   flex: 0 0 auto;
 }
@@ -250,6 +258,25 @@
 .toolbar-new-label:active {
   background-color: var(--toolbar-accent);
   transform: scale(0.98);
+}
+
+/* New Script Button (Requirement 2.1) */
+.toolbar-new-script {
+  background-color: var(--toolbar-hover);
+  color: var(--toolbar-text);
+}
+
+.toolbar-new-script:hover {
+  background-color: var(--toolbar-active);
+}
+
+.toolbar-new-script:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.toolbar-new-script .button-icon {
+  font-size: 12px;
 }
 
 /* Secondary Buttons */
@@ -477,6 +504,20 @@
     gap: 6px;
   }
 
+  .toolbar-scripts {
+    padding-right: 6px;
+    margin-right: 6px;
+  }
+
+  .toolbar-new-script .button-text {
+    display: none;
+  }
+
+  .toolbar-new-script {
+    width: 32px;
+    padding: 0;
+  }
+
   .toolbar-search {
     width: 160px;
   }
@@ -510,6 +551,16 @@
 }
 
 @media (max-width: 480px) {
+  .toolbar-scripts {
+    border-right: none;
+    padding-right: 0;
+    margin-right: 0;
+  }
+
+  .toolbar-new-script {
+    display: none;
+  }
+
   .toolbar-search {
     width: 120px;
   }

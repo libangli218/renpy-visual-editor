@@ -3,16 +3,21 @@
  * 多 Label 视图工具栏组件
  * 
  * Provides toolbar functionality for the multi-label view including:
+ * - Script selector for switching between .rpy files
+ * - New script button
  * - Search box for filtering labels
  * - New label button
  * - Layout mode toggle (grid/list)
  * - Collapse/expand all buttons
  * 
- * Requirements: 4.3, 5.1, 5.2, 6.1
+ * Requirements: 1.1, 2.1, 4.3, 5.1, 5.2, 6.1, 6.4
  */
 
 import React, { useCallback, useState, memo } from 'react'
 import { LayoutMode } from './stores/multiLabelViewStore'
+import { ScriptSelector } from './ScriptSelector'
+import { NewScriptDialog } from './NewScriptDialog'
+import { ScriptFileInfo } from '../../store/editorStore'
 import './MultiLabelToolbar.css'
 
 /**
@@ -51,16 +56,37 @@ export interface MultiLabelToolbarProps {
   onResetZoom?: () => void
   /** Fit all labels callback */
   onFitAll?: () => void
+  
+  // Multi-script props (Requirements 1.1, 2.1, 6.4)
+  /** Current script file path */
+  currentFile?: string | null
+  /** All available script files */
+  scriptFiles?: ScriptFileInfo[]
+  /** Callback when script is changed */
+  onScriptChange?: (filePath: string) => void | Promise<void>
+  /** Callback to reload current script */
+  onScriptReload?: () => void | Promise<void>
+  /** Callback to create new script */
+  onCreateScript?: (fileName: string) => void | Promise<void>
+  /** Whether script operations are loading */
+  isScriptLoading?: boolean
+  /** Error message for script switch failures */
+  scriptSwitchError?: string | null
+  /** Callback to clear script switch error */
+  onClearScriptError?: () => void
 }
 
 /**
  * MultiLabelToolbar - Toolbar for multi-label view
  * 
  * Implements Requirements:
+ * - 1.1: Script selector dropdown in toolbar
+ * - 2.1: New script button next to script selector
  * - 4.3: Layout mode switching (grid/list)
  * - 5.1: New label button
  * - 5.2: Prompt for label name on create
  * - 6.1: Search box for filtering labels
+ * - 6.4: Keyboard shortcut tooltip (Ctrl+N)
  */
 export const MultiLabelToolbar: React.FC<MultiLabelToolbarProps> = memo(({
   searchQuery,
@@ -79,11 +105,24 @@ export const MultiLabelToolbar: React.FC<MultiLabelToolbarProps> = memo(({
   zoomLevel = 100,
   onResetZoom,
   onFitAll,
+  // Multi-script props
+  currentFile = null,
+  scriptFiles = [],
+  onScriptChange,
+  onScriptReload,
+  onCreateScript,
+  isScriptLoading = false,
+  scriptSwitchError = null,
+  onClearScriptError,
 }) => {
   // State for new label dialog
   const [showNewLabelDialog, setShowNewLabelDialog] = useState(false)
   const [newLabelName, setNewLabelName] = useState('')
   const [newLabelError, setNewLabelError] = useState('')
+  
+  // State for new script dialog (Requirement 2.1)
+  const [showNewScriptDialog, setShowNewScriptDialog] = useState(false)
+  const [isCreatingScript, setIsCreatingScript] = useState(false)
 
   // Handle search input change
   const handleSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
@@ -155,12 +194,71 @@ export const MultiLabelToolbar: React.FC<MultiLabelToolbarProps> = memo(({
     }
   }, [handleConfirmNewLabel, handleCancelNewLabel])
 
+  // Handle new script button click (Requirement 2.1)
+  const handleNewScriptClick = useCallback(() => {
+    setShowNewScriptDialog(true)
+  }, [])
+
+  // Handle new script dialog close
+  const handleNewScriptDialogClose = useCallback(() => {
+    setShowNewScriptDialog(false)
+  }, [])
+
+  // Handle new script creation (Requirement 2.1)
+  const handleCreateScript = useCallback(async (fileName: string) => {
+    if (!onCreateScript) return
+    
+    setIsCreatingScript(true)
+    try {
+      await onCreateScript(fileName)
+      setShowNewScriptDialog(false)
+    } catch (error) {
+      // Error will be handled by the dialog
+      throw error
+    } finally {
+      setIsCreatingScript(false)
+    }
+  }, [onCreateScript])
+
+  // Get existing script file names for validation
+  const existingScriptNames = scriptFiles.map(f => f.name)
+
   // Determine if showing filtered results
   const isFiltered = searchQuery.trim().length > 0
   const displayCount = isFiltered && filteredCount !== undefined ? filteredCount : labelCount
 
+  // Check if multi-script features are enabled
+  const hasMultiScriptSupport = onScriptChange && scriptFiles.length > 0
+
   return (
     <div className={`multi-label-toolbar ${className}`}>
+      {/* Script Section: Script Selector and New Script Button (Requirements 1.1, 2.1) */}
+      {hasMultiScriptSupport && (
+        <div className="toolbar-section toolbar-scripts">
+          <ScriptSelector
+            currentFile={currentFile}
+            scriptFiles={scriptFiles}
+            onScriptChange={onScriptChange}
+            onReload={onScriptReload || (() => {})}
+            disabled={readOnly}
+            isLoading={isScriptLoading}
+            switchError={scriptSwitchError}
+            onClearError={onClearScriptError}
+          />
+          {!readOnly && onCreateScript && (
+            <button
+              className="toolbar-button toolbar-new-script"
+              onClick={handleNewScriptClick}
+              title="新建脚本文件 (Ctrl+N)"
+              disabled={isScriptLoading}
+            >
+              <span className="button-icon">📄</span>
+              <span className="button-text">新建文件</span>
+            </button>
+          )}
+        </div>
+      )}
+
       {/* Left Section: Search */}
       <div className="toolbar-section toolbar-left">
         <div className="toolbar-search">
@@ -332,6 +430,17 @@ export const MultiLabelToolbar: React.FC<MultiLabelToolbarProps> = memo(({
             </div>
           </div>
         </div>
+      )}
+
+      {/* New Script Dialog (Requirement 2.1) */}
+      {onCreateScript && (
+        <NewScriptDialog
+          isOpen={showNewScriptDialog}
+          onClose={handleNewScriptDialogClose}
+          onCreate={handleCreateScript}
+          existingFiles={existingScriptNames}
+          isCreating={isCreatingScript}
+        />
       )}
     </div>
   )

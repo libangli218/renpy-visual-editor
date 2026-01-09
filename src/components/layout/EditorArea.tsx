@@ -14,18 +14,44 @@ import { resourceManager, ImageTag } from '../../resource/ResourceManager'
  * - Bottom: Edit panel (Story Mode or Multi-Label View)
  * 
  * Implements Requirements:
+ * - 1.1: Script selector in toolbar
+ * - 2.1: New script button
  * - 7.1: Default to Multi-Label View when opening project
  * - 7.3: Remove BlockModeEditor independent entry
  * - 3.4: Toggle Preview Panel visibility
  */
 export const EditorArea: React.FC = () => {
-  const { mode, ast, setAst, projectPath, previewVisible } = useEditorStore()
+  const { 
+    mode, 
+    ast, 
+    setAst, 
+    projectPath, 
+    previewVisible,
+    // Multi-script state
+    currentFile,
+    scriptFiles,
+    isLoading,
+    switchScript,
+    reloadCurrentScript,
+    createNewScript,
+    refreshScriptFiles,
+  } = useEditorStore()
   
   // State for available resources
   const [availableImages, setAvailableImages] = useState<string[]>([])
   const [availableAudio, setAvailableAudio] = useState<string[]>([])
   const [imageTags, setImageTags] = useState<ImageTag[]>([])
   const [backgroundTags, setBackgroundTags] = useState<ImageTag[]>([])
+  
+  // State for script switch error
+  const [scriptSwitchError, setScriptSwitchError] = useState<string | null>(null)
+
+  // Refresh script files when project path changes
+  useEffect(() => {
+    if (projectPath) {
+      refreshScriptFiles()
+    }
+  }, [projectPath, refreshScriptFiles])
 
   // Scan resources when project path changes
   useEffect(() => {
@@ -91,6 +117,58 @@ export const EditorArea: React.FC = () => {
   }, [setAst])
 
   /**
+   * Handle script change (Requirements 1.1, 1.3)
+   */
+  const handleScriptChange = useCallback(async (filePath: string) => {
+    try {
+      setScriptSwitchError(null)
+      await switchScript(filePath)
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : '切换脚本失败'
+      setScriptSwitchError(errorMsg)
+      throw error
+    }
+  }, [switchScript])
+
+  /**
+   * Handle script reload (Requirement 3.8)
+   */
+  const handleScriptReload = useCallback(async () => {
+    try {
+      setScriptSwitchError(null)
+      await reloadCurrentScript()
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : '重新加载失败'
+      setScriptSwitchError(errorMsg)
+      throw error
+    }
+  }, [reloadCurrentScript])
+
+  /**
+   * Handle create new script (Requirements 2.1, 2.5, 2.6)
+   */
+  const handleCreateScript = useCallback(async (fileName: string) => {
+    try {
+      setScriptSwitchError(null)
+      const success = await createNewScript(fileName)
+      if (!success) {
+        throw new Error('创建脚本失败')
+      }
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : '创建脚本失败'
+      setScriptSwitchError(errorMsg)
+      throw error
+    }
+  }, [createNewScript])
+
+  /**
+   * Clear script switch error
+   */
+  const handleClearScriptError = useCallback(() => {
+    setScriptSwitchError(null)
+  }, [])
+
+  /**
    * Get available labels from AST for jump/call targets
    */
   const availableLabels = useMemo(() => {
@@ -134,6 +212,15 @@ export const EditorArea: React.FC = () => {
           imageTags={imageTags}
           backgroundTags={backgroundTags}
           projectPath={projectPath}
+          // Multi-script props (Requirements 1.1, 2.1, 6.4)
+          currentFile={currentFile}
+          scriptFiles={scriptFiles}
+          onScriptChange={handleScriptChange}
+          onScriptReload={handleScriptReload}
+          onCreateScript={handleCreateScript}
+          isScriptLoading={isLoading}
+          scriptSwitchError={scriptSwitchError}
+          onClearScriptError={handleClearScriptError}
         />
       </section>
     )
