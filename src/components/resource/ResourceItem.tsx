@@ -56,6 +56,9 @@ export interface ResourceItemProps {
  * Displays a thumbnail preview with the resource name.
  * Supports drag-and-drop for use in the block editor.
  */
+// Preview size for hover tooltip (larger than thumbnail)
+const PREVIEW_SIZE = 180
+
 export const ResourceItem: React.FC<ResourceItemProps> = ({
   imageTag,
   type,
@@ -70,9 +73,12 @@ export const ResourceItem: React.FC<ResourceItemProps> = ({
   className = '',
 }) => {
   const [thumbnailUrl, setThumbnailUrl] = useState<string>('')
+  const [previewUrl, setPreviewUrl] = useState<string>('')
   const [isLoading, setIsLoading] = useState(true)
   const [hasError, setHasError] = useState(false)
   const [isDragging, setIsDragging] = useState(false)
+  const [isHovering, setIsHovering] = useState(false)
+  const [previewLoaded, setPreviewLoaded] = useState(false)
   const itemRef = useRef<HTMLDivElement>(null)
 
   // Get thumbnail size in pixels
@@ -108,6 +114,36 @@ export const ResourceItem: React.FC<ResourceItemProps> = ({
       mounted = false
     }
   }, [imagePath, sizePixels])
+
+  // Load larger preview image when hovering (lazy load)
+  useEffect(() => {
+    if (!isHovering || previewLoaded) return
+
+    let mounted = true
+
+    const loadPreview = async () => {
+      try {
+        const url = await thumbnailService.getThumbnail(imagePath, PREVIEW_SIZE)
+        if (mounted) {
+          setPreviewUrl(url)
+          setPreviewLoaded(true)
+        }
+      } catch (error) {
+        console.warn(`Failed to load preview for ${imagePath}:`, error)
+        // Fallback to thumbnail URL if preview fails
+        if (mounted) {
+          setPreviewUrl(thumbnailUrl)
+          setPreviewLoaded(true)
+        }
+      }
+    }
+
+    loadPreview()
+
+    return () => {
+      mounted = false
+    }
+  }, [isHovering, previewLoaded, imagePath, thumbnailUrl])
 
   /**
    * Create drag data for this resource
@@ -240,6 +276,20 @@ export const ResourceItem: React.FC<ResourceItemProps> = ({
     }
   }, [onClick, onDoubleClick])
 
+  /**
+   * Handle mouse enter - start loading preview
+   */
+  const handleMouseEnter = useCallback(() => {
+    setIsHovering(true)
+  }, [])
+
+  /**
+   * Handle mouse leave
+   */
+  const handleMouseLeave = useCallback(() => {
+    setIsHovering(false)
+  }, [])
+
   // Extract display name from image tag
   const displayName = imageTag.split(' ').slice(-1)[0] || imageTag
 
@@ -254,6 +304,8 @@ export const ResourceItem: React.FC<ResourceItemProps> = ({
       onDoubleClick={handleDoubleClick}
       onContextMenu={handleContextMenu}
       onKeyDown={handleKeyDown}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
       tabIndex={0}
       role="button"
       aria-label={`${type === 'background' ? 'Background' : 'Sprite'}: ${imageTag}`}
@@ -296,11 +348,14 @@ export const ResourceItem: React.FC<ResourceItemProps> = ({
 
       {/* Hover preview tooltip - shown on hover */}
       <div className="resource-preview-tooltip">
-        <img
-          src={thumbnailUrl}
-          alt={imageTag}
-          className="preview-image"
-          draggable={false}
+        <div 
+          className="preview-image-container"
+          style={{
+            backgroundImage: `url(${previewUrl || thumbnailUrl})`,
+            backgroundSize: 'contain',
+            backgroundPosition: 'center',
+            backgroundRepeat: 'no-repeat',
+          }}
         />
         <div className="preview-info">
           <span className="preview-tag">{imageTag}</span>

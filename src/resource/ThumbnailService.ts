@@ -358,6 +358,31 @@ export class ThumbnailService {
    * @returns Data URL of the generated thumbnail
    */
   async generateThumbnail(imagePath: string, size: number): Promise<string> {
+    // First, try to load the image using Electron's IPC API (most reliable)
+    const electronAPI = typeof window !== 'undefined' 
+      ? (window as unknown as { electronAPI?: { readFileAsBase64?: (path: string) => Promise<string | null> } }).electronAPI 
+      : undefined
+    
+    if (electronAPI?.readFileAsBase64) {
+      try {
+        const dataUrl = await electronAPI.readFileAsBase64(imagePath)
+        if (dataUrl) {
+          // Now create thumbnail from the data URL
+          return this.createThumbnailFromDataUrl(dataUrl, size)
+        }
+      } catch (error) {
+        console.warn(`Failed to read image via IPC: ${imagePath}`, error)
+      }
+    }
+    
+    // Fallback: try using local-file:// protocol (registered in Electron main process)
+    return this.loadImageAndCreateThumbnail(imagePath, size)
+  }
+
+  /**
+   * Create a thumbnail from a data URL
+   */
+  private createThumbnailFromDataUrl(dataUrl: string, size: number): Promise<string> {
     return new Promise((resolve, reject) => {
       const img = new Image()
       
@@ -372,30 +397,76 @@ export class ThumbnailService {
           return
         }
 
-          // Calculate scaling to cover the thumbnail area while maintaining aspect ratio
-          const scale = Math.max(size / img.width, size / img.height)
-          const scaledWidth = img.width * scale
-          const scaledHeight = img.height * scale
-          
-          // Center the image
-          const x = (size - scaledWidth) / 2
-          const y = (size - scaledHeight) / 2
+        // Calculate scaling to cover the thumbnail area while maintaining aspect ratio
+        const scale = Math.max(size / img.width, size / img.height)
+        const scaledWidth = img.width * scale
+        const scaledHeight = img.height * scale
+        
+        // Center the image
+        const x = (size - scaledWidth) / 2
+        const y = (size - scaledHeight) / 2
 
-          // Clear canvas with transparent background
-          ctx.clearRect(0, 0, size, size)
-          
-          // Draw the scaled image
-          ctx.drawImage(img, x, y, scaledWidth, scaledHeight)
-          
-          resolve(canvas.toDataURL('image/png'))
+        // Clear canvas with transparent background
+        ctx.clearRect(0, 0, size, size)
+        
+        // Draw the scaled image
+        ctx.drawImage(img, x, y, scaledWidth, scaledHeight)
+        
+        resolve(canvas.toDataURL('image/png'))
+      }
+
+      img.onerror = () => {
+        reject(new Error('Failed to load image from data URL'))
+      }
+
+      img.src = dataUrl
+    })
+  }
+
+  /**
+   * Load image using local-file protocol and create thumbnail
+   */
+  private loadImageAndCreateThumbnail(imagePath: string, size: number): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const img = new Image()
+      
+      img.onload = () => {
+        const canvas = document.createElement('canvas')
+        canvas.width = size
+        canvas.height = size
+        const ctx = canvas.getContext('2d')
+        
+        if (!ctx) {
+          reject(new Error('Failed to get canvas context'))
+          return
+        }
+
+        // Calculate scaling to cover the thumbnail area while maintaining aspect ratio
+        const scale = Math.max(size / img.width, size / img.height)
+        const scaledWidth = img.width * scale
+        const scaledHeight = img.height * scale
+        
+        // Center the image
+        const x = (size - scaledWidth) / 2
+        const y = (size - scaledHeight) / 2
+
+        // Clear canvas with transparent background
+        ctx.clearRect(0, 0, size, size)
+        
+        // Draw the scaled image
+        ctx.drawImage(img, x, y, scaledWidth, scaledHeight)
+        
+        resolve(canvas.toDataURL('image/png'))
       }
 
       img.onerror = () => {
         reject(new Error(`Failed to load image: ${imagePath}`))
       }
 
-      // Load the image using file:// protocol for local files
-      img.src = imagePath.startsWith('file://') ? imagePath : `file://${imagePath}`
+      // Use local-file:// protocol (registered in Electron main process)
+      // Format: local-file:///F:/path/to/file.jpg
+      const normalizedPath = imagePath.replace(/\\/g, '/')
+      img.src = `local-file:///${normalizedPath}`
     })
   }
 

@@ -206,8 +206,10 @@ export const ResourcePreviewPanel: React.FC<ResourcePreviewPanelProps> = ({
     return null
   }
 
-  // Build image URL
-  const imageUrl = `file://${resource.imagePath}`
+  // Build image URL using local-file:// protocol (registered in Electron main process)
+  // Format: local-file:///F:/path/to/file.jpg
+  const normalizedPath = resource.imagePath.replace(/\\/g, '/')
+  const imageUrl = `local-file:///${normalizedPath}`
 
   return (
     <div 
