@@ -185,16 +185,15 @@ export const ResourceItem: React.FC<ResourceItemProps> = ({
       ctx.lineWidth = 2
       ctx.strokeRect(1, 1, previewSize - 2, previewSize - 2)
 
-      // Draw thumbnail if available
-      if (thumbnailUrl && !hasError) {
-        const img = new Image()
-        img.src = thumbnailUrl
-        // Note: Image may not be loaded yet, so preview might be empty
-        // This is acceptable as the drag operation still works
-        try {
-          ctx.drawImage(img, 2, 2, previewSize - 4, previewSize - 4)
-        } catch {
-          // Ignore draw errors
+      // Draw thumbnail if available - use the thumbnail image element from DOM
+      if (thumbnailUrl && !hasError && itemRef.current) {
+        const thumbnailImg = itemRef.current.querySelector('.thumbnail-image') as HTMLImageElement
+        if (thumbnailImg && thumbnailImg.complete && thumbnailImg.naturalWidth > 0) {
+          try {
+            ctx.drawImage(thumbnailImg, 2, 2, previewSize - 4, previewSize - 4)
+          } catch {
+            // Ignore draw errors
+          }
         }
       }
 

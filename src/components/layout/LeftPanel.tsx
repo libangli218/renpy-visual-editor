@@ -483,18 +483,6 @@ export const LeftPanel: React.FC = () => {
     openContextMenu({ x: event.clientX, y: event.clientY }, resource)
   }, [openContextMenu])
 
-  // Handle import for sprites
-  const handleImportSprites = useCallback(() => {
-    // TODO: Implement import in task 9
-    console.log('Import sprites')
-  }, [])
-
-  // Handle import for backgrounds
-  const handleImportBackgrounds = useCallback(() => {
-    // TODO: Implement import in task 9
-    console.log('Import backgrounds')
-  }, [])
-
   // Handle resource refresh (after rename/delete operations)
   const handleResourceRefresh = useCallback(async () => {
     if (!projectPath) return
@@ -654,7 +642,6 @@ export const LeftPanel: React.FC = () => {
         getImagePath={getImagePath}
         expanded={resourceExpandedSections.has(sectionType)}
         onToggle={() => toggleResourceSection(sectionType)}
-        onImport={isSprites ? handleImportSprites : handleImportBackgrounds}
         onRefresh={handleResourceRefresh}
         searchQuery={searchQueries[sectionType]}
         onSearchChange={(query) => setSearchQuery(sectionType, query)}
