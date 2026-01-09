@@ -400,8 +400,8 @@
 }
 
 .resource-preview-tooltip-fixed .preview-image-container {
-  width: 180px;
-  height: 120px;
+  width: 160px;
+  height: 200px;
   border-radius: var(--radius-sm, 4px);
   background-color: var(--bg-tertiary, #2a2a2a);
   margin-bottom: var(--spacing-xs, 4px);

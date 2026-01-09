@@ -116,7 +116,7 @@ export const ResourceItem: React.FC<ResourceItemProps> = ({
     }
   }, [imagePath, sizePixels])
 
-  // Load larger preview image when hovering (lazy load)
+  // Load original image for preview when hovering (lazy load)
   useEffect(() => {
     if (!isHovering || previewLoaded) return
 
@@ -124,6 +124,23 @@ export const ResourceItem: React.FC<ResourceItemProps> = ({
 
     const loadPreview = async () => {
       try {
+        // Load original image via IPC for full preview (not cropped thumbnail)
+        const electronAPI = (window as unknown as { 
+          electronAPI?: { 
+            readFileAsBase64?: (path: string) => Promise<string | null> 
+          } 
+        }).electronAPI
+
+        if (electronAPI?.readFileAsBase64) {
+          const dataUrl = await electronAPI.readFileAsBase64(imagePath)
+          if (mounted && dataUrl) {
+            setPreviewUrl(dataUrl)
+            setPreviewLoaded(true)
+            return
+          }
+        }
+
+        // Fallback to thumbnail if IPC fails
         const url = await thumbnailService.getThumbnail(imagePath, PREVIEW_SIZE)
         if (mounted) {
           setPreviewUrl(url)
@@ -400,8 +417,8 @@ const TooltipPortal: React.FC<TooltipPortalProps> = ({ targetRef, children }) =>
       if (!rect) return
       
       // Position tooltip to the right of the item
-      const tooltipWidth = 200
-      const tooltipHeight = 180
+      const tooltipWidth = 180
+      const tooltipHeight = 260 // Taller for portrait sprites
       const gap = 8
       
       let left = rect.right + gap
