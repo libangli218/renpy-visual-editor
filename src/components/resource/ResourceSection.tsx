@@ -19,6 +19,12 @@ import {
   ThumbnailSize,
   ResourceSectionType,
 } from '../../store/resourceStore'
+import {
+  ConflictDialog,
+  ValidationWarningDialog,
+  ImportResultDialog,
+} from './ImportDialog'
+import { useResourceImport } from '../../hooks/useResourceImport'
 import './ResourceSection.css'
 
 /**
@@ -63,8 +69,10 @@ export interface ResourceSectionProps {
   expanded: boolean
   /** Toggle expanded state */
   onToggle: () => void
-  /** Import button click handler */
+  /** Import button click handler (legacy, optional) */
   onImport?: () => void
+  /** Refresh resources callback (called after import) */
+  onRefresh?: () => void
   /** Search query */
   searchQuery: string
   /** Set search query */
@@ -176,10 +184,12 @@ export const ResourceSection: React.FC<ResourceSectionProps> = ({
   icon,
   sectionType,
   imageTags,
+  projectPath,
   getImagePath,
   expanded,
   onToggle,
   onImport,
+  onRefresh,
   searchQuery,
   onSearchChange,
   thumbnailSize,
@@ -190,6 +200,16 @@ export const ResourceSection: React.FC<ResourceSectionProps> = ({
 }) => {
   // Track expanded groups for sprites
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set())
+  
+  // Import hook
+  const {
+    state: importState,
+    importBackgrounds,
+    importSprites,
+    resolveConflict,
+    resolveValidation,
+    closeResultDialog,
+  } = useResourceImport(projectPath, onRefresh)
   
   // Convert image tags to resource data
   const resourceType = sectionType === 'backgrounds' ? 'background' : 'sprite'
@@ -232,6 +252,18 @@ export const ResourceSection: React.FC<ResourceSectionProps> = ({
   const handleClearSearch = useCallback(() => {
     onSearchChange('')
   }, [onSearchChange])
+  
+  // Handle import button click
+  const handleImportClick = useCallback(() => {
+    // Use legacy onImport if provided, otherwise use the hook
+    if (onImport) {
+      onImport()
+    } else if (sectionType === 'backgrounds') {
+      importBackgrounds()
+    } else {
+      importSprites()
+    }
+  }, [onImport, sectionType, importBackgrounds, importSprites])
   
   // Handle resource click
   const handleResourceClick = useCallback((resource: ResourceData) => {
@@ -377,15 +409,14 @@ export const ResourceSection: React.FC<ResourceSectionProps> = ({
                 </button>
               )}
             </div>
-            {onImport && (
-              <button
-                className="resource-import-btn"
-                onClick={onImport}
-                title={`导入${title}`}
-              >
-                +
-              </button>
-            )}
+            <button
+              className="resource-import-btn"
+              onClick={handleImportClick}
+              title={`导入${title}`}
+              disabled={importState.isImporting}
+            >
+              {importState.isImporting ? '...' : '+'}
+            </button>
           </div>
           
           {/* Resource List */}
@@ -393,6 +424,33 @@ export const ResourceSection: React.FC<ResourceSectionProps> = ({
             {sectionType === 'sprites' ? renderGroupedResources() : renderFlatResources()}
           </div>
         </div>
+      )}
+      
+      {/* Import Dialogs */}
+      <ConflictDialog
+        isOpen={importState.conflictDialogOpen}
+        fileName={importState.conflictFileName}
+        targetPath={importState.conflictTargetPath}
+        onResolve={resolveConflict}
+      />
+      
+      <ValidationWarningDialog
+        isOpen={importState.validationDialogOpen}
+        fileName={importState.validationFileName}
+        warnings={importState.validationWarnings}
+        suggestedName={importState.validationSuggestedName}
+        onProceed={resolveValidation}
+      />
+      
+      {importState.result && (
+        <ImportResultDialog
+          isOpen={importState.resultDialogOpen}
+          total={importState.result.total}
+          successful={importState.result.successful}
+          failed={importState.result.failed}
+          skipped={importState.result.skipped}
+          onClose={closeResultDialog}
+        />
       )}
     </div>
   )

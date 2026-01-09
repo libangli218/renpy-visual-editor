@@ -6,3 +6,6 @@
 
 export { useResourceDrop } from './useResourceDrop'
 export type { UseResourceDropOptions, UseResourceDropReturn } from './useResourceDrop'
+
+export { useResourceImport } from './useResourceImport'
+export type { ImportState, UseResourceImportReturn } from './useResourceImport'

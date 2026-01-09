@@ -35,6 +35,14 @@ contextBridge.exposeInMainWorld('electronAPI', {
   openDirectory: () => ipcRenderer.invoke('dialog:openDirectory'),
   selectDirectory: (title?: string) => ipcRenderer.invoke('dialog:selectDirectory', title),
   selectRenpySdk: () => ipcRenderer.invoke('dialog:selectRenpySdk'),
+  selectImages: (title?: string) => ipcRenderer.invoke('dialog:selectImages', title),
+  
+  // File system extended operations
+  stat: (path: string) => ipcRenderer.invoke('fs:stat', path),
+  deleteFile: (path: string) => ipcRenderer.invoke('fs:deleteFile', path),
+  
+  // Shell operations
+  showItemInFolder: (path: string) => ipcRenderer.invoke('shell:showItemInFolder', path),
   
   // Game launcher operations
   launchGame: (projectPath: string, sdkPath: string) => ipcRenderer.invoke('game:launch', projectPath, sdkPath),
@@ -110,6 +118,10 @@ declare global {
       openDirectory: () => Promise<string | null>
       selectDirectory: (title?: string) => Promise<string | null>
       selectRenpySdk: () => Promise<string | null>
+      selectImages: (title?: string) => Promise<string[] | null>
+      stat: (path: string) => Promise<{ size: number; mtime: number; isFile: boolean; isDirectory: boolean } | null>
+      deleteFile: (path: string) => Promise<void>
+      showItemInFolder: (path: string) => Promise<void>
       launchGame: (projectPath: string, sdkPath: string) => Promise<{ success: boolean; pid?: number; error?: string }>
       stopGame: () => Promise<{ success: boolean; error?: string }>
       isGameRunning: () => Promise<boolean>

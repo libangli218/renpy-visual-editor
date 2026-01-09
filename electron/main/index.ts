@@ -325,6 +325,55 @@ ipcMain.handle('game:isRunning', async () => {
   return gameProcess !== null && !gameProcess.killed
 })
 
+// Select image files for import
+// Implements Requirements 3.3, 3.4, 3.10
+ipcMain.handle('dialog:selectImages', async (_event, title?: string) => {
+  if (!mainWindow) return null
+  
+  const result = await dialog.showOpenDialog(mainWindow, {
+    properties: ['openFile', 'multiSelections'],
+    title: title || 'Select Images to Import',
+    filters: [
+      { name: 'Images', extensions: ['png', 'jpg', 'jpeg', 'webp', 'gif'] },
+      { name: 'All Files', extensions: ['*'] },
+    ],
+  })
+  
+  if (result.canceled || result.filePaths.length === 0) {
+    return null
+  }
+  
+  return result.filePaths
+})
+
+// Get file stats (for checking file size, mtime, etc.)
+ipcMain.handle('fs:stat', async (_event, filePath: string) => {
+  const fs = await import('fs/promises')
+  try {
+    const stats = await fs.stat(filePath)
+    return {
+      size: stats.size,
+      mtime: stats.mtimeMs,
+      isFile: stats.isFile(),
+      isDirectory: stats.isDirectory(),
+    }
+  } catch {
+    return null
+  }
+})
+
+// Delete a file
+ipcMain.handle('fs:deleteFile', async (_event, filePath: string) => {
+  const fs = await import('fs/promises')
+  await fs.unlink(filePath)
+})
+
+// Show item in folder (file explorer)
+ipcMain.handle('shell:showItemInFolder', async (_event, filePath: string) => {
+  const { shell } = await import('electron')
+  shell.showItemInFolder(filePath)
+})
+
 // Select Ren'Py SDK path
 ipcMain.handle('dialog:selectRenpySdk', async () => {
   if (!mainWindow) return null
