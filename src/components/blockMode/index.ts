@@ -59,6 +59,9 @@ export * from './SnapGuides'
 export * from './MultiLabelToolbar'
 export * from './MultiLabelView'
 
+// Script Selector
+export * from './ScriptSelector'
+
 // Drag-Drop System
 export * from './DragDropContext'
 export * from './SnapIndicator'

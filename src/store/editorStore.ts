@@ -1,8 +1,50 @@
 import { create } from 'zustand'
-import { HistoryManager } from './HistoryManager'
+import { HistoryManager, HistoryEntry } from './HistoryManager'
 import { EditorMode, ComplexityLevel, EditorState } from '../types/editor'
 import { RenpyScript } from '../types/ast'
 import { projectManager } from '../project/ProjectManager'
+
+/**
+ * Script file information for the script selector
+ * Implements Requirements 1.2, 1.5, 1.9
+ */
+export interface ScriptFileInfo {
+  /** Full file path */
+  path: string
+  /** Display name (filename without path) */
+  name: string
+  /** Whether the file has unsaved changes */
+  modified: boolean
+  /** Whether the file has parse errors */
+  hasError?: boolean
+  /** Error message if hasError is true */
+  errorMessage?: string
+}
+
+/**
+ * Unified script state (combines AST cache and undo/redo history)
+ * Implements Requirements 4.6, 4.7
+ */
+export interface ScriptState {
+  /** Parsed AST */
+  ast: RenpyScript | null
+  /** Undo/redo history for this script */
+  undoHistory: {
+    past: HistoryEntry<EditorState>[]
+    future: HistoryEntry<EditorState>[]
+  }
+  /** Last accessed timestamp for LRU eviction */
+  lastAccessed: number
+  /** Whether the file has unsaved changes */
+  modified: boolean
+  /** Whether the file has parse errors */
+  hasError: boolean
+  /** Error message if hasError is true */
+  errorMessage?: string
+}
+
+/** Maximum number of script states to cache */
+const SCRIPT_STATE_MAX_SIZE = 10
 
 // Create a history manager instance
 const historyManager = new HistoryManager<EditorState>(100)
@@ -64,6 +106,16 @@ export interface EditorStore {
   canUndo: boolean
   canRedo: boolean
   
+  // Multi-script state (Requirements 1.2, 1.6, 1.9)
+  scriptFiles: ScriptFileInfo[]
+  
+  // Unified script state management (Requirements 4.6, 4.7)
+  scriptStates: Map<string, ScriptState>
+  
+  // Loading state
+  isLoading: boolean
+  loadingFile: string | null
+  
   // Actions
   setMode: (mode: EditorMode) => void
   setComplexity: (complexity: ComplexityLevel) => void
@@ -89,6 +141,14 @@ export interface EditorStore {
   redo: () => void
   pushToHistory: () => void
   resetHistory: () => void
+  
+  // Multi-script actions (Requirements 1.2, 1.6, 1.9, 3.1-3.8)
+  refreshScriptFiles: () => void
+  switchScript: (filePath: string) => Promise<void>
+  switchToNextScript: () => void
+  switchToPrevScript: () => void
+  createNewScript: (fileName: string) => Promise<boolean>
+  reloadCurrentScript: () => Promise<void>
   
   // Get current state snapshot
   getStateSnapshot: () => EditorState
@@ -142,6 +202,11 @@ export const useEditorStore = create<EditorStore>((set, get) => {
     propertiesVisible: true,
     canUndo: false,
     canRedo: false,
+    // Multi-script state (Requirements 1.2, 1.6, 1.9)
+    scriptFiles: [],
+    scriptStates: new Map<string, ScriptState>(),
+    isLoading: false,
+    loadingFile: null,
     
     // Actions that modify state and push to history
     setMode: (mode) => {
@@ -308,6 +373,295 @@ export const useEditorStore = create<EditorStore>((set, get) => {
     
     getStateSnapshot: () => {
       return createStateSnapshot(get())
+    },
+    
+    /**
+     * Refresh the script files list from ProjectManager
+     * Implements Requirements 1.2, 1.6, 1.9
+     */
+    refreshScriptFiles: () => {
+      const scriptPaths = projectManager.getScriptFiles()
+      
+      // Convert to ScriptFileInfo format
+      const scriptFiles: ScriptFileInfo[] = scriptPaths.map(path => {
+        // Extract filename from path
+        const parts = path.split(/[/\\]/)
+        const name = parts[parts.length - 1] || path
+        
+        // Check if modified
+        const modified = projectManager.isScriptModified(path)
+        
+        // Check for errors in scriptStates
+        const state = get()
+        const scriptState = state.scriptStates.get(path)
+        
+        return {
+          path,
+          name,
+          modified,
+          hasError: scriptState?.hasError ?? false,
+          errorMessage: scriptState?.errorMessage,
+        }
+      })
+      
+      // Sort files: script.rpy first, then alphabetically
+      scriptFiles.sort((a, b) => {
+        // script.rpy always comes first
+        if (a.name === 'script.rpy') return -1
+        if (b.name === 'script.rpy') return 1
+        // Otherwise sort alphabetically
+        return a.name.localeCompare(b.name)
+      })
+      
+      set({ scriptFiles })
+    },
+    
+    /**
+     * Switch to a different script file
+     * Implements Requirements 3.1, 3.2, 3.3, 3.4, 3.6
+     */
+    switchScript: async (filePath: string) => {
+      const state = get()
+      
+      // Don't switch if already on this file
+      if (state.currentFile === filePath) {
+        return
+      }
+      
+      // Set loading state
+      set({ isLoading: true, loadingFile: filePath })
+      
+      try {
+        // Save current script state before switching
+        if (state.currentFile && state.ast) {
+          const currentScriptState: ScriptState = {
+            ast: JSON.parse(JSON.stringify(state.ast)),
+            undoHistory: {
+              past: [],  // History is managed by historyManager
+              future: [],
+            },
+            lastAccessed: Date.now(),
+            modified: projectManager.isScriptModified(state.currentFile),
+            hasError: false,
+          }
+          
+          const newScriptStates = new Map(state.scriptStates)
+          newScriptStates.set(state.currentFile, currentScriptState)
+          
+          // LRU cleanup: remove oldest entries if over limit
+          if (newScriptStates.size > SCRIPT_STATE_MAX_SIZE) {
+            const entries = Array.from(newScriptStates.entries())
+              .filter(([path]) => !projectManager.isScriptModified(path)) // Don't evict modified files
+              .sort((a, b) => a[1].lastAccessed - b[1].lastAccessed)
+            
+            while (newScriptStates.size > SCRIPT_STATE_MAX_SIZE && entries.length > 0) {
+              const oldest = entries.shift()
+              if (oldest) {
+                newScriptStates.delete(oldest[0])
+              }
+            }
+          }
+          
+          set({ scriptStates: newScriptStates })
+          
+          // Update AST in ProjectManager
+          projectManager.updateScript(state.currentFile, state.ast)
+        }
+        
+        // Try to load from cache first
+        let newAst: RenpyScript | null = null
+        let hasError = false
+        let errorMessage: string | undefined
+        
+        const cachedState = state.scriptStates.get(filePath)
+        if (cachedState?.ast) {
+          newAst = cachedState.ast
+          hasError = cachedState.hasError
+          errorMessage = cachedState.errorMessage
+        } else {
+          // Load from ProjectManager
+          const scriptAst = projectManager.getScript(filePath)
+          if (scriptAst) {
+            newAst = scriptAst
+          } else {
+            // Script not in ProjectManager, this shouldn't happen normally
+            hasError = true
+            errorMessage = `Script not found: ${filePath}`
+          }
+        }
+        
+        // Update script state cache
+        const newScriptStates = new Map(get().scriptStates)
+        newScriptStates.set(filePath, {
+          ast: newAst ? JSON.parse(JSON.stringify(newAst)) : null,
+          undoHistory: { past: [], future: [] },
+          lastAccessed: Date.now(),
+          modified: projectManager.isScriptModified(filePath),
+          hasError,
+          errorMessage,
+        })
+        
+        // Reset history for the new file
+        historyManager.initialize(createStateSnapshot({
+          ...state,
+          currentFile: filePath,
+          ast: newAst,
+          selectedNodeId: null,
+          selectedBlockId: null,
+        }))
+        
+        // Update state: reset selection, preserve mode
+        set({
+          currentFile: filePath,
+          ast: newAst,
+          selectedNodeId: null,
+          selectedBlockId: null,
+          // Preserve mode (Requirements 3.4)
+          // mode: state.mode,
+          scriptStates: newScriptStates,
+          isLoading: false,
+          loadingFile: null,
+          canUndo: false,
+          canRedo: false,
+        })
+        
+        // Refresh script files to update modified indicators
+        get().refreshScriptFiles()
+        
+      } catch (error) {
+        console.error('Failed to switch script:', error)
+        set({ isLoading: false, loadingFile: null })
+      }
+    },
+    
+    /**
+     * Switch to the next script in the list
+     * Implements Requirement 6.1
+     */
+    switchToNextScript: () => {
+      const state = get()
+      if (state.scriptFiles.length <= 1 || !state.currentFile) {
+        return
+      }
+      
+      const currentIndex = state.scriptFiles.findIndex(f => f.path === state.currentFile)
+      const nextIndex = (currentIndex + 1) % state.scriptFiles.length
+      const nextFile = state.scriptFiles[nextIndex]
+      
+      if (nextFile) {
+        get().switchScript(nextFile.path)
+      }
+    },
+    
+    /**
+     * Switch to the previous script in the list
+     * Implements Requirement 6.2
+     */
+    switchToPrevScript: () => {
+      const state = get()
+      if (state.scriptFiles.length <= 1 || !state.currentFile) {
+        return
+      }
+      
+      const currentIndex = state.scriptFiles.findIndex(f => f.path === state.currentFile)
+      const prevIndex = (currentIndex - 1 + state.scriptFiles.length) % state.scriptFiles.length
+      const prevFile = state.scriptFiles[prevIndex]
+      
+      if (prevFile) {
+        get().switchScript(prevFile.path)
+      }
+    },
+    
+    /**
+     * Create a new script file
+     * Implements Requirements 2.5, 2.6
+     */
+    createNewScript: async (fileName: string) => {
+      // Ensure .rpy extension
+      if (!fileName.endsWith('.rpy')) {
+        fileName += '.rpy'
+      }
+      
+      // Generate default template
+      const labelName = fileName.replace('.rpy', '').replace(/[^a-zA-Z0-9_]/g, '_')
+      const template = `# ${fileName}
+# 由 Ren'Py Visual Editor 创建
+
+label ${labelName}:
+    "这是一个新的场景。"
+    return
+`
+      
+      const result = await projectManager.createScript(fileName, template)
+      
+      if (result.success) {
+        // Refresh script files list
+        get().refreshScriptFiles()
+        
+        // Get the new file path
+        const project = projectManager.getProject()
+        if (project) {
+          const newFilePath = Array.from(project.scripts.keys()).find(p => p.endsWith(fileName))
+          if (newFilePath) {
+            // Switch to the new file
+            await get().switchScript(newFilePath)
+            return true
+          }
+        }
+      }
+      
+      return false
+    },
+    
+    /**
+     * Reload the current script from disk
+     * Implements Requirement 3.8
+     */
+    reloadCurrentScript: async () => {
+      const state = get()
+      if (!state.currentFile) {
+        return
+      }
+      
+      set({ isLoading: true, loadingFile: state.currentFile })
+      
+      try {
+        // Get fresh AST from ProjectManager
+        const ast = projectManager.getScript(state.currentFile)
+        
+        if (ast) {
+          // Update script state cache
+          const newScriptStates = new Map(state.scriptStates)
+          newScriptStates.set(state.currentFile, {
+            ast: JSON.parse(JSON.stringify(ast)),
+            undoHistory: { past: [], future: [] },
+            lastAccessed: Date.now(),
+            modified: false,
+            hasError: false,
+          })
+          
+          // Reset history
+          historyManager.initialize(createStateSnapshot({
+            ...state,
+            ast,
+          }))
+          
+          set({
+            ast,
+            scriptStates: newScriptStates,
+            isLoading: false,
+            loadingFile: null,
+            canUndo: false,
+            canRedo: false,
+          })
+          
+          // Refresh script files to update modified indicators
+          get().refreshScriptFiles()
+        }
+      } catch (error) {
+        console.error('Failed to reload script:', error)
+        set({ isLoading: false, loadingFile: null })
+      }
     },
   }
 })
