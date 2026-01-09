@@ -456,6 +456,12 @@ export class ProjectManager {
 
   /**
    * Recursively scan a directory for .rpy files
+   * 
+   * Skips the following directories:
+   * - saves: Save game data
+   * - cache: Compiled bytecode cache
+   * - tl: Translation files (auto-generated, should not be edited in visual editor)
+   * - Directories starting with '.' (hidden directories)
    */
   private async scanDirectory(dirPath: string, files: string[], errors: string[]): Promise<void> {
     try {
@@ -466,7 +472,11 @@ export class ProjectManager {
 
         if (entry.isDirectory) {
           // Skip certain directories
-          if (entry.name === 'saves' || entry.name === 'cache' || entry.name.startsWith('.')) {
+          // - saves: Save game data
+          // - cache: Compiled bytecode cache  
+          // - tl: Translation files (auto-generated, should not be edited in visual editor)
+          // - Hidden directories (starting with '.')
+          if (entry.name === 'saves' || entry.name === 'cache' || entry.name === 'tl' || entry.name.startsWith('.')) {
             continue
           }
           await this.scanDirectory(fullPath, files, errors)
